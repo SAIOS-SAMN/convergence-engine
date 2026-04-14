@@ -14,14 +14,14 @@
 //! not persist. After re-entry, the agent re-derives from chain state,
 //! not from memory of what it did.
 //!
-//! Register: D.AGENT.1 (UAID), D.AGENT.2 (autonomy), D.AGENT.7 (lineage),
+//! Register: D.AGENT.1 (UAID), D.AGENT.2 (autonomy), D.AGENT.7 (hierarchy),
 //!           D.AGENT.8 (rollback), D.AGENT.STATE.1 (persistent binary state).
 
 use std::fs::{File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::path::Path;
 
-use crate::engine::{WitnessState, SluiceState, Delta, compute_rcf_hash, coherence_functional, t_k_to_q1616, Q};
+use crate::engine::{NodeState, SluiceState, Delta, compute_rcf_hash, coherence_functional, t_k_to_q1616, Q};
 use crate::gradient;
 use crate::signing;
 
@@ -45,7 +45,7 @@ pub struct UAID {
 
 impl UAID {
     /// Construct UAID from current node state and genesis RCF.
-    pub fn from_node_state(state: &WitnessState, genesis_rcf: &[u8; 32]) -> Self {
+    pub fn from_node_state(state: &NodeState, genesis_rcf: &[u8; 32]) -> Self {
         let rcf = compute_rcf_hash(&state.delta_k);
         let sk = signing::derive_signing_key(genesis_rcf);
         let vk = signing::public_key(&sk);
@@ -144,7 +144,7 @@ impl RollbackCheck {
     }
 }
 
-/// D.AGENT.7 — Lineage: derive a child's Ed25519 key from parent's current RCF.
+/// D.AGENT.7 — Hierarchy: derive a child's Ed25519 key from parent's current RCF.
 pub fn derive_child_key(parent_rcf: &[u8; 32]) -> (ed25519_dalek::SigningKey, ed25519_dalek::VerifyingKey) {
     let sk = signing::derive_signing_key(parent_rcf);
     let vk = signing::public_key(&sk);
@@ -169,8 +169,8 @@ pub struct SpawnRecord {
 
 impl SpawnRecord {
     /// Create a spawn record. The child's key is derived from the parent's
-    /// current rcf_identity, creating a cryptographic lineage link.
-    pub fn create(parent_state: &WitnessState, genesis_rcf: &[u8; 32],
+    /// current rcf_identity, creating a cryptographic hierarchy link.
+    pub fn create(parent_state: &NodeState, genesis_rcf: &[u8; 32],
                   child_entity_id: u32, parent_receipt_hash: &[u8; 32]) -> Self {
         let parent_uaid = UAID::from_node_state(parent_state, genesis_rcf);
         let (_, child_vk) = derive_child_key(&parent_uaid.rcf_identity);
@@ -184,7 +184,7 @@ impl SpawnRecord {
     }
 
     /// Verify that a child's first receipt correctly links to this spawn record.
-    pub fn verify_lineage(&self, child_first_receipt_parent_hash: &[u8; 16]) -> bool {
+    pub fn verify_hierarchy(&self, child_first_receipt_parent_hash: &[u8; 16]) -> bool {
         // Child's parent_hash (16 bytes truncated) must match parent's receipt hash
         child_first_receipt_parent_hash == &self.parent_receipt_hash[0..16]
     }
@@ -257,7 +257,7 @@ impl AgentStateRecord {
     /// The kernel computes the algebraic state and writes it — the agent
     /// doesn't decide what to remember, the kernel decides what's valid.
     pub fn from_node_state(
-        state: &WitnessState,
+        state: &NodeState,
         genesis_rcf: &[u8; 32],
         chain_length: u32,
         prev_coherence_q1616: u32,
@@ -449,10 +449,10 @@ mod tests {
 
     fn qr(n: i64, d: i64) -> Q { Q::new(BigInt::from(n), BigInt::from(d)) }
 
-    fn test_state() -> WitnessState {
+    fn test_state() -> NodeState {
         let mut d = Delta::zero(3, 1);
         d.set_antisym(0, 1, vec![qr(1, 1)]);
-        WitnessState {
+        NodeState {
             entity_id: 42, k_index: 100, sluice_state: SluiceState::Locked,
             latest_sigma_enc: 0, delta_k: d.clone(), delta_bar: d,
             trajectory: Trajectory::new(), t_k_latest: Q::zero(),
@@ -524,7 +524,7 @@ mod tests {
     }
 
     #[test]
-    fn test_spawn_record_lineage() {
+    fn test_spawn_record_hierarchy() {
         let state = test_state();
         let genesis_rcf = compute_rcf_hash(&state.delta_k);
         let parent_hash = [0xAA; 32];
@@ -534,9 +534,9 @@ mod tests {
         // Child's first receipt parent_hash (truncated 16 bytes) must match
         let mut trunc: [u8; 16] = [0; 16];
         trunc.copy_from_slice(&parent_hash[0..16]);
-        assert!(record.verify_lineage(&trunc));
+        assert!(record.verify_hierarchy(&trunc));
         // Wrong parent hash must fail
-        assert!(!record.verify_lineage(&[0xBB; 16]));
+        assert!(!record.verify_hierarchy(&[0xBB; 16]));
     }
 
     #[test]
@@ -633,7 +633,7 @@ mod tests {
     }
 
     /// Helper: get the Q16.16 coherence of a test state for comparison.
-    fn record_coherence_of(state: &WitnessState) -> u32 {
+    fn record_coherence_of(state: &NodeState) -> u32 {
         let c = coherence_functional(&state.delta_k);
         t_k_to_q1616(&c)
     }
