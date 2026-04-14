@@ -4,7 +4,7 @@
 //
 //! D.AGENT.1-8, D.AGENT.STATE.1 — SAIOS Agent Standard.
 //!
-//! Agents are algebraic citizens with identity (UAID), earned autonomy (ω),
+//! Agents are algebraic citizens with identity (UAID), earned sovereignty (ω),
 //! cryptographic proof (Ed25519), and full auditability (receipt chain).
 //!
 //! D.AGENT.STATE.1 — Agent state persistence as 128-byte binary record.
@@ -14,14 +14,14 @@
 //! not persist. After re-entry, the agent re-derives from chain state,
 //! not from memory of what it did.
 //!
-//! Register: D.AGENT.1 (UAID), D.AGENT.2 (autonomy), D.AGENT.7 (hierarchy),
+//! Register: D.AGENT.1 (UAID), D.AGENT.2 (sovereignty), D.AGENT.7 (lineage),
 //!           D.AGENT.8 (rollback), D.AGENT.STATE.1 (persistent binary state).
 
 use std::fs::{File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::path::Path;
 
-use crate::engine::{NodeState, SluiceState, Delta, compute_rcf_hash, coherence_functional, t_k_to_q1616, Q};
+use crate::engine::{WitnessState, SluiceState, Delta, compute_rcf_hash, coherence_functional, t_k_to_q1616, Q};
 use crate::gradient;
 use crate::signing;
 
@@ -45,7 +45,7 @@ pub struct UAID {
 
 impl UAID {
     /// Construct UAID from current node state and genesis RCF.
-    pub fn from_node_state(state: &NodeState, genesis_rcf: &[u8; 32]) -> Self {
+    pub fn from_node_state(state: &WitnessState, genesis_rcf: &[u8; 32]) -> Self {
         let rcf = compute_rcf_hash(&state.delta_k);
         let sk = signing::derive_signing_key(genesis_rcf);
         let vk = signing::public_key(&sk);
@@ -83,31 +83,31 @@ impl UAID {
     }
 }
 
-/// D.AGENT.2 — Autonomy level = sluice weight ω ∈ [0,1].
+/// D.AGENT.2 — Sovereignty level = sluice weight ω ∈ [0,1].
 /// Not a role. Not a rank. Earned by algebraic consistency.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum AutonomyLevel {
-    /// ω = 1.0: full autonomy, all proposals accepted.
+pub enum SovereigntyLevel {
+    /// ω = 1.0: full sovereignty, all proposals accepted.
     Full,
-    /// ω ∈ (ε, 1.0): partial autonomy, weighted influence.
+    /// ω ∈ (ε, 1.0): partial sovereignty, weighted influence.
     Partial,
     /// ω ≈ ε_sluice: approaching ejection.
     Threshold,
-    /// ω < ε_sluice: no autonomy, sluiced.
+    /// ω < ε_sluice: no sovereignty, sluiced.
     None,
 }
 
-impl AutonomyLevel {
+impl SovereigntyLevel {
     pub fn from_omega(omega: &Q, epsilon_sluice: &Q) -> Self {
         use num_traits::One;
         if omega >= &Q::one() {
-            AutonomyLevel::Full
+            SovereigntyLevel::Full
         } else if omega > epsilon_sluice {
-            AutonomyLevel::Partial
+            SovereigntyLevel::Partial
         } else if omega == epsilon_sluice {
-            AutonomyLevel::Threshold
+            SovereigntyLevel::Threshold
         } else {
-            AutonomyLevel::None
+            SovereigntyLevel::None
         }
     }
 }
@@ -144,7 +144,7 @@ impl RollbackCheck {
     }
 }
 
-/// D.AGENT.7 — Hierarchy: derive a child's Ed25519 key from parent's current RCF.
+/// D.AGENT.7 — Lineage: derive a child's Ed25519 key from parent's current RCF.
 pub fn derive_child_key(parent_rcf: &[u8; 32]) -> (ed25519_dalek::SigningKey, ed25519_dalek::VerifyingKey) {
     let sk = signing::derive_signing_key(parent_rcf);
     let vk = signing::public_key(&sk);
@@ -169,8 +169,8 @@ pub struct SpawnRecord {
 
 impl SpawnRecord {
     /// Create a spawn record. The child's key is derived from the parent's
-    /// current rcf_identity, creating a cryptographic hierarchy link.
-    pub fn create(parent_state: &NodeState, genesis_rcf: &[u8; 32],
+    /// current rcf_identity, creating a cryptographic lineage link.
+    pub fn create(parent_state: &WitnessState, genesis_rcf: &[u8; 32],
                   child_entity_id: u32, parent_receipt_hash: &[u8; 32]) -> Self {
         let parent_uaid = UAID::from_node_state(parent_state, genesis_rcf);
         let (_, child_vk) = derive_child_key(&parent_uaid.rcf_identity);
@@ -184,7 +184,7 @@ impl SpawnRecord {
     }
 
     /// Verify that a child's first receipt correctly links to this spawn record.
-    pub fn verify_hierarchy(&self, child_first_receipt_parent_hash: &[u8; 16]) -> bool {
+    pub fn verify_lineage(&self, child_first_receipt_parent_hash: &[u8; 16]) -> bool {
         // Child's parent_hash (16 bytes truncated) must match parent's receipt hash
         child_first_receipt_parent_hash == &self.parent_receipt_hash[0..16]
     }
@@ -207,7 +207,7 @@ impl SpawnRecord {
 //   [87..91]   coherence_delta_q1616 (i32) — rate of change of C (signed Q16.16)
 //   [91..92]   sluice_state (u8)    — current sluice
 //   [92..93]   trajectory_phase (u8) — active work phase
-//   [93..94]   autonomy_flags (u8) — 3 bits for 3 boundary integrity states
+//   [93..94]   sovereignty_flags (u8) — 3 bits for 3 boundary integrity states
 //   [94..110]  receipt_tip_hash[16]  — truncated hash of chain tip
 //   [110..126] anchor_hash[16]       — truncated genesis anchor
 //   [126..128] reserved
@@ -242,8 +242,8 @@ pub struct AgentStateRecord {
     pub sluice_state: u8,
     /// Active work phase (0 = none, 1-5 = open work items).
     pub trajectory_phase: u8,
-    /// Autonomy boundary flags. Bit 0 = kernel, Bit 1 = C2R, Bit 2 = interop.
-    pub autonomy_flags: u8,
+    /// Sovereignty boundary flags. Bit 0 = kernel, Bit 1 = C2R, Bit 2 = interop.
+    pub sovereignty_flags: u8,
     /// Truncated hash of chain tip receipt (first 16 bytes).
     pub receipt_tip_hash: [u8; 16],
     /// Truncated genesis anchor hash (first 16 bytes).
@@ -257,7 +257,7 @@ impl AgentStateRecord {
     /// The kernel computes the algebraic state and writes it — the agent
     /// doesn't decide what to remember, the kernel decides what's valid.
     pub fn from_node_state(
-        state: &NodeState,
+        state: &WitnessState,
         genesis_rcf: &[u8; 32],
         chain_length: u32,
         prev_coherence_q1616: u32,
@@ -290,7 +290,7 @@ impl AgentStateRecord {
             coherence_delta_q1616: c_delta,
             sluice_state: state.sluice_state.enc_u8(),
             trajectory_phase: 0,
-            autonomy_flags: 0b111, // All three boundaries intact by default
+            sovereignty_flags: 0b111, // All three boundaries intact by default
             receipt_tip_hash: tip_trunc,
             anchor_hash: anchor_trunc,
         }
@@ -309,7 +309,7 @@ impl AgentStateRecord {
         buf[87..91].copy_from_slice(&self.coherence_delta_q1616.to_be_bytes());
         buf[91] = self.sluice_state;
         buf[92] = self.trajectory_phase;
-        buf[93] = self.autonomy_flags;
+        buf[93] = self.sovereignty_flags;
         buf[94..110].copy_from_slice(&self.receipt_tip_hash);
         buf[110..126].copy_from_slice(&self.anchor_hash);
         // [126..128] reserved = 0
@@ -341,7 +341,7 @@ impl AgentStateRecord {
             coherence_delta_q1616: i32::from_be_bytes(buf[87..91].try_into().unwrap()),
             sluice_state: buf[91],
             trajectory_phase: buf[92],
-            autonomy_flags: buf[93],
+            sovereignty_flags: buf[93],
             receipt_tip_hash: tip,
             anchor_hash: anchor,
         }
@@ -371,9 +371,9 @@ impl AgentStateRecord {
         Ok(Self::from_bytes(&buf))
     }
 
-    /// Autonomy boundary check. Returns true if all 3 boundaries intact.
-    pub fn autonomy_intact(&self) -> bool {
-        self.autonomy_flags & 0b111 == 0b111
+    /// Sovereignty boundary check. Returns true if all 3 boundaries intact.
+    pub fn sovereignty_intact(&self) -> bool {
+        self.sovereignty_flags & 0b111 == 0b111
     }
 
     /// Coherence improving? Negative delta = descending toward C(Δ)=0.
@@ -433,7 +433,7 @@ impl ReentryContext {
     /// Is the agent in a valid state for resumed operation?
     pub fn valid_for_reentry(&self) -> bool {
         self.chain_verified
-            && self.state.autonomy_intact()
+            && self.state.sovereignty_intact()
             && self.state.sluice_state != SluiceState::Corrupted.enc_u8()
     }
 }
@@ -449,10 +449,10 @@ mod tests {
 
     fn qr(n: i64, d: i64) -> Q { Q::new(BigInt::from(n), BigInt::from(d)) }
 
-    fn test_state() -> NodeState {
+    fn test_state() -> WitnessState {
         let mut d = Delta::zero(3, 1);
         d.set_antisym(0, 1, vec![qr(1, 1)]);
-        NodeState {
+        WitnessState {
             entity_id: 42, k_index: 100, sluice_state: SluiceState::Locked,
             latest_sigma_enc: 0, delta_k: d.clone(), delta_bar: d,
             trajectory: Trajectory::new(), t_k_latest: Q::zero(),
@@ -488,12 +488,12 @@ mod tests {
     }
 
     #[test]
-    fn test_autonomy_levels() {
+    fn test_sovereignty_levels() {
         let eps = qr(1, 1000);
-        assert_eq!(AutonomyLevel::from_omega(&qr(1, 1), &eps), AutonomyLevel::Full);
-        assert_eq!(AutonomyLevel::from_omega(&qr(1, 2), &eps), AutonomyLevel::Partial);
-        assert_eq!(AutonomyLevel::from_omega(&qr(1, 1000), &eps), AutonomyLevel::Threshold);
-        assert_eq!(AutonomyLevel::from_omega(&qr(0, 1), &eps), AutonomyLevel::None);
+        assert_eq!(SovereigntyLevel::from_omega(&qr(1, 1), &eps), SovereigntyLevel::Full);
+        assert_eq!(SovereigntyLevel::from_omega(&qr(1, 2), &eps), SovereigntyLevel::Partial);
+        assert_eq!(SovereigntyLevel::from_omega(&qr(1, 1000), &eps), SovereigntyLevel::Threshold);
+        assert_eq!(SovereigntyLevel::from_omega(&qr(0, 1), &eps), SovereigntyLevel::None);
     }
 
     #[test]
@@ -524,7 +524,7 @@ mod tests {
     }
 
     #[test]
-    fn test_spawn_record_hierarchy() {
+    fn test_spawn_record_lineage() {
         let state = test_state();
         let genesis_rcf = compute_rcf_hash(&state.delta_k);
         let parent_hash = [0xAA; 32];
@@ -534,9 +534,9 @@ mod tests {
         // Child's first receipt parent_hash (truncated 16 bytes) must match
         let mut trunc: [u8; 16] = [0; 16];
         trunc.copy_from_slice(&parent_hash[0..16]);
-        assert!(record.verify_hierarchy(&trunc));
+        assert!(record.verify_lineage(&trunc));
         // Wrong parent hash must fail
-        assert!(!record.verify_hierarchy(&[0xBB; 16]));
+        assert!(!record.verify_lineage(&[0xBB; 16]));
     }
 
     #[test]
@@ -601,17 +601,17 @@ mod tests {
     }
 
     #[test]
-    fn test_agent_state_autonomy_flags() {
+    fn test_agent_state_sovereignty_flags() {
         let state = test_state();
         let genesis_rcf = compute_rcf_hash(&state.delta_k);
         let record = AgentStateRecord::from_node_state(
             &state, &genesis_rcf, 0, 0, &[0; 32], &[0; 32],
         );
-        assert!(record.autonomy_intact());
+        assert!(record.sovereignty_intact());
         // Corrupt one boundary
         let mut corrupted = record.clone();
-        corrupted.autonomy_flags = 0b110; // kernel boundary down
-        assert!(!corrupted.autonomy_intact());
+        corrupted.sovereignty_flags = 0b110; // kernel boundary down
+        assert!(!corrupted.sovereignty_intact());
     }
 
     #[test]
@@ -633,7 +633,7 @@ mod tests {
     }
 
     /// Helper: get the Q16.16 coherence of a test state for comparison.
-    fn record_coherence_of(state: &NodeState) -> u32 {
+    fn record_coherence_of(state: &WitnessState) -> u32 {
         let c = coherence_functional(&state.delta_k);
         t_k_to_q1616(&c)
     }

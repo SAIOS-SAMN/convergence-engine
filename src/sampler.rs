@@ -348,7 +348,7 @@ impl EpsilonTable {
 
     /// D.INTELLIGENCE.EVOLVE: Learn from cognition.
     ///
-    /// When a primary node derives a rule through cognition (factor_value_vectors,
+    /// When a witness derives a rule through cognition (factor_value_vectors,
     /// vision, spatial relation), the derived understanding is encoded as
     /// a sampler hint. The sampler stores it indexed by orbit prefix.
     /// On subsequent K-steps in the same orbit region, the sampler proposes

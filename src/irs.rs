@@ -179,7 +179,7 @@ pub struct IrsAscending {
     pub coherence_trend: String,
     pub signature: CoherenceSignature,
     pub c7: C7Summary,
-    pub autonomy: String,
+    pub sovereignty: String,
     /// Perception result — present when the system has perceived an observation.
     /// This is not separate from ascending. Perception IS what ascending reads.
     pub perception: Option<PerceptionSummary>,
@@ -254,10 +254,10 @@ pub fn irs_ascending(
         source: last_source.to_string(),
     };
 
-    let autonomy = if agent_state.autonomy_intact() {
+    let sovereignty = if agent_state.sovereignty_intact() {
         "intact".to_string()
     } else {
-        let flags = agent_state.autonomy_flags;
+        let flags = agent_state.sovereignty_flags;
         let mut broken = Vec::new();
         if flags & 0b001 == 0 { broken.push("kernel"); }
         if flags & 0b010 == 0 { broken.push("c2r"); }
@@ -272,7 +272,7 @@ pub fn irs_ascending(
         coherence_trend,
         signature: signature.clone(),
         c7,
-        autonomy,
+        sovereignty,
         perception: None, // Set by caller when perception data is available
     }
 }
@@ -314,11 +314,11 @@ pub fn irs_ascending_to_json(r: &IrsAscending) -> String {
     };
 
     format!(
-        r#"{{"k_index":{},"orbit_class":"0x{}","coherence":"{}","coherence_trend":"{}","signature":{{"entropy":"{}","agreement":[{}],"orbit_distances":[{}],"modal_orbit":"{}","basin_crossings":{},"mean_coherence_delta":"{}","stasis_count":{},"k_window":{}}},"c7":{{"passed":{},"coherence_delta":"{}","source":"{}"}},"autonomy":"{}"{}}}"#,
+        r#"{{"k_index":{},"orbit_class":"0x{}","coherence":"{}","coherence_trend":"{}","signature":{{"entropy":"{}","agreement":[{}],"orbit_distances":[{}],"modal_orbit":"{}","basin_crossings":{},"mean_coherence_delta":"{}","stasis_count":{},"k_window":{}}},"c7":{{"passed":{},"coherence_delta":"{}","source":"{}"}},"sovereignty":"{}"{}}}"#,
         r.k_index, r.orbit_class, r.coherence, r.coherence_trend,
         entropy_str, agreement_json, distances_json, modal_hex,
         sig.basin_crossings, mean_cd, sig.stasis_count, sig.k_window,
-        r.c7.passed, r.c7.coherence_delta, r.c7.source, r.autonomy,
+        r.c7.passed, r.c7.coherence_delta, r.c7.source, r.sovereignty,
         perception_json,
     )
 }
@@ -690,7 +690,7 @@ mod tests {
             k_index: 8877, chain_length: 200,
             t_k_q1616: 65536, coherence_q1616: 16384,
             coherence_delta_q1616: -1000, sluice_state: 1,
-            trajectory_phase: 0, autonomy_flags: 0b111,
+            trajectory_phase: 0, sovereignty_flags: 0b111,
             receipt_tip_hash: [0; 16], anchor_hash: [0; 16],
         };
         use crate::mdc::{MdcResult, EchelonHint};
@@ -711,7 +711,7 @@ mod tests {
         assert_eq!(parsed["k_index"], 8877);
         assert!(parsed["signature"]["agreement"].is_array());
         assert_eq!(parsed["signature"]["entropy"], "3/10");
-        assert_eq!(parsed["autonomy"], "intact");
+        assert_eq!(parsed["sovereignty"], "intact");
     }
 
     #[test]
@@ -720,7 +720,7 @@ mod tests {
             rcf_identity: [0x42; 32], entity_id: 1, verifying_key: [0; 32],
             k_index: 100, chain_length: 50,
             t_k_q1616: 0, coherence_q1616: 0, coherence_delta_q1616: 0,
-            sluice_state: 1, trajectory_phase: 0, autonomy_flags: 0b111,
+            sluice_state: 1, trajectory_phase: 0, sovereignty_flags: 0b111,
             receipt_tip_hash: [0; 16], anchor_hash: [0; 16],
         };
         use crate::mdc::{MdcResult, EchelonHint};
@@ -751,7 +751,7 @@ mod tests {
             k_index: 100, chain_length: 50,
             t_k_q1616: 0, coherence_q1616: 65536, // C = 1.0
             coherence_delta_q1616: -500, // improving
-            sluice_state: 1, trajectory_phase: 0, autonomy_flags: 0b111,
+            sluice_state: 1, trajectory_phase: 0, sovereignty_flags: 0b111,
             receipt_tip_hash: [0; 16], anchor_hash: [0; 16],
         };
         use crate::mdc::{MdcResult, EchelonHint};

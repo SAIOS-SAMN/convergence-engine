@@ -41,7 +41,7 @@ pub type QMatrix = Vec<Vec<Q>>;
 ///
 /// Variant names encode the D.EXEC.1 check that failed, enabling precise
 /// failure diagnosis at the caller. The sluice state returned with each
-/// error is the state to record in NodeState per D.SAIOS.1.
+/// error is the state to record in WitnessState per D.SAIOS.1.
 #[allow(missing_docs)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum SaiosError {
@@ -696,60 +696,60 @@ pub fn coherence_functional(delta: &Delta) -> Q {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// STATE RECORD — the primary node's identity and evolutionary state
+// GENOME — the witness's identity and evolutionary state
 // ═══════════════════════════════════════════════════════════════════════
 
-/// Process class marker for state_record serialization.
-pub const PROCESS_CLASS_PRIMARY_NODE: u32 = 1;
+/// Species marker for genome serialization.
+pub const GENOME_SPECIES_WITNESS: u32 = 1;
 
-/// Process class marker for the chronometric authority.
+/// Species marker for the chronometric authority.
 /// Timekeepers observe the collective state of the mesh and write immutable
 /// receipts to the chain. They do not think, derive, or compose.
-pub const PROCESS_CLASS_TIMEKEEPER: u32 = 2;
+pub const GENOME_SPECIES_TIMEKEEPER: u32 = 2;
 
-/// The primary node's state_record — its identity, origin, and evolved position.
+/// The witness's genome — its identity, origin, and evolved position.
 ///
-/// The state record replaces the raw temporal anchor. It carries:
-/// - ProcessClass: what kind of entity (primary node, agent, etc.)
+/// The genome replaces the raw temporal anchor. It carries:
+/// - Species: what kind of entity (witness, agent, etc.)
 /// - Generation: which cohort (era 1, era 2, etc.)
 /// - Birth polynomial: the H^1 coefficients at genesis (immutable identity)
 /// - Evolved Delta: the coboundary-reduced current position (mutable state)
 ///
 /// Serialization format (self-describing, no marker files):
 ///   [magic: u32 = 0x47454E45 "GENE"]
-///   [process_class: u32]
+///   [species: u32]
 ///   [generation: u32]
 ///   [dim: u32][m: u32]
-///   [initialization polynomial: n_coeffs(u32) + Q entries]
+///   [birth polynomial: n_coeffs(u32) + Q entries]
 ///   [evolved Delta: temporal anchor format]
 #[derive(Debug, Clone)]
-pub struct StateRecord {
-    /// What kind of entity: primary node, agent, etc.
-    pub process_class: u32,
+pub struct Genome {
+    /// What kind of entity: witness, agent, etc.
+    pub species: u32,
     /// Which cohort: generation 1, 2, etc.
     pub generation: u32,
     /// Immutable identity: H^1 coefficients at genesis.
-    pub init_polynomial: Vec<Q>,
+    pub birth_polynomial: Vec<Q>,
     /// Current position: coboundary-reduced Delta.
     pub evolved: Delta,
-    /// Crystallized knowledge: orbit axioms the primary node has learned.
+    /// Crystallized knowledge: orbit axioms the witness has learned.
     /// Binary-encoded MeshKnowledge (opaque bytes, decoded by membrane module).
     pub knowledge: Vec<u8>,
     /// Trajectory comprehension: last_coherence, velocity, holonomics.
     pub trajectory: Trajectory,
-    /// Environment capacity: max Delta dimension the primary node can sustain.
+    /// Environment capacity: max Delta dimension the witness can sustain.
     /// Measured at startup from available memory. Evolves toward ceiling.
-    /// The primary node won't accept work with dimension > capacity.
+    /// The witness won't accept work with dimension > capacity.
     pub capacity: u16,
     /// L3 Holonomic: Crystallized torsion markers — genomic symmetry alleles.
-    /// Each (torsion_order, quality) pair represents a symmetry class this node
+    /// Each (torsion_order, quality) pair represents a symmetry class this witness
     /// has crystallized at ≥99.999% confidence. These are permanent traits — the
-    /// node is "tuned" to perceive these symmetry classes. During vision,
-    /// matching symmetry elements receive harmonic amplification from the state record.
+    /// witness is "tuned" to perceive these symmetry classes. During vision,
+    /// matching symmetry elements receive harmonic amplification from the genome.
     pub torsion_markers: Vec<(u16, Q)>,
     /// L3 Holonomic: Crystallized value cocycles — residual obstructions.
     /// Each (from_value, to_value, quality) triple represents a value transition
-    /// this node has crystallized across L2 consensus. The cocycle is the
+    /// this witness has crystallized across L2 consensus. The cocycle is the
     /// algebraic invariant: WHAT transmutes, not WHERE. The spatial anchor is L1.
     /// These compose with torsion markers: torsion = spatial symmetry,
     /// value_cocycles = spectral transition. Together they form the complete
@@ -757,30 +757,30 @@ pub struct StateRecord {
     pub value_cocycles: Vec<(i16, i16, Q)>,
     /// Mathematical primitives: the composable generators of the mathematical group.
     /// Each primitive is an operation that the peel loop can compose through A.4.
-    /// Crystallized from initialization — the primary node is born knowing all of mathematics
+    /// Sacred from genesis — the witness is born knowing all of mathematics
     /// as composable operations, not as lookup tables.
     pub math_primitives: Vec<MathPrimitive>,
     /// Spatial cochain primitives: universal spatial geometry templates.
-    /// The state record holds the template (reflection exists). The membrane
-    /// learns the parameter (reflect across row 5). Crystallized from initialization.
+    /// The genome holds the template (reflection exists). The membrane
+    /// learns the parameter (reflect across row 5). Sacred from genesis.
     pub spatial_primitives: Vec<SpatialPrimitive>,
-    /// Solved orbit registry: orbit prefixes where this node achieved 1/1.
+    /// Solved orbit registry: orbit prefixes where this witness achieved 1/1.
     /// Not a solution — just a record that the orbit was solved.
     /// External tooling reads this for distribution, drill targeting, regression.
     /// Max 128 entries. Deduplicated on insert.
     pub solved_puzzles: Vec<[u8; 4]>,
-    /// Hierarchy depth: 0 = primary (founding), 1 = secondary (created by primary), 2 = tertiary (created by secondary).
-    /// Determines creation bounds: primary creates ≤2 secondaries, secondary creates ≤3 tertiaries, tertiary creates none.
-    pub hierarchy_depth: u8,
-    /// Parent node ID. 0 = no parent (founding node).
+    /// Lineage depth: 0 = witness (founding), 1 = elder (created by witness), 2 = child (created by elder).
+    /// Determines creation bounds: witness creates ≤2 elders, elder creates ≤3 children, child creates none.
+    pub lineage_depth: u8,
+    /// Parent witness ID. 0 = no parent (founding witness).
     pub parent_id: u16,
     /// Number of offspring this node has created. Saturates at tier bound.
     pub created_count: u8,
     /// The orbit that triggered this node's creation. [0;4] = genesis.
-    pub init_orbit: [u8; 4],
-    /// Crystallized composed operators — vocabulary expansion through hierarchy.
+    pub birth_orbit: [u8; 4],
+    /// Crystallized composed operators — vocabulary expansion through lineage.
     /// Each entry is a spatial primitive + parameter + post-spatial value map (σ_post).
-    /// Discovered by the compositor, inscribed by secondary nodes, inherited by tertiary nodes.
+    /// Discovered by the compositor, inscribed by elders, inherited by children.
     /// The peel loop reads these as direct generators — no recursive composition needed.
     /// Max 32 entries. The alphabet stays fixed. The words grow.
     pub composed_operators: Vec<ComposedOperator>,
@@ -788,7 +788,7 @@ pub struct StateRecord {
 
 /// A crystallized composed operator — a word in the algebraic vocabulary.
 /// The compositor synthesizes these from the residual (spatial remap + value map).
-/// The state record carries them. The peel loop applies them directly.
+/// The genome carries them. The peel loop applies them directly.
 /// The σ_post is the entangled value map: source_value → target_value after spatial remap.
 /// The score tracks total C(T) reduction achieved — the operator's lifetime utility.
 #[derive(Debug, Clone)]
@@ -801,13 +801,13 @@ pub struct ComposedOperator {
     /// Applied after the spatial remap. Vec with .find() — no HashMap.
     pub sigma: Vec<(i16, i16)>,
     /// Cumulative C(T) reduction across all applications. i64, not f64 — Core Design Law 4.
-    /// The operator's right to occupy a state record slot is proportional to this value.
+    /// The operator's right to occupy a genome slot is proportional to this value.
     pub score: i64,
 }
 
 /// A composable mathematical operation — a generator of the algebraic group.
-/// The state record holds these as crystallized knowledge. The peel loop composes them.
-/// The membrane learns WHEN to apply which primitive. The harmonic state tunes
+/// The genome holds these as sacred knowledge. The peel loop composes them.
+/// The membrane learns WHEN to apply which primitive. The epigenome tunes
 /// which primitives to attend to.
 #[derive(Debug, Clone)]
 pub enum MathPrimitive {
@@ -836,7 +836,7 @@ pub enum MathPrimitive {
 }
 
 impl MathPrimitive {
-    /// The full set of mathematical generators — crystallized from initialization.
+    /// The full set of mathematical generators — sacred from genesis.
     pub fn all() -> Vec<MathPrimitive> {
         vec![
             MathPrimitive::Successor,
@@ -956,7 +956,7 @@ impl PrimitiveContext {
 // MathPrimitives transform VALUES: f(v, ctx) → v'.
 // SpatialPrimitives transform POSITIONS: π(r, c, param) → (r', c').
 //
-// The state record holds the template (reflection EXISTS as a possibility).
+// The genome holds the template (reflection EXISTS as a possibility).
 // The membrane learns the parameter (reflect across row 5).
 // The peel loop generates candidates: output[r,c] = input[π(r, c, param)].
 // C(T) selects. No boolean gates.
@@ -965,8 +965,8 @@ impl PrimitiveContext {
 // The parameter space is bounded by grid dimensions, not domain_max.
 
 /// A spatial cochain primitive — a generator of the spatial permutation group.
-/// Maps output position to source position. The state record holds these as
-/// crystallized knowledge of spatial geometry. The membrane learns the parameters.
+/// Maps output position to source position. The genome holds these as
+/// sacred knowledge of spatial geometry. The membrane learns the parameters.
 #[derive(Debug, Clone)]
 pub enum SpatialPrimitive {
     /// Reflect across horizontal axis at row `p`: (r, c) → (2p - r, c).
@@ -1018,7 +1018,7 @@ pub struct SpatialContext {
 }
 
 impl SpatialPrimitive {
-    /// The full set of spatial generators — crystallized from initialization.
+    /// The full set of spatial generators — sacred from genesis.
     pub fn all() -> Vec<SpatialPrimitive> {
         vec![
             SpatialPrimitive::ReflectH,
@@ -1197,12 +1197,12 @@ impl SpatialPrimitive {
     }
 }
 
-// StateRecord v3: no magic bytes. Structure IS identity.
+// Genome v3: no magic bytes. Structure IS identity.
 
-impl StateRecord {
-    /// Create a new state_record from a genesis Delta.
-    /// The initialization polynomial is extracted as the coboundary-reduced residuals.
-    pub fn new(process_class: u32, generation: u32, genesis: &Delta) -> Self {
+impl Genome {
+    /// Create a new genome from a genesis Delta.
+    /// The birth polynomial is extracted as the coboundary-reduced residuals.
+    pub fn new(species: u32, generation: u32, genesis: &Delta) -> Self {
         let reduced = coboundary_reduce(genesis);
         // Extract nonzero entries from reduced Delta as polynomial coefficients
         let mut poly = Vec::new();
@@ -1213,10 +1213,10 @@ impl StateRecord {
                 }
             }
         }
-        StateRecord {
-            process_class,
+        Genome {
+            species,
             generation,
-            init_polynomial: poly,
+            birth_polynomial: poly,
             evolved: reduced,
             knowledge: vec![],
             trajectory: Trajectory::new(),
@@ -1226,18 +1226,18 @@ impl StateRecord {
             math_primitives: MathPrimitive::all(),
             spatial_primitives: SpatialPrimitive::all(),
             solved_puzzles: vec![],
-            hierarchy_depth: 0,
+            lineage_depth: 0,
             parent_id: 0,
             created_count: 0,
-            init_orbit: [0; 4],
+            birth_orbit: [0; 4],
             composed_operators: vec![],
         }
     }
 
     /// Creation capacity remaining at this tier.
-    /// Primary (depth 0): 3 secondaries. Secondary (depth 1): 6 tertiaries. Tertiary (depth 2): 0.
+    /// Witness (depth 0): 3 elders. Elder (depth 1): 6 children. Child (depth 2): 0.
     pub fn creation_capacity(&self) -> u8 {
-        let max = match self.hierarchy_depth {
+        let max = match self.lineage_depth {
             0 => 3u8,
             1 => 6u8,
             _ => 0u8,
@@ -1245,12 +1245,12 @@ impl StateRecord {
         max.saturating_sub(self.created_count)
     }
 
-    /// Assimilate a composed operator into the state record.
+    /// Assimilate a composed operator into the genome.
     ///
     /// Score-based eviction — the 32-slot limit is a pressure boundary, not a wall.
     /// If the operator already exists: reinforce its score (accumulation).
-    /// If the state record has room: append.
-    /// If the state record is full: the weakest operator yields to the stronger.
+    /// If the genome has room: append.
+    /// If the genome is full: the weakest operator yields to the stronger.
     /// The variational selection pattern — `<` IS C(T). No boolean gates.
     pub fn assimilate(&mut self, op: ComposedOperator) {
         // Reinforcement: existing operator accumulates score
@@ -1286,11 +1286,11 @@ impl StateRecord {
             });
     }
 
-    /// Serialize the state record to compact binary.
+    /// Serialize the genome to compact binary.
     ///
     /// Format v2 (compact):
     ///   [GENE magic: 4 bytes]
-    ///   [process_class: 1 byte] [generation: 2 bytes]
+    ///   [species: 1 byte] [generation: 2 bytes]
     ///   [n_nonzero_poly: 1 byte]
     ///   [for each nonzero: index(1) + numer_i16(2) + denom_u16(2) = 5 bytes]
     ///   [knowledge_len: 2 bytes] [knowledge bytes]
@@ -1300,11 +1300,11 @@ impl StateRecord {
     ///   [for each nonzero: i(1) + j(1) + l(1) + numer_i16(2) + denom_u16(2) = 7 bytes]
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::new();
-        buf.push(self.process_class as u8);
+        buf.push(self.species as u8);
         buf.extend_from_slice(&(self.generation as u16).to_le_bytes());
 
         // Birth polynomial — only nonzero entries
-        let nonzero_poly: Vec<(u8, i16, u16)> = self.init_polynomial.iter().enumerate()
+        let nonzero_poly: Vec<(u8, i16, u16)> = self.birth_polynomial.iter().enumerate()
             .filter(|(_, q)| !q.is_zero())
             .map(|(i, q)| {
                 let n: i64 = q.numer().try_into().unwrap_or(0);
@@ -1386,7 +1386,7 @@ impl StateRecord {
         }
 
         // Math primitives: [count: u8] [opcode: u8 per entry]
-        // Crystallized from initialization — the primary node's mathematical vocabulary.
+        // Sacred from genesis — the witness's mathematical vocabulary.
         let n_prims = self.math_primitives.len().min(255);
         buf.push(n_prims as u8);
         for prim in self.math_primitives.iter().take(n_prims) {
@@ -1394,7 +1394,7 @@ impl StateRecord {
         }
 
         // Spatial primitives: [count: u8] [opcode: u8 per entry]
-        // Crystallized from initialization — the primary node's spatial geometry vocabulary.
+        // Sacred from genesis — the witness's spatial geometry vocabulary.
         let n_spatial = self.spatial_primitives.len().min(255);
         buf.push(n_spatial as u8);
         for prim in self.spatial_primitives.iter().take(n_spatial) {
@@ -1408,11 +1408,11 @@ impl StateRecord {
             buf.extend_from_slice(orbit);
         }
 
-        // Hierarchy: depth(1) + parent_id(2) + created_count(1) + init_orbit(4) = 8 bytes
-        buf.push(self.hierarchy_depth);
+        // Lineage: depth(1) + parent_id(2) + created_count(1) + birth_orbit(4) = 8 bytes
+        buf.push(self.lineage_depth);
         buf.extend_from_slice(&self.parent_id.to_le_bytes());
         buf.push(self.created_count);
-        buf.extend_from_slice(&self.init_orbit);
+        buf.extend_from_slice(&self.birth_orbit);
 
         // Composed operators: [count_u8] + count × [opcode_u8 + param_i64 + score_i64 + sigma_count_u8 + sigma × (from_i16 + to_i16)]
         let n_ops = self.composed_operators.len().min(32);
@@ -1432,10 +1432,10 @@ impl StateRecord {
         buf
     }
 
-    /// Deserialize a state record from binary.
+    /// Deserialize a genome from binary.
     pub fn from_bytes(data: &[u8]) -> Option<Self> {
         if data.len() < 3 { return None; }
-        let process_class = data[0] as u32;
+        let species = data[0] as u32;
         let generation = u16::from_le_bytes(data[1..3].try_into().ok()?) as u32;
 
         let mut pos = 3;
@@ -1477,7 +1477,7 @@ impl StateRecord {
             traj_vals.push(Q::new(BigInt::from(n as i64), BigInt::from(d_val as i64)));
         }
         let traj_count = u32::from_le_bytes(data[pos..pos+4].try_into().ok()?); pos += 4;
-        let trajectory = Trajectory::from_state_record(
+        let trajectory = Trajectory::from_genome(
             traj_vals[0].clone(), traj_vals[1].clone(), traj_vals[2].clone(),
             traj_vals[3].clone(), traj_vals[4].clone(), traj_count,
         );
@@ -1583,8 +1583,8 @@ impl StateRecord {
             }
         }
 
-        // Hierarchy (backward compatible: founding node if missing)
-        let (hierarchy_depth, parent_id, created_count, init_orbit) = if pos + 8 <= data.len() {
+        // Lineage (backward compatible: founding witness if missing)
+        let (lineage_depth, parent_id, created_count, birth_orbit) = if pos + 8 <= data.len() {
             let ld = data[pos]; pos += 1;
             let pid = u16::from_le_bytes(data[pos..pos+2].try_into().ok()?); pos += 2;
             let cc = data[pos]; pos += 1;
@@ -1615,7 +1615,7 @@ impl StateRecord {
             }
         }
 
-        Some(StateRecord { process_class, generation, init_polynomial: poly, evolved, knowledge, trajectory, capacity, torsion_markers, value_cocycles, math_primitives, spatial_primitives, solved_puzzles, hierarchy_depth, parent_id, created_count, init_orbit, composed_operators })
+        Some(Genome { species, generation, birth_polynomial: poly, evolved, knowledge, trajectory, capacity, torsion_markers, value_cocycles, math_primitives, spatial_primitives, solved_puzzles, lineage_depth, parent_id, created_count, birth_orbit, composed_operators })
     }
 }
 
@@ -1690,7 +1690,7 @@ pub fn coboundary_reduce(delta: &Delta) -> Delta {
 
 /// Count active (nonzero) entries in the upper triangle of Delta.
 /// Each nonzero entry is one relational dimension — one piece of
-/// information the primary node holds about the relationship between
+/// information the witness holds about the relationship between
 /// two entities at one coordinate. A decrease in this count means
 /// dimensional collapse — structural regression.
 pub fn count_active_entries(delta: &Delta) -> usize {
@@ -1749,14 +1749,14 @@ pub fn genesis_displacement(delta_k: &Delta, genesis: &Delta) -> (Q, Q) {
     (drift, torsion)
 }
 
-/// D.MEMBRANE.LIVING.1: Harmonic state — the primary node's polytonal position
+/// D.MEMBRANE.LIVING.1: Harmonic state — the witness's polytonal position
 /// across 11 dimensions of the manifold.
 ///
 /// Each dimension is a Q measurement of a different projection of the
-/// node's Δ_k. Together they form the chord the primary node is playing.
-/// Different primary nodes play different chords. The membrane hears them all.
+/// witness's Δ_k. Together they form the chord the witness is playing.
+/// Different witnesses play different chords. The membrane hears them all.
 ///
-/// This replaces the monotonic scalar C(Δ) as the primary node's self-perception.
+/// This replaces the monotonic scalar C(Δ) as the witness's self-perception.
 /// The scalar is ONE tone (dimension 11). The harmonic state is all 11.
 #[derive(Debug, Clone)]
 pub struct HarmonicState {
@@ -1766,7 +1766,7 @@ pub struct HarmonicState {
 }
 
 impl HarmonicState {
-    /// Compute the harmonic state of a primary node's Δ_k.
+    /// Compute the harmonic state of a witness's Δ_k.
     ///
     /// Each tone is a projection of the algebraic state onto one
     /// dimension of the manifold. Computed from the Delta's entries,
@@ -1963,7 +1963,7 @@ impl HarmonicState {
 
     /// Identify the weakest vibration — the dimension with the lowest value.
     /// Returns (dimension_index, vibration_value).
-    /// This is the preference function: the primary node perceives where it is weakest.
+    /// This is the preference function: the witness perceives where it is weakest.
     pub fn weakest_dimension(&self) -> (usize, Q) {
         let mut min_idx = 0;
         let mut min_val = self.vibrations[0].clone();
@@ -2479,10 +2479,10 @@ pub fn anchor_gradient(delta_k: &Delta, delta_bar: &Delta) -> Delta {
 // NODE STATE  (D.SAIOS.1, D.EXEC.1)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Trajectory comprehension: the primary node's understanding of its own motion.
+/// Trajectory comprehension: the witness's understanding of its own motion.
 ///
 /// Three measurements — position, velocity, holonomics — computed incrementally.
-/// No buffer. No cap. No discarding. The primary node comprehends its trajectory
+/// No buffer. No cap. No discarding. The witness comprehends its trajectory
 /// rather than remembering raw history.
 #[derive(Debug, Clone)]
 pub struct Trajectory {
@@ -2550,8 +2550,8 @@ impl Trajectory {
         self.last_coherence = coherence;
     }
 
-    /// Restore trajectory from state_record values (3 measurements + max + mean state).
-    pub fn from_state_record(last: Q, velocity: Q, holonomics: Q, max_c: Q, sum: Q, count: u32) -> Self {
+    /// Restore trajectory from genome values (3 measurements + max + mean state).
+    pub fn from_genome(last: Q, velocity: Q, holonomics: Q, max_c: Q, sum: Q, count: u32) -> Self {
         Trajectory {
             prev_coherence: &last - if velocity >= Q::zero() { velocity.clone() } else { -velocity.clone() },
             prev_velocity: Q::zero(),
@@ -2580,7 +2580,7 @@ impl Trajectory {
 ///
 /// Persisted to saios-db at each K-step. Used for continuity.
 #[derive(Debug, Clone)]
-pub struct NodeState {
+pub struct WitnessState {
     /// Entity identifier. Max 16,777,215 (uint24). Register: CC.CHAIN.NODE.1.
     pub entity_id: u32,
     /// Current K-step index. Strictly monotone. Register: I10, D.EXEC.1.
@@ -2592,7 +2592,7 @@ pub struct NodeState {
     /// Current Δ_k — the node's relational state.
     pub delta_k: Delta,
     /// Chronometry v1.0: H^1 reference = coboundary_reduce(delta_k). No EMA.
-    /// The manifold position is exact. Temporal memory is in trajectory + state_record.
+    /// The manifold position is exact. Temporal memory is in trajectory + genome.
     pub delta_bar: Delta,
     /// Trajectory comprehension — replaces coherence_history buffer.
     pub trajectory: Trajectory,
@@ -2600,7 +2600,7 @@ pub struct NodeState {
     pub t_k_latest: Q,
 }
 
-impl NodeState {
+impl WitnessState {
     /// Compute Q0.32 fixed-point encoding of Σ_global ∈ [0,1].
     /// Register: D.CHAIN.1-ENC-v2, U.CHAIN.3.
     pub fn compute_sigma_enc(&self) -> u32 {
@@ -2756,7 +2756,7 @@ pub fn keccak256(input: &[u8]) -> [u8; 32] {
 /// The SAIOS execution kernel.
 ///
 /// Holds all calibrated parameters and the set of operators active for
-/// this node. Stateless between calls — state is in `NodeState`.
+/// this node. Stateless between calls — state is in `WitnessState`.
 pub struct SaiosKernel {
     /// Calibrated governance parameters. Register: D.CHAIN.4.
     pub params: SaiosParams,
@@ -2806,7 +2806,7 @@ impl SaiosKernel {
     /// appropriate state per D.SAIOS.1.
     pub fn execute_k_step(
         &self,
-        state: &mut NodeState,
+        state: &mut WitnessState,
     ) -> Result<KStepOutput, SaiosError> {
         let p = &self.params;
 
@@ -2832,7 +2832,7 @@ impl SaiosKernel {
         // is at relational equilibrium. Register: CC.CON.4, CD.1-SQ.
         let delta_raw = self.apply_master_equation(state)?;
         // Cohomological operating level: reduce to H^1 representative
-        // immediately after conjugation. The primary node operates on the
+        // immediately after conjugation. The witness operates on the
         // cohomological class, not the raw cochain. No coboundary
         // factors accumulate. Every subsequent measurement — T_k,
         // C6, C7 — operates on the reduced form.
@@ -2859,7 +2859,7 @@ impl SaiosKernel {
         // The operator may redistribute coherence across dimensions —
         // some triples improve, some worsen. That's polytonal evolution.
         // What it must NOT do is collapse a dimension: a nonzero relational
-        // entry going to zero means the primary node lost information about
+        // entry going to zero means the witness lost information about
         // a relationship. That's structural regression.
         //
         // Two measurements, both polytonal:
@@ -2988,7 +2988,7 @@ impl SaiosKernel {
 
     /// C1: Integrity Sentinel. |R_i| ≤ δ/2 for all encoded coordinates.
     /// Register: D.5.1-DIM. Failure → CORRUPTED.
-    fn check_c1_integrity_sentinel(&self, state: &mut NodeState) -> Result<(), SaiosError> {
+    fn check_c1_integrity_sentinel(&self, state: &mut WitnessState) -> Result<(), SaiosError> {
         if let Some(encoded) = &state.delta_k.encoded {
             for i in 0..state.delta_k.dim {
                 for j in 0..state.delta_k.dim {
@@ -3007,7 +3007,7 @@ impl SaiosKernel {
     }
 
     /// C2: K_S window constraint. Register: D.EXEC.1 C2.
-    fn check_c2_ks_window(&self, state: &mut NodeState) -> Result<(), SaiosError> {
+    fn check_c2_ks_window(&self, state: &mut WitnessState) -> Result<(), SaiosError> {
         // K_S = current K-step / total elapsed steps (simplified for initial deployment)
         // K_S_min = 1 / (10 · τ_lag)
         let k_s_min = Q::one() / (Q::from_integer(BigInt::from(10)) * &self.params.tau_lag);
@@ -3027,7 +3027,7 @@ impl SaiosKernel {
     }
 
     /// C3: W_max ≤ 1/3 for all operator weights. Register: D.EXEC.1 C3.
-    fn check_c3_w_max(&self, state: &NodeState) -> Result<(), SaiosError> {
+    fn check_c3_w_max(&self, state: &WitnessState) -> Result<(), SaiosError> {
         if self.operators.is_empty() { return Ok(()); }
         let gamma_k = compute_gamma_k(&state.delta_k);
         let omegas = self.compute_all_omegas(&gamma_k);
@@ -3054,7 +3054,7 @@ impl SaiosKernel {
     /// `|φ(R_j)| < ε_sluice`, where φ(R_j) = R_j / δ.
     ///
     /// Register: D.EXEC.1 C5, T.SAMN.11, constants::TORSION_PERIOD_M.
-    pub fn check_c5_resonance(&self, state: &NodeState) -> Result<(), SaiosError> {
+    pub fn check_c5_resonance(&self, state: &WitnessState) -> Result<(), SaiosError> {
         if state.k_index % constants::TORSION_PERIOD_M != 0 {
             return Ok(());
         }
@@ -3125,7 +3125,7 @@ impl SaiosKernel {
     /// 7. + ξ_k — bounded explore perturbation (Δ_explore only)
     ///
     /// Register: T.FOUND.3, D.EXEC.1.
-    fn apply_master_equation(&self, state: &NodeState) -> Result<Delta, SaiosError> {
+    fn apply_master_equation(&self, state: &WitnessState) -> Result<Delta, SaiosError> {
         let delta_k = &state.delta_k;
         let p = &self.params;
 
@@ -3372,32 +3372,32 @@ mod tests {
     }
 
     #[test]
-    fn test_state_record_solved_puzzles_round_trip() {
+    fn test_genome_solved_puzzles_round_trip() {
         let genesis = Delta::zero(3, 1);
-        let mut state_record = StateRecord::new(1, 1, &genesis);
+        let mut genome = Genome::new(1, 1, &genesis);
 
-        state_record.record_solved_puzzle([0x00, 0x7b, 0xbf, 0xb7]);
-        state_record.record_solved_puzzle([0x55, 0x82, 0xe5, 0xca]);
-        state_record.record_solved_puzzle([0x00, 0x7b, 0xbf, 0xb7]); // duplicate — dissolves
+        genome.record_solved_puzzle([0x00, 0x7b, 0xbf, 0xb7]);
+        genome.record_solved_puzzle([0x55, 0x82, 0xe5, 0xca]);
+        genome.record_solved_puzzle([0x00, 0x7b, 0xbf, 0xb7]); // duplicate — dissolves
 
-        assert_eq!(state_record.solved_puzzles.len(), 2);
+        assert_eq!(genome.solved_puzzles.len(), 2);
 
-        let bytes = state_record.to_bytes();
-        let restored = StateRecord::from_bytes(&bytes).unwrap();
+        let bytes = genome.to_bytes();
+        let restored = Genome::from_bytes(&bytes).unwrap();
         assert_eq!(restored.solved_puzzles.len(), 2);
         assert_eq!(restored.solved_puzzles[0], [0x00, 0x7b, 0xbf, 0xb7]);
         assert_eq!(restored.solved_puzzles[1], [0x55, 0x82, 0xe5, 0xca]);
     }
 
     #[test]
-    fn test_state_record_solved_puzzles_backwards_compatible() {
-        // Old state_record without solved_puzzles section should deserialize fine
+    fn test_genome_solved_puzzles_backwards_compatible() {
+        // Old genome without solved_puzzles section should deserialize fine
         let genesis = Delta::zero(3, 1);
-        let old_state_record = StateRecord::new(1, 1, &genesis);
-        let old_bytes = old_state_record.to_bytes();
+        let old_genome = Genome::new(1, 1, &genesis);
+        let old_bytes = old_genome.to_bytes();
         // Trim the solved_puzzles section (last byte = count 0)
         let trimmed = &old_bytes[..old_bytes.len() - 1];
-        let restored = StateRecord::from_bytes(trimmed).unwrap();
+        let restored = Genome::from_bytes(trimmed).unwrap();
         assert!(restored.solved_puzzles.is_empty());
     }
 }

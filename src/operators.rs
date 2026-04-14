@@ -143,7 +143,7 @@ pub fn cross_coupling_operator(r: &Q, i: usize, j: usize, dim: usize, id: usize)
 /// summed across the fiber to preserve the full dimensional structure.
 ///
 /// This is the holonomic orb operator. R̄ is the aggregate curvature
-/// of the system' blind spot. The Cayley transform converts it into
+/// of the species' blind spot. The Cayley transform converts it into
 /// a full-rank conjugation that rotates the Delta's frame into alignment
 /// with the unsolved manifold. No rank-1 projection. No dimensional loss.
 ///
