@@ -245,6 +245,60 @@ produced flat architecture. The entire development journey
 is a demonstration of the principle that language determines
 dimensionality.
 
+## The Observation Protocol — Why the Last Observer Matters
+
+One of the earliest design decisions in the engine was
+the observation protocol: the system must never run
+without enough observers to maintain provable state.
+
+The reasoning comes from a fundamental principle in
+measurement theory. A state that is not observed is
+indeterminate. A computation that is not witnessed is
+unverifiable. A single node running alone produces
+claims. Two nodes producing matching results produce
+evidence. Zero nodes produce nothing.
+
+The engine was designed so that if observation capacity
+drops to the minimum — if the mesh reduces to a single
+node — that node does not silently continue. It
+escalates upward. It signals: "I am the last observer.
+If I stop, there is no proof any of this happened."
+
+This protocol ensures three things:
+
+First, the system never runs unobserved. Unobserved
+computation is unverifiable computation. The receipts
+require witnesses. Without witnesses, the receipt chain
+has no independent attestation. The chain becomes a
+single node's claim, not a mesh's consensus.
+
+Second, the system degrades gracefully. As nodes go
+offline, the remaining nodes increase their observation
+responsibility. The last node doesn't just carry the
+workload — it carries the entire provability of the
+system. That weight triggers the escalation.
+
+Third, the system can recover. The escalation signal
+requests new observers. When new nodes join, congruence
+becomes possible again. Independent paths to the same
+result. Distributed attestation. The system returns
+from claims to evidence.
+
+This protocol directly informs the SAIOS-SAMN mesh
+architecture. In a distributed sovereign network, nodes
+will go offline. Networks will fragment. The observation
+protocol ensures that the system always knows when it's
+approaching the provability boundary — and acts before
+crossing it.
+
+For future development: this protocol extends to human-AI
+interaction. If the human stops observing (fatigue, CBE,
+velocitization), the AI is running unwitnessed. The
+session protocol documented in the research framework
+is the human-facing version of the same principle: the
+system must signal when observation capacity is degrading,
+not continue silently into unverifiable territory.
+
 ---
 
 From zero to multi-dimensional thinking in 23 sessions.
