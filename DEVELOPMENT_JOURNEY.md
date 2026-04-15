@@ -245,59 +245,59 @@ produced flat architecture. The entire development journey
 is a demonstration of the principle that language determines
 dimensionality.
 
-## The Observation Protocol — Why the Last Observer Matters
+## The Observation Protocol — The Thinking Behind the Design
 
-One of the earliest design decisions in the engine was
-the observation protocol: the system must never run
-without enough observers to maintain provable state.
+One of the earliest ideas that guided the engine was a
+question borrowed from Schrodinger's thought experiment:
+what happens to a system when nobody is observing it?
 
-The reasoning comes from a fundamental principle in
-measurement theory. A state that is not observed is
-indeterminate. A computation that is not witnessed is
-unverifiable. A single node running alone produces
-claims. Two nodes producing matching results produce
-evidence. Zero nodes produce nothing.
+The thought process was simple. If a computation runs
+and nobody independently verifies the result, is the
+result trustworthy? We felt the answer was no. A single
+node running alone produces claims. Two nodes producing
+matching results produce something closer to evidence.
+Zero nodes produce nothing provable.
 
-The engine was designed so that if observation capacity
-drops to the minimum — if the mesh reduces to a single
-node — that node does not silently continue. It
-escalates upward. It signals: "I am the last observer.
-If I stop, there is no proof any of this happened."
+This thinking led to a design choice: if the mesh
+reduces to a single node, that node should signal
+upward rather than silently continuing. The idea being
+that a system running without independent observation
+is a system whose output cannot be independently
+verified.
 
-This protocol ensures three things:
+We are not measurement theorists or physicists. This
+was a creative interpretation of a well-known thought
+experiment applied to distributed computing. Whether
+this is the correct engineering approach requires
+evaluation by people with formal training in distributed
+systems and verification theory.
 
-First, the system never runs unobserved. Unobserved
-computation is unverifiable computation. The receipts
-require witnesses. Without witnesses, the receipt chain
-has no independent attestation. The chain becomes a
-single node's claim, not a mesh's consensus.
+The thinking extended to three ideas we wanted to explore:
 
-Second, the system degrades gracefully. As nodes go
-offline, the remaining nodes increase their observation
-responsibility. The last node doesn't just carry the
-workload — it carries the entire provability of the
-system. That weight triggers the escalation.
+First, the system should be aware of its own observation
+capacity. As nodes go offline, the remaining nodes carry
+more verification responsibility. We wanted the system
+to know when it was approaching a threshold where
+independent verification was no longer possible.
 
-Third, the system can recover. The escalation signal
-requests new observers. When new nodes join, congruence
-becomes possible again. Independent paths to the same
-result. Distributed attestation. The system returns
-from claims to evidence.
+Second, the system should be able to recover. If new
+nodes join, independent verification becomes possible
+again. The system should be designed to return from
+reduced observation to full observation gracefully.
 
-This protocol directly informs the SAIOS-SAMN mesh
-architecture. In a distributed sovereign network, nodes
-will go offline. Networks will fragment. The observation
-protocol ensures that the system always knows when it's
-approaching the provability boundary — and acts before
-crossing it.
+Third, this same idea might apply to human-AI interaction.
+If the human stops actively observing the AI's output
+(due to fatigue, cognitive load, or velocitization), the
+AI is effectively running unwitnessed. The session
+protocol in the research framework was our attempt to
+apply this same thinking to the human side — the system
+should signal when the human's observation capacity
+appears to be degrading.
 
-For future development: this protocol extends to human-AI
-interaction. If the human stops observing (fatigue, CBE,
-velocitization), the AI is running unwitnessed. The
-session protocol documented in the research framework
-is the human-facing version of the same principle: the
-system must signal when observation capacity is degrading,
-not continue silently into unverifiable territory.
+These are design ideas, not proven principles. They
+guided our architecture. Whether they hold up under
+formal analysis is an open question we invite qualified
+researchers to evaluate.
 
 ---
 
