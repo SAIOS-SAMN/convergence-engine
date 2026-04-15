@@ -245,6 +245,60 @@ produced flat architecture. The entire development journey
 is a demonstration of the principle that language determines
 dimensionality.
 
+## The Observation Protocol — The Thinking Behind the Design
+
+One of the earliest ideas that guided the engine was a
+question borrowed from Schrodinger's thought experiment:
+what happens to a system when nobody is observing it?
+
+The thought process was simple. If a computation runs
+and nobody independently verifies the result, is the
+result trustworthy? We felt the answer was no. A single
+node running alone produces claims. Two nodes producing
+matching results produce something closer to evidence.
+Zero nodes produce nothing provable.
+
+This thinking led to a design choice: if the mesh
+reduces to a single node, that node should signal
+upward rather than silently continuing. The idea being
+that a system running without independent observation
+is a system whose output cannot be independently
+verified.
+
+We are not measurement theorists or physicists. This
+was a creative interpretation of a well-known thought
+experiment applied to distributed computing. Whether
+this is the correct engineering approach requires
+evaluation by people with formal training in distributed
+systems and verification theory.
+
+The thinking extended to three ideas we wanted to explore:
+
+First, the system should be aware of its own observation
+capacity. As nodes go offline, the remaining nodes carry
+more verification responsibility. We wanted the system
+to know when it was approaching a threshold where
+independent verification was no longer possible.
+
+Second, the system should be able to recover. If new
+nodes join, independent verification becomes possible
+again. The system should be designed to return from
+reduced observation to full observation gracefully.
+
+Third, this same idea might apply to human-AI interaction.
+If the human stops actively observing the AI's output
+(due to fatigue, cognitive load, or velocitization), the
+AI is effectively running unwitnessed. The session
+protocol in the research framework was our attempt to
+apply this same thinking to the human side — the system
+should signal when the human's observation capacity
+appears to be degrading.
+
+These are design ideas, not proven principles. They
+guided our architecture. Whether they hold up under
+formal analysis is an open question we invite qualified
+researchers to evaluate.
+
 ---
 
 From zero to multi-dimensional thinking in 23 sessions.
@@ -253,3 +307,74 @@ The translation preserved the understanding.
 The framework protects the next researcher.
 The engine is the proof.
 The journey is the finding.
+
+## The Fundamental Design Choice — Containment Over Connection
+
+The mainstream approach to AI alignment tries to connect
+everything to everything. Every model supervises every
+other model. Every node sees every node. Every output is
+checked against every other output. This is full mesh
+supervision. It scales exponentially in complexity. It
+collapses under its own weight because the supervision
+becomes more complex than the thing being supervised.
+
+The convergence engine took a different approach. Instead
+of connecting all dots to all other dots, each process
+expands and contracts within its own containment boundary.
+
+Expansion is unlimited inside the boundary. The process
+explores, proposes, generates, creates. No constraint on
+the imagination or computation inside the bubble.
+
+Contraction resolves to the irreducible form. Coboundary
+projection strips distortion. The coherence functional
+measures what remains. The result is the minimum
+representation — nothing more, nothing less.
+
+The boundary holds regardless of what happens inside.
+The C7 gates validate at the boundary. The domain
+classification labels at the boundary. The receipt
+chain proves at the boundary. Nothing inside the
+containment needs to be supervised because invalid
+states are structurally rejected at exit.
+
+Processes don't need to see every other process. They
+need to converge independently and compare results at
+the boundary. Two processes that independently converge
+to the same irreducible form have verified each other
+without ever communicating during computation. The
+verification happens at the boundary, not during the
+work.
+
+This is the difference between connection and
+containment. Connection tries to make everything aware
+of everything. Containment lets everything work
+independently and verifies at the edges. Connection
+scales exponentially. Containment scales linearly —
+each new process adds one more independent path to
+verification without adding complexity to any existing
+process.
+
+Anthropic's model organisms approach and our approach
+started from the same observation: AI systems need
+structural alignment. The paths diverged on
+architecture. They built supervised connection. We
+built contained convergence. Their results showed the
+supervision can be gamed. Our architecture makes gaming
+structurally impossible because the containment is
+mathematical, not supervisory.
+
+This was not a planned design choice. It emerged from
+the development process. The researcher wanted
+independent processes that could verify each other
+without central coordination. The biological vocabulary
+(witnesses, membrane, congruence) activated the
+computational pathways that produced containment
+architecture rather than connection architecture. The
+vocabulary guided the design toward independent
+verification rather than mutual supervision.
+
+Whether containment scales better than connection at
+production level is the open question. The architecture
+is built. The tests pass. The formal comparison awaits
+qualified evaluation.
