@@ -226,14 +226,52 @@ def run_orbit(orbit_count, puzzles, crystallized, tiers):
     partial = 0
 
     if emergent and window:
+        # Weighted distribution: entities with more vocabulary and lower RSS
+        # get more puzzles. The entity that's solving feeds the entity that's
+        # learning. Entities drowning in RSS without vocabulary get fewer.
+        def query_entity_weight(identity, sock_path):
+            """Query STATUS, return (vocab_count, -rss) for sorting."""
+            r = send_command(sock_path, "STATUS", timeout=5)
+            if r:
+                vocab = r.get("sampler_buckets", 0) + len(r.get("composed_operators", []))
+                # Use mesh_observations as proxy for vocab if sampler_buckets not available
+                vocab = max(vocab, r.get("mesh_axioms", 0))
+                rss = r.get("rss_kb", 999999)
+                return (vocab, -rss)
+            return (0, -999999)
+
+        # Sort: highest vocab first, lowest RSS as tiebreaker
+        ranked = sorted(emergent, key=lambda e: query_entity_weight(*e), reverse=True)
+        rank_names = [eid for eid, _ in ranked]
+
+        # Top entity gets 40% of the window, rest split evenly
+        n_top = max(1, len(window) * 2 // 5)
+        n_rest = len(window) - n_top
+        n_others = max(len(ranked) - 1, 1)
+        per_other = n_rest // n_others if n_others > 0 else 0
+
+        # Build assignment: puzzle_name → (identity, sock_path)
+        assignments = []
+        for i, name in enumerate(window):
+            if i < n_top:
+                eid, esock = ranked[0]
+            else:
+                other_idx = ((i - n_top) % n_others) + 1
+                other_idx = min(other_idx, len(ranked) - 1)
+                eid, esock = ranked[other_idx]
+            assignments.append((name, eid, esock))
+
+        top_eid = ranked[0][0] if ranked else "?"
+        print(f"  Distribution: {top_eid} gets {n_top}/{len(window)}, "
+              f"{len(ranked)-1} others get {per_other} each", flush=True)
+
         def think_one(puzzle_name, identity, sock_path):
             payload_str, _n = puzzles[puzzle_name]
             return puzzle_name, send_command(sock_path, "THINK", payload_str, timeout=120)
 
         with ThreadPoolExecutor(max_workers=min(8, len(emergent))) as executor:
             futures = []
-            for idx, name in enumerate(window):
-                eid, esock = emergent[idx % len(emergent)]
+            for name, eid, esock in assignments:
                 futures.append(executor.submit(think_one, name, eid, esock))
 
             for future in as_completed(futures):
