@@ -350,34 +350,138 @@ def run_orbit(orbit_count, puzzles, crystallized, tiers):
     return cadence_s
 
 
+# ── Cumulative State ──────────────────────────────────────────────────
+
+class OrbitState:
+    """Cumulative statistics across the orbit session."""
+    def __init__(self):
+        self.orbit_count = 0
+        self.total_understood = 0
+        self.total_partial = 0
+        self.total_presented = 0
+        self.emergent_k_sum = 0
+        self.derived_k_sum = 0
+        self.sovereign_k_sum = 0
+        self.start_time = time.monotonic()
+
+    def summary_line(self, orbit_understood, orbit_partial, n_novel, n_emergent, max_rss_kb):
+        """One-line summary for this orbit."""
+        elapsed = time.monotonic() - self.start_time
+        rate = self.total_understood / max(elapsed / 60, 0.01)
+        return (
+            f"  orbit={self.orbit_count:4d} "
+            f"u={orbit_understood}/{orbit_partial:+d}p "
+            f"| cum={self.total_understood}u/{self.total_partial}p "
+            f"| novel={n_novel} "
+            f"| emergent={n_emergent} maxRSS={max_rss_kb//1024}MB "
+            f"| {rate:.1f}u/min"
+        )
+
+
+def read_max_emergent_rss():
+    """Read max RSS across emergent entities from /dev/shm."""
+    max_rss = 0
+    shm = Path("/dev/shm")
+    for f in shm.glob("saios-emergent-*"):
+        if f.name.endswith(".vocabulary"):
+            continue
+        try:
+            fields = f.read_text().split()
+            rss = int(fields[4]) if len(fields) > 4 else 0
+            max_rss = max(max_rss, rss)
+        except Exception:
+            pass
+    return max_rss
+
+
 # ── Main ───────────────────────────────────────────────────────────────
 
 def main():
+    max_cells = int(os.environ.get("SAIOS_MAX_CELLS", "225"))
+
     print("Loading puzzles...", flush=True)
     puzzles = load_puzzles()
-    print(f"Loaded {len(puzzles)} puzzles from {PUZZLE_DIR}", flush=True)
+    total_within_cap = sum(1 for _, (_, n) in puzzles.items() if n <= max_cells)
+    print(f"Loaded {len(puzzles)} puzzles ({total_within_cap} within {max_cells}-cell cap)", flush=True)
 
     crystallized = collect_crystallized_orbits()
     print(f"Crystallized orbits: {len(crystallized)}", flush=True)
 
-    orbit_count = 0
+    state = OrbitState()
+
+    print(f"\n{'─'*70}", flush=True)
+    print(f"  ORBIT ENGINE — continuous until no novel puzzles remain", flush=True)
+    print(f"{'─'*70}", flush=True)
 
     while True:
         tiers = discover_by_tier()
-        total = sum(len(v) for v in tiers.values())
-        if total == 0:
-            print("No entities detected. Waiting...", flush=True)
+        n_emergent = len(tiers["emergent"])
+        total_alive = sum(len(v) for v in tiers.values())
+
+        if total_alive == 0:
+            print("  No entities detected. Waiting...", flush=True)
             time.sleep(5)
             continue
 
-        orbit_count += 1
-        cadence = run_orbit(orbit_count, puzzles, crystallized, tiers)
+        if n_emergent == 0:
+            print("  No emergent entities. Waiting...", flush=True)
+            time.sleep(5)
+            continue
 
-        # Refresh crystallized orbits periodically
-        if orbit_count % 10 == 0:
+        state.orbit_count += 1
+        cadence = run_orbit(state.orbit_count, puzzles, crystallized, tiers)
+
+        # Count novel puzzles remaining (computed inside run_orbit too, but we need it here)
+        novel_count = 0
+        for name in puzzles:
+            payload_str, cell_count = puzzles[name]
+            if cell_count > max_cells:
+                continue
+            payload = json.loads(payload_str)
+            orbit = compute_orbit(payload["pairs"][0]["source"])
+            if orbit not in crystallized:
+                novel_count += 1
+
+        # Parse the last orbit's results from run_orbit's print output
+        # (run_orbit already printed details — we just track cumulative here)
+
+        max_rss = read_max_emergent_rss()
+
+        # Refresh crystallized orbits every 10 cycles
+        if state.orbit_count % 10 == 0:
+            old_count = len(crystallized)
             crystallized = collect_crystallized_orbits()
+            new_crystals = len(crystallized) - old_count
+            if new_crystals > 0:
+                print(f"\n  *** {new_crystals} new orbits crystallized! "
+                      f"Total crystallized: {len(crystallized)} ***\n", flush=True)
+
+        # Stop condition: no novel puzzles remain within the cell cap
+        if novel_count == 0:
+            print(f"\n{'='*70}", flush=True)
+            print(f"  ALL NOVEL PUZZLES EXHAUSTED (within {max_cells}-cell cap)", flush=True)
+            print(f"  Orbits: {state.orbit_count}  "
+                  f"Crystallized: {len(crystallized)}  "
+                  f"Elapsed: {(time.monotonic() - state.start_time)/60:.1f}min", flush=True)
+            print(f"{'='*70}", flush=True)
+            break
 
         time.sleep(cadence)
+
+    # Final entity status
+    print(f"\n  Final entity status:", flush=True)
+    for f in sorted(Path("/dev/shm").glob("saios-*")):
+        if f.name.endswith(".vocabulary"):
+            continue
+        try:
+            fields = f.read_text().strip().split()
+            tier = fields[5] if len(fields) > 5 else "?"
+            k = fields[1] if len(fields) > 1 else "?"
+            rss = fields[4] if len(fields) > 4 else "?"
+            solved = fields[9] if len(fields) > 9 else "?"
+            print(f"    {f.name:30s} {tier:12s} K={k:>5s} RSS={rss:>6s}KB solved={solved}", flush=True)
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
