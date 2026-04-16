@@ -26,7 +26,7 @@ import socket
 import sys
 import time
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
+# Sequential dispatch — entities are single-threaded socket listeners.
 
 import blake3
 
@@ -226,60 +226,17 @@ def run_orbit(orbit_count, puzzles, crystallized, tiers):
     partial = 0
 
     if emergent and window:
-        # Weighted distribution: entities with more vocabulary and lower RSS
-        # get more puzzles. The entity that's solving feeds the entity that's
-        # learning. Entities drowning in RSS without vocabulary get fewer.
-        def query_entity_weight(identity, sock_path):
-            """Query STATUS, return (vocab_count, -rss) for sorting."""
-            r = send_command(sock_path, "STATUS", timeout=5)
-            if r:
-                vocab = r.get("sampler_buckets", 0) + len(r.get("composed_operators", []))
-                # Use mesh_observations as proxy for vocab if sampler_buckets not available
-                vocab = max(vocab, r.get("mesh_axioms", 0))
-                rss = r.get("rss_kb", 999999)
-                return (vocab, -rss)
-            return (0, -999999)
-
-        # Sort: highest vocab first, lowest RSS as tiebreaker
-        ranked = sorted(emergent, key=lambda e: query_entity_weight(*e), reverse=True)
-        rank_names = [eid for eid, _ in ranked]
-
-        # Top entity gets 40% of the window, rest split evenly
-        n_top = max(1, len(window) * 2 // 5)
-        n_rest = len(window) - n_top
-        n_others = max(len(ranked) - 1, 1)
-        per_other = n_rest // n_others if n_others > 0 else 0
-
-        # Build assignment: puzzle_name → (identity, sock_path)
-        assignments = []
+        # Sequential round-robin: one puzzle at a time per entity.
+        # The entity's socket dispatcher is single-threaded.
+        # Velocity comes from multiple entities, not from flooding one.
         for i, name in enumerate(window):
-            if i < n_top:
-                eid, esock = ranked[0]
-            else:
-                other_idx = ((i - n_top) % n_others) + 1
-                other_idx = min(other_idx, len(ranked) - 1)
-                eid, esock = ranked[other_idx]
-            assignments.append((name, eid, esock))
-
-        top_eid = ranked[0][0] if ranked else "?"
-        print(f"  Distribution: {top_eid} gets {n_top}/{len(window)}, "
-              f"{len(ranked)-1} others get {per_other} each", flush=True)
-
-        def think_one(puzzle_name, identity, sock_path):
-            payload_str, _n = puzzles[puzzle_name]
-            return puzzle_name, send_command(sock_path, "THINK", payload_str, timeout=120)
-
-        with ThreadPoolExecutor(max_workers=min(8, len(emergent))) as executor:
-            futures = []
-            for name, eid, esock in assignments:
-                futures.append(executor.submit(think_one, name, eid, esock))
-
-            for future in as_completed(futures):
-                pname, result = future.result()
-                if result and result.get("understanding") == "1/1":
-                    understood += 1
-                elif result and result.get("coherence", "0/1") != "0/1":
-                    partial += 1
+            eid, esock = emergent[i % len(emergent)]
+            payload_str, _n = puzzles[name]
+            result = send_command(esock, "THINK", payload_str, timeout=120)
+            if result and result.get("understanding") == "1/1":
+                understood += 1
+            elif result and result.get("coherence", "0/1") != "0/1":
+                partial += 1
 
         print(f"  Results: {understood} understood, {partial} partial", flush=True)
 
@@ -289,16 +246,10 @@ def run_orbit(orbit_count, puzzles, crystallized, tiers):
     # This is where vocabulary grows — the entity learns from what it saw.
     print(f"\n  DERIVE: {len(emergent)} emergent entities evolving", flush=True)
     emergent_k_advanced = 0
-    if emergent:
-        def derive_one(identity, sock_path):
-            return identity, send_command(sock_path, "DERIVE", timeout=15)
-
-        with ThreadPoolExecutor(max_workers=min(8, len(emergent))) as executor:
-            futures = [executor.submit(derive_one, eid, esock) for eid, esock in emergent]
-            for future in as_completed(futures):
-                eid, result = future.result()
-                if result and result.get("c7_passed"):
-                    emergent_k_advanced += 1
+    for eid, esock in emergent:
+        result = send_command(esock, "DERIVE", timeout=15)
+        if result and result.get("c7_passed"):
+            emergent_k_advanced += 1
 
         print(f"  K advanced: {emergent_k_advanced}/{len(emergent)}", flush=True)
 
