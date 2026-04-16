@@ -230,18 +230,18 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                 // D.MEMBRANE.V.1: Query membrane for consensus T at this orbit.
                 let membrane_consensus_t: Option<saios_kernel_v2::engine::Delta> =
                     entity.knowledge.compound_t(&obs_orbit).and_then(|tc| {
-                        if tc.witness_entities.is_empty() { return None; }
+                        if tc.observing_entities.is_empty() { return None; }
                         // Reconstruct consensus T through coboundary_reduce — not arithmetic mean.
                         // The H^1 representative of the compound IS the consensus.
                         // No averaging. No flattening. The relational geometry is preserved.
                         // A single primary entity's vector is a perspective, not a consensus —
                         // but it is still the best information available. coboundary_reduce
                         // projects it to H^1 regardless of witness count.
-                        let d = tc.witness_entities[0].len();
-                        let min_d = tc.witness_entities.iter().map(|e| e.len()).min().unwrap_or(d);
+                        let d = tc.observing_entities[0].len();
+                        let min_d = tc.observing_entities.iter().map(|e| e.len()).min().unwrap_or(d);
                         // Compound: sum across primary entitys, dimension = intersection of measured
                         let entity_vec: Vec<saios_kernel_v2::engine::Q> = (0..min_d).map(|i| {
-                            tc.witness_entities.iter()
+                            tc.observing_entities.iter()
                                 .filter_map(|e| e.get(i).cloned())
                                 .fold(saios_kernel_v2::engine::Q::zero(), |acc, v| acc + v)
                         }).collect();
@@ -286,18 +286,18 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     entity.knowledge.compound_t_at_level(&trans_orbit, "transmutation").and_then(|tc| {
                         if tc.count < 2 { return None; }
                         if tc.t_dim != 2 || tc.t_m != 2 { return None; }
-                        if tc.witness_entities.is_empty() { return None; }
+                        if tc.observing_entities.is_empty() { return None; }
                         let k = saios_kernel_v2::engine::Q::new(
                             num_bigint::BigInt::from(tc.count as i64),
                             num_bigint::BigInt::from(1),
                         );
-                        let quality_sum: saios_kernel_v2::engine::Q = tc.witness_entities.iter()
+                        let quality_sum: saios_kernel_v2::engine::Q = tc.observing_entities.iter()
                             .filter_map(|e| e.first().cloned())
                             .fold(saios_kernel_v2::engine::Q::zero(), |a, b| a + b);
                         let avg_quality = &quality_sum / &k;
                         // Torsion order: positive integer or dissolve.
                         // Torsion order 0 does not exist in group theory.
-                        let order: usize = tc.witness_entities.first()
+                        let order: usize = tc.observing_entities.first()
                             .and_then(|e| e.get(1))
                             .and_then(|q| q.numer().try_into().ok())
                             .filter(|&o: &usize| o > 0)?;

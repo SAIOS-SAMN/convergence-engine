@@ -252,7 +252,7 @@ mod tests {
         let (mut stream, _) = listener.accept().unwrap();
         stream.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
         let result = read_frame(&mut stream);
-        assert!(result.is_err(), "Corrupted checksum must be rejected");
+        assert!(result.is_err(), "Fractured checksum must not verify");
 
         send_handle.join().unwrap();
     }

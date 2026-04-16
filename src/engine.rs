@@ -131,17 +131,17 @@ pub enum TripleLockFailReason {
 /// - `Locked`    : Full write authority. All checks passed. K advanced.
 /// - `Shifting`  : Reduced authority. Coherence degrading. Re-sync triggered.
 /// - `Gated`     : No authority. Coherence failure. C7 did not pass.
-/// - `Corrupted` : No authority. Hardware fault. |R_i| > δ/2. Run diagnostics.
+/// - `Fractured` : No authority. Hardware fault. |R_i| > δ/2. Run diagnostics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SluiceState {
     /// 0x01 — full write authority, K advanced, Type 1 or 2 anchor eligible.
     Locked   = 0x01,
     /// 0x02 — reduced authority, Type 2 only, re-sync in progress.
     Shifting  = 0x02,
-    /// 0x03 — no authority, coherence failure, C7 failed.
+    /// 0x03 — no authority, coherence failure, C7 diverged.
     Gated     = 0x03,
     /// 0x04 — no authority, hardware fault, Integrity Sentinel fired.
-    Corrupted = 0x04,
+    Fractured = 0x04,
 }
 
 impl SluiceState {
@@ -2994,7 +2994,7 @@ impl SaiosKernel {
                 for j in 0..state.delta_k.dim {
                     for (l, coord) in encoded[i][j].iter().enumerate() {
                         if let Err(e) = coord.check_sentinel(&self.params.delta, l) {
-                            state.sluice_state = SluiceState::Corrupted;
+                            state.sluice_state = SluiceState::Fractured;
                             return Err(e);
                         }
                     }

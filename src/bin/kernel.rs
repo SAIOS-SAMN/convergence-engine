@@ -185,7 +185,7 @@ mod tests {
         assert_eq!(SluiceState::Locked.enc_u8(), 0x01);
         assert_eq!(SluiceState::Shifting.enc_u8(), 0x02);
         assert_eq!(SluiceState::Gated.enc_u8(), 0x03);
-        assert_eq!(SluiceState::Corrupted.enc_u8(), 0x04);
+        assert_eq!(SluiceState::Fractured.enc_u8(), 0x04);
     }
 
     #[test]
