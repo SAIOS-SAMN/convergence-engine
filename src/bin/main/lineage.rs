@@ -353,39 +353,37 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
             // Encode absorbed value cocycles as a T Delta:
             // each (from_value, to_value) is a relational entry.
             // The T Delta IS the transformation the children discovered.
-            let unique_vals: Vec<i64> = {
-                let mut vals = Vec::new();
-                for &(fv, tv, _) in cocycles.iter().take(32) {
-                    if !vals.contains(&(fv as i64)) { vals.push(fv as i64); }
-                    if !vals.contains(&(tv as i64)) { vals.push(tv as i64); }
-                }
-                vals.sort();
-                vals
-            };
-            let k = unique_vals.len();
-            if k >= 2 {
-                let mut t = saios_kernel_v2::engine::Delta::zero(k, 1);
-                for &(fv, tv, ref quality) in cocycles.iter().take(32) {
-                    let fi = unique_vals.iter().position(|&v| v == fv as i64);
-                    let ti = unique_vals.iter().position(|&v| v == tv as i64);
-                    if let (Some(i), Some(j)) = (fi, ti) {
-                        if i < j {
-                            t.entries[i][j][0] = quality.clone();
-                            t.entries[j][i][0] = -quality.clone();
-                        } else if j < i {
-                            t.entries[j][i][0] = -quality.clone();
-                            t.entries[i][j][0] = quality.clone();
-                        }
+            // Build T compound at THIS entity's dimensional frame (dim × m).
+            // The sampler requires global_curvature.dim == entity.delta.dim.
+            // Project absorbed cocycles into the entity's relational space.
+            let dim = entity.delta.dim;
+            let m = entity.delta.m;
+            if dim >= 2 {
+                let mut t = saios_kernel_v2::engine::Delta::zero(dim, m);
+                // Distribute cocycle energy across the entity's relational entries.
+                // Each cocycle (from→to, quality) contributes to the antisymmetric
+                // structure. Map cocycle index to relational entry (i,j) cyclically.
+                for (idx, &(fv, tv, ref quality)) in cocycles.iter().take(32).enumerate() {
+                    let i = idx % dim;
+                    let j = (idx + 1) % dim;
+                    let (i, j) = if i < j { (i, j) } else { (j, i) };
+                    if i == j { continue; }
+                    // Sign from the value transition direction
+                    let sign = if fv <= tv { quality.clone() } else { -quality.clone() };
+                    for l in 0..m {
+                        t.entries[i][j][l] = &t.entries[i][j][l] + &sign;
+                        t.entries[j][i][l] = &t.entries[j][i][l] - &sign;
                     }
                 }
+                let t = saios_kernel_v2::engine::coboundary_reduce(&t);
                 // Insert into membrane as T compound — the entity re-perceives
                 // what its children discovered, at its own dimensional frame.
                 for orbit in solved.iter().take(8) {
                     entity.knowledge.record_t_delta(*orbit, &t, "drain_compound");
                 }
                 let _ = entity.knowledge.save(&entity.dir.join("mesh_knowledge.bin"));
-                eprintln!("[drain-reperceive] encoded {} cocycles as {}×1 T compound across {} orbits",
-                    cocycles.len().min(32), k, solved.len().min(8));
+                eprintln!("[drain-reperceive] encoded {} cocycles as {}×{} T compound across {} orbits",
+                    cocycles.len().min(32), dim, m, solved.len().min(8));
             }
         }
 
