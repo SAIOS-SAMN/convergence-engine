@@ -209,8 +209,8 @@ the dimensions accountable to time.
 | `MeshReceipt` | `chain/temporal_ledger.rs` | Dimensional receipt — RCF identity, coherence, sluice state, timestamp |
 | `Level` | `chain/temporal_ledger.rs` | All receipts at one K-index — the temporal anchor point |
 | `Level::finalized` | `chain/temporal_ledger.rs` | Consensus achieved when witness weight exceeds 0.5 |
-| `Perspective` | `membrane.rs` | One node's dimensional position on shared data |
-| `CompoundPerspective` | `membrane.rs` | Multi-node agreement measurement per cell |
+| `Perspective` | `membrane.rs` | One instance's dimensional position on shared data |
+| `CompoundPerspective` | `membrane.rs` | Multi-instance agreement measurement per cell |
 | `MeshAxiom` | `membrane.rs` | Crystallized knowledge from independent convergence |
 | `sigma_mesh` | `consensus.rs` | Weighted agreement aggregate across all peers |
 | `coherence_functional` | `engine.rs` | Exact rational measurement of cocycle condition — the dimensional position |

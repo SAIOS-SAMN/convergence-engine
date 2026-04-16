@@ -17,7 +17,7 @@ both sides of that interaction.
 
 | Mathematics | Information | Network | Human |
 |---|---|---|---|
-| Antisymmetric rational tensor operations | Relational data structure that preserves the geometry between entities | The shared state format every node reads and writes | The representation of how things RELATE to each other, not what they ARE individually |
+| Antisymmetric rational tensor operations | Relational data structure that preserves the geometry between entities | The shared state format every entity reads and writes | The representation of how things RELATE to each other, not what they ARE individually |
 
 The Delta doesn't describe things. It describes RELATIONSHIPS
 between things. This is the foundational insight. A person is
@@ -186,7 +186,7 @@ frames. Peer-to-peer. No central authority.
 
 ### agent.rs, credential.rs, signing.rs — Identity
 
-Each node has a cryptographic identity. Ed25519 signatures.
+Each entity has a cryptographic identity. Ed25519 signatures.
 Verification requires proof of consistent computation
 history. You earn trust by demonstrating convergence, not
 by declaring it.

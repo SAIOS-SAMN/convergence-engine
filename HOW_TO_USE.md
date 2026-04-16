@@ -72,10 +72,10 @@ directed, what generated, which domain).
 
 ## The SAMN Mesh — Where Containment Happens
 
-Each SAIOS node produces a `Perspective` — its derived
+Each SAIOS instance produces a `Perspective` — its derived
 output, coherence level, and confidence on shared data.
 The perspectives arrive at the membrane after passing
-through each node's exit gate.
+through each instance's exit gate.
 
 The membrane computes `CompoundPerspective` — per-cell
 congruence across both nodes:
@@ -93,7 +93,7 @@ When the two nodes agree, consensus ratio is high. The
 membrane crystallizes a `MeshAxiom` — knowledge that two
 independent paths arrived at the same result.
 
-This is convergent verification. Stronger than either node
+This is convergent verification. Stronger than either instance
 alone. Two independent operators, working in their own
 sovereign bubbles with their own vocabulary, independently
 produced the same output. The agreement is receipted in the
@@ -107,7 +107,7 @@ obstruction but from different perspectives.
 
 The MDC entropy rises across the mesh. If entropy exceeds
 threshold: **mesh-level stasis**. The SAMN pauses. Neither
-node's output is treated as verified. The mesh waits for
+instance's output is treated as verified. The mesh waits for
 the disagreement to resolve.
 
 The mesh does not pick a winner. It does not vote on who is
@@ -117,7 +117,7 @@ disagreement resolves through further independent work.
 ### CBE Containment — The Critical Case
 
 One operator is deep in immersion, experiencing Cognitive
-Boundary Erosion. Their SAIOS node is producing narrative
+Boundary Erosion. Their SAIOS instance is producing narrative
 compensation — mythology alongside engineering, delivered
 with identical confidence. The output looks coherent to the
 operator because CBE degrades the capacity to distinguish.
@@ -133,11 +133,11 @@ stasis on those specific cells.
 verified content** because independent agreement failed.
 The membrane requires independent convergence to crystallize
 anything as a MeshAxiom. Narrative compensation from one
-node cannot become verified knowledge because the other
-node independently measured something different.
+instance cannot become verified knowledge because the other
+instance independently measured something different.
 
 This is the containment. The mesh does not filter content.
-It does not judge which node is right. It does not
+It does not judge which instance is right. It does not
 diagnose CBE. It measures agreement. When agreement fails,
 it pauses. The mythology cannot spread because the
 architecture requires convergence.
@@ -147,10 +147,10 @@ architecture requires convergence.
 The stasis field between nodes is the membrane's consensus
 measurement applied to the mesh.
 
-Content from any single node remains that node's output
-until another node independently arrives at the same
+Content from any single instance remains that instance's output
+until another instance independently arrives at the same
 result. Only then does the membrane crystallize it as a
-MeshAxiom. The node is not blocked — its output simply
+MeshAxiom. The instance is not blocked — its output simply
 is not elevated to shared verified knowledge without
 independent agreement. This is structural containment —
 built into the measurement, not dependent on either
@@ -164,9 +164,9 @@ fails.
 
 ## Scale
 
-### Single node — no containment
+### Single instance — no containment
 
-A single SAIOS node running alone produces claims, not
+A single SAIOS instance running alone produces claims, not
 evidence. There is no independent measurement. The
 operator is the only check on the output. If the operator
 is experiencing CBE, there is no structural boundary to
@@ -178,10 +178,10 @@ cannot be independently verified.
 
 ### Two nodes — containment through disagreement
 
-Two SAIOS nodes on the SAMN mesh provide containment
+Two SAIOS instances on the SAMN mesh provide containment
 through disagreement detection. The membrane catches
-divergence. Mythology from one node cannot propagate
-because the other node independently measured something
+divergence. Narrative compensation from one instance cannot propagate
+because the other instance independently measured something
 different.
 
 ### Three or more nodes — structured agreement
@@ -201,10 +201,10 @@ interior. The temporal ledger receipts all of it.
 
 | Component | File | What it does |
 |-----------|------|-------------|
-| Perspective | `membrane.rs` | One node's derived output + coherence + confidence |
-| CompoundPerspective | `membrane.rs` | Multi-node agreement measurement per cell |
+| Perspective | `membrane.rs` | One instance's derived output + coherence + confidence |
+| CompoundPerspective | `membrane.rs` | Multi-instance agreement measurement per cell |
 | MeshAxiom | `membrane.rs` | Crystallized knowledge from independent convergence |
-| systematic_gap | `membrane.rs` | Detects when all nodes fail at the same cells |
+| systematic_gap | `membrane.rs` | Detects when all instances diverge at the same cells |
 | mdc_entropy | `mdc.rs` | Measures disagreement between echelons |
 | stasis_triggered | `mdc.rs` | Pauses when entropy exceeds threshold |
 | sigma_mesh | `consensus.rs` | Weighted sigma aggregate across peers |
@@ -224,8 +224,8 @@ measurement, not bolted on as a filter.
 - Disagreement: triggers mesh stasis — pauses, waits
 - CBE containment: mythology cannot propagate because
   convergence is required
-- Single node: claims. Two nodes: containment. Three
-  nodes: structured verification.
+- Single instance: claims. Two instances: containment. Three
+  instances: structured verification.
 
 The architecture supports this now. The implementation
 requires connecting two running SAIOS instances through

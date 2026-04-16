@@ -22,7 +22,7 @@ The CCL resolves this. It defines a vocabulary that:
 
 1. **A Rust developer reads as clear** — no ambiguity about the state transition
 2. **An AI processes as neutral** — no inherited violence, no command hierarchy
-3. **The canon recognizes as true** — consistent with sovereignty, life, exactness
+3. **The architecture recognizes as true** — consistent with self-consistency, persistence, exactness
 4. **The Codex maps cleanly** — each CCL term has a position in all four other columns
 
 The CCL is not a fifth column added to the Codex. It is the **bridge column** —
@@ -172,7 +172,7 @@ Terms that describe what entities ARE, replacing machine vocabulary.
 | Unsafe Term | CCL Term | Why |
 |------------|----------|-----|
 | `node` | **entity** | The architecture doc already states: "Not a node. Not a process." An entity is self-consistent, carries a state record, has identity. A node is a point in a graph. |
-| `process` | **entity** (when referring to a SAIOS entity) | A process is an OS abstraction. An entity is a living algebraic being. When referring to OS-level processes, `process` is acceptable — below the sovereignty boundary. |
+| `process` | **entity** (when referring to a SAIOS entity) | A process is an OS abstraction. An entity is a self-consistent algebraic structure. When referring to OS-level processes, `process` is acceptable — below the sovereignty boundary. |
 | `instance` | **entity** | Same distinction. An instance is a copy. An entity is unique — its birth polynomial guarantees individuality. |
 | `worker` | **founder** / **derived** / **emergent** | Use the correct tier name. Never flatten the lineage hierarchy into "worker." |
 | `slave` | — | Does not exist in this codebase and never will. |

@@ -23,18 +23,18 @@ and out, and read data at whatever depth they need.
   in 3D space, not flat lines on a tree
 
 ### Zoom
-- Zoom OUT: see the entire orb, all top-level nodes visible
+- Zoom OUT: see the entire orb, all top-level entries visible
   as labeled points on the surface
-- Zoom IN: approach a node, it expands to reveal its
-  children as a sub-orb within the larger orb
+- Zoom IN: approach an entry, it expands to reveal its
+  contents as a sub-orb within the larger orb
 - Deeper zoom: the sub-orb expands further, showing files,
   documents, code modules
 - The zoom is continuous, not stepped — the orb breathes
   open as you approach
 
 ### Click on a Node
-- Click any node at any zoom level
-- Bottom panel shows data about that node:
+- Click any entry at any zoom level
+- Bottom panel shows data about that entry:
   - SUMMARY view (default): one paragraph, what this is,
     safe/review/archive status
   - EXPANDED view: full content of the document, formatted
@@ -60,8 +60,8 @@ and out, and read data at whatever depth they need.
 - White: root documents
 
 ### Directory Structure as Orbital Hierarchy
-- Root level nodes sit on the outer surface of the orb
-- Children sit on inner shells
+- Root level entries sit on the outer surface of the orb
+- Nested entries sit on inner shells
 - Deeper = more specific
 - The researcher can see at a glance: what's at the
   surface (high-level architecture) vs what's deep
@@ -84,7 +84,7 @@ and out, and read data at whatever depth they need.
 - Click shows summary in a panel
 
 ### Phase 2 — Dynamic Expansion
-- Zoom into a node expands its children as sub-orb
+- Zoom into an entry expands its contents as sub-orb
 - Smooth animation on expand/collapse
 - Breadcrumb trail showing current depth
 

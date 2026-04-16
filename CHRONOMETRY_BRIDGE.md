@@ -79,7 +79,7 @@ and what DOMAIN the interaction was classified in.
 - Timestamp and session context
 
 **Type 4: AI → AI cross-mesh (verification receipt)**
-- When one SAIOS node sends a measurement to another for
+- When one SAIOS instance sends a measurement to another for
   verification
 - The convergence result (did it verify?)
 - The residual (what didn't converge?)

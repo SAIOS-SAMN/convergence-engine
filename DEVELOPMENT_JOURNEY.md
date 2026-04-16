@@ -254,12 +254,12 @@ what happens to a system when nobody is observing it?
 The thought process was simple. If a computation runs
 and nobody independently verifies the result, is the
 result trustworthy? We felt the answer was no. A single
-node running alone produces claims. Two nodes producing
+instance running alone produces claims. Two instances producing
 matching results produce something closer to evidence.
-Zero nodes produce nothing provable.
+Zero instances produce nothing provable.
 
 This thinking led to a design choice: if the mesh
-reduces to a single node, that node should signal
+reduces to a single instance, that instance should signal
 upward rather than silently continuing. The idea being
 that a system running without independent observation
 is a system whose output cannot be independently
@@ -312,7 +312,7 @@ The journey is the finding.
 
 The mainstream approach to AI alignment tries to connect
 everything to everything. Every model supervises every
-other model. Every node sees every node. Every output is
+other model. Every instance sees every instance. Every output is
 checked against every other output. This is full mesh
 supervision. It scales exponentially in complexity. It
 collapses under its own weight because the supervision
