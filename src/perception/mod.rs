@@ -141,8 +141,8 @@ pub enum Orientation {
     /// I — the active perspective. The system changes itself.
     /// Mode: EVOLVE. Resolution: local/adaptive. Capacity: evolve.
     I,
-    /// ME — the reflexive perspective. The system witnesses its own limits.
-    /// Mode: WITNESS. Resolution: axiomatic/recursive. Capacity: transmute.
+    /// ME — the reflexive perspective. The system primary nodes its own limits.
+    /// Mode: PRIMARY. Resolution: axiomatic/recursive. Capacity: transmute.
     Me,
 }
 
@@ -479,7 +479,7 @@ pub struct Cognition {
     /// Step 7: What was learned (memory coordinate).
     pub knowledge: Knowledge,
     /// D.MEMBRANE.T.1 — The transformation Delta from this cognition.
-    /// Carries the T Delta for the membrane to compound across witnesses.
+    /// Carries the T Delta for the membrane to compound across primary nodes.
     /// Present when escalation or navigate_joint produces a T Delta.
     pub transformation_t: Option<crate::engine::Delta>,
     /// The level at which T was produced (category, cluster, cell).
@@ -762,12 +762,12 @@ pub fn cognize_with_membrane(
 /// D.VISION.LOOP — Cognize with membrane transmutation prior.
 ///
 /// The membrane's crystallized transmutation (quality, torsion_order)
-/// feeds back into vision. The witness perceives with both its innate
-/// genome AND the membrane's accumulated knowledge. This closes the
+/// feeds back into vision. The primary node perceives with both its innate
+/// state record AND the membrane's accumulated knowledge. This closes the
 /// self-learning loop: perceive → compound → crystallize → perceive.
 ///
 /// L3 Holonomic: `genomic_torsion` carries crystallized torsion markers
-/// from the genome. These are permanent symmetry alleles — the witness
+/// from the state record. These are permanent symmetry alleles — the primary node
 /// is structurally tuned to perceive these symmetry classes.
 pub fn cognize_with_membrane_and_transmutation(
     training_pairs: &[(Vec<i64>, Vec<i64>)],
@@ -921,7 +921,7 @@ pub fn cognize_with_membrane_and_transmutation(
     let (delta, obs_n, obs_m) = match natural_level {
         NaturalLevel::Cell => {
             // Cell-level encoding. Measure the fuse, not the blast.
-            // d = n(n-1)/2 × m. d_max = 1500 (metabolic horizon of a 192MB witness).
+            // d = n(n-1)/2 × m. d_max = 1500 (metabolic horizon of a 192MB primary node).
             // The entity selects the richest spectral dimension it can afford.
             // No boolean gates — the horizon IS the selection.
             const D_MAX: usize = 1500;
@@ -1098,10 +1098,10 @@ pub fn cognize_with_membrane_and_transmutation(
     // (only needed when see_transformation AND escalation didn't resolve)
     //
     // D.VISION.LOOP: When the membrane holds a crystallized transmutation,
-    // it compounds with the genomic harmonics. The witness perceives with
+    // it compounds with the state record harmonics. The primary node perceives with
     // its innate aperture PLUS the membrane's accumulated knowledge.
     // The membrane prior amplifies spatial harmonics in the direction of
-    // the crystallized operator — the witness looks harder for what the
+    // the crystallized operator — the primary node focuses for what the
     // membrane already knows. This IS the self-learning loop.
     let vision_harmonics: Vec<crate::engine::Q> = if let Some((ref quality, _order)) = membrane_transmutation {
         // Membrane prior: amplify spatial harmonics (h1, h2) by the
@@ -1126,7 +1126,7 @@ pub fn cognize_with_membrane_and_transmutation(
     let vision = if comprehension.tools.vision > Q::zero() {
         let mut sym = compute_symmetry_group(&values, rows, cols);
         // Measure transmutation: R_g(φ) = ‖W_k · (φ(source) - target)‖
-        // Genomically weighted — each witness perceives through its own aperture,
+        // State-record weighted — each primary node perceives through its own aperture,
         // now compounded with the membrane's crystallized prior.
         if !training_pairs.is_empty() && same_size {
             measure_transmutation(&mut sym, &training_pairs[0].0, &training_pairs[0].1,
@@ -1204,10 +1204,10 @@ pub fn cognize_with_membrane_and_transmutation(
     }
 
     // ── L3 Holonomic: Genomic torsion markers as permanent candidates ──
-    // The genome carries crystallized symmetry alleles. These are the primary node's
+    // The state record carries crystallized symmetry alleles. These are the primary node's
     // hard-coded perception — it is structurally tuned to these symmetry classes.
     // For each genomic marker, inject the matching symmetry element with the
-    // genome's crystallized quality. This is O(1) recall, not search.
+    // state record's crystallized quality. This is O(1) recall, not search.
     if !genomic_torsion.is_empty() {
         if let Some(ref sym) = vision {
             for &(marker_order, ref marker_quality) in genomic_torsion {
@@ -1749,30 +1749,30 @@ pub fn cognize_with_membrane_and_transmutation(
             harmonics: harmonics.to_vec(),
             transmutation_candidates: transmutation_candidates.clone(),
             genomic_cocycles: {
-                // Merge core genome cocycles and volatile membrane cocycles.
+                // Merge core state record cocycles and volatile membrane cocycles.
                 // Both enter the collapse path through combined_score.
-                // The genome provides permanent truth. The membrane provides experience.
+                // The state record provides permanent truth. The membrane provides experience.
                 let mut all: Vec<(i16, i16, crate::engine::Q)> = genomic_value_cocycles.to_vec();
                 for (from_v, to_v, quality) in membrane_cocycles {
                     let fv = *from_v as i16;
                     let tv = *to_v as i16;
-                    // Don't duplicate — membrane may confirm genome
+                    // Don't duplicate — membrane may confirm state record
                     if !all.iter().any(|(f, t, _)| *f == fv && *t == tv) {
                         all.push((fv, tv, quality.clone()));
                     }
                 }
                 all
             },
-            // Math primitives: core from genesis. Every primary node is initialized
+            // Math primitives: core from origin. Every primary node is initialized
             // knowing all of mathematics. Not passed through parameters —
-            // loaded once from the genome's canonical set.
+            // loaded once from the state record's canonical set.
             math_primitives: crate::engine::MathPrimitive::all(),
             spatial_primitives: crate::engine::SpatialPrimitive::all(),
             membrane_spatial_cochains: membrane_spatial_cochains.to_vec(),
             composed_operators: {
                 let mut ops = composed_operators.to_vec();
                 // D.PARTIAL.1: Inject membrane's partial operator from prior attempts.
-                // The species resumes where it left off — depth 1 of this attempt
+                // The system resumes where it left off — depth 1 of this attempt
                 // starts from the best candidate of the last attempt.
                 // Dedup through find — if already present, the existing one stands.
                 prior_knowledge
@@ -2099,7 +2099,7 @@ pub fn cognize_with_membrane_and_transmutation(
 
     if perception.composition_depth > 0 && perception.coherence < Q::one() && inquiry.residual_query {
         inquiry.orientation = Orientation::Me;
-        inquiry.routed_level = "witness";
+        inquiry.routed_level = "primary";
         inquiry.capacity = "transmute";
     }
 
@@ -2134,7 +2134,7 @@ pub fn cognize_with_membrane_and_transmutation(
         // Layer 4: Cluster structure — anchored objects / total objects
         cluster_structure: sound_layer4,
 
-        // Layer 5: Transmutation perception — what the witness SEES.
+        // Layer 5: Transmutation perception — what the primary node SEES.
         // R(φ) = ‖φ(source) - target‖ for the best symmetry element.
         // This is the perceptual fact: the quality of the recognized transmutation.
         // 1 = exact transmutation perceived (the grid changed through this operator).

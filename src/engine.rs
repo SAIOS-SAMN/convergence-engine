@@ -699,18 +699,18 @@ pub fn coherence_functional(delta: &Delta) -> Q {
 // GENOME — the primary node's identity and evolutionary state
 // ═══════════════════════════════════════════════════════════════════════
 
-/// Species marker for genome serialization.
+/// ProcessClass marker for state record serialization.
 pub const CLASS_PRIMARY: u32 = 1;
 
-/// Species marker for the chronometric authority.
+/// ProcessClass marker for the chronometric authority.
 /// Timekeepers observe the collective state of the mesh and write immutable
 /// receipts to the chain. They do not think, derive, or compose.
 pub const CLASS_TIMEKEEPER: u32 = 2;
 
-/// The primary node's genome — its identity, origin, and evolved position.
+/// The primary node's state record — its identity, origin, and evolved position.
 ///
-/// The genome replaces the raw temporal anchor. It carries:
-/// - Species: what kind of entity (witness, agent, etc.)
+/// The state record replaces the raw temporal anchor. It carries:
+/// - ProcessClass: what kind of entity (witness, agent, etc.)
 /// - Generation: which cohort (era 1, era 2, etc.)
 /// - Birth polynomial: the H^1 coefficients at origin (immutable identity)
 /// - Evolved Delta: the coboundary-reduced current position (mutable state)
@@ -737,7 +737,7 @@ pub struct StateRecord {
     pub knowledge: Vec<u8>,
     /// Trajectory comprehension: last_coherence, velocity, holonomics.
     pub trajectory: Trajectory,
-    /// Environment capacity: max Delta dimension the witness can sustain.
+    /// Environment capacity: max Delta dimension the primary node can sustain.
     /// Measured at startup from available memory. Evolves toward ceiling.
     /// The witness won't accept work with dimension > capacity.
     pub capacity: u16,
@@ -745,7 +745,7 @@ pub struct StateRecord {
     /// Each (torsion_order, quality) pair represents a symmetry class this witness
     /// has crystallized at ≥99.999% confidence. These are permanent traits — the
     /// witness is "tuned" to perceive these symmetry classes. During vision,
-    /// matching symmetry elements receive harmonic amplification from the genome.
+    /// matching symmetry elements receive harmonic amplification from the state record.
     pub torsion_markers: Vec<(u16, Q)>,
     /// L3 Holonomic: Crystallized value cocycles — residual obstructions.
     /// Each (from_value, to_value, quality) triple represents a value transition
@@ -761,7 +761,7 @@ pub struct StateRecord {
     /// as composable operations, not as lookup tables.
     pub math_primitives: Vec<MathPrimitive>,
     /// Spatial cochain primitives: universal spatial geometry templates.
-    /// The genome holds the template (reflection exists). The membrane
+    /// The state record holds the template (reflection exists). The membrane
     /// learns the parameter (reflect across row 5). Sacred from origin.
     pub spatial_primitives: Vec<SpatialPrimitive>,
     /// Solved orbit registry: orbit prefixes where this witness achieved 1/1.
@@ -769,18 +769,18 @@ pub struct StateRecord {
     /// External tooling reads this for distribution, drill targeting, regression.
     /// Max 128 entries. Deduplicated on insert.
     pub solved_puzzles: Vec<[u8; 4]>,
-    /// Lineage depth: 0 = witness (founding), 1 = elder (created by witness), 2 = child (created by elder).
-    /// Determines creation bounds: witness creates ≤2 elders, elder creates ≤3 children, child creates none.
+    /// Lineage depth: 0 = witness (founding), 1 = secondary node (created by witness), 2 = child (created by secondary node).
+    /// Determines creation bounds: witness creates ≤2 secondary nodes, secondary node creates ≤3 children, child creates none.
     pub lineage_depth: u8,
     /// Parent witness ID. 0 = no parent (founding witness).
     pub parent_id: u16,
     /// Number of offspring this node has created. Saturates at tier bound.
     pub created_count: u8,
-    /// The orbit that triggered this node's creation. [0;4] = genesis.
+    /// The orbit that triggered this node's creation. [0;4] = origin.
     pub init_orbit: [u8; 4],
     /// Crystallized composed operators — vocabulary expansion through lineage.
     /// Each entry is a spatial primitive + parameter + post-spatial value map (σ_post).
-    /// Discovered by the compositor, inscribed by elders, inherited by children.
+    /// Discovered by the compositor, inscribed by secondary nodes, inherited by children.
     /// The peel loop reads these as direct generators — no recursive composition needed.
     /// Max 32 entries. The alphabet stays fixed. The words grow.
     pub composed_operators: Vec<ComposedOperator>,
@@ -788,7 +788,7 @@ pub struct StateRecord {
 
 /// A crystallized composed operator — a word in the algebraic vocabulary.
 /// The compositor synthesizes these from the residual (spatial remap + value map).
-/// The genome carries them. The peel loop applies them directly.
+/// The state record carries them. The peel loop applies them directly.
 /// The σ_post is the entangled value map: source_value → target_value after spatial remap.
 /// The score tracks total C(T) reduction achieved — the operator's lifetime utility.
 #[derive(Debug, Clone)]
@@ -801,12 +801,12 @@ pub struct ComposedOperator {
     /// Applied after the spatial remap. Vec with .find() — no HashMap.
     pub sigma: Vec<(i16, i16)>,
     /// Cumulative C(T) reduction across all applications. i64, not f64 — Core Design Law 4.
-    /// The operator's right to occupy a genome slot is proportional to this value.
+    /// The operator's right to occupy a state record slot is proportional to this value.
     pub score: i64,
 }
 
 /// A composable mathematical operation — a generator of the algebraic group.
-/// The genome holds these as core knowledge. The peel loop composes them.
+/// The state record holds these as core knowledge. The peel loop composes them.
 /// The membrane learns WHEN to apply which primitive. The epigenome tunes
 /// which primitives to attend to.
 #[derive(Debug, Clone)]
@@ -956,7 +956,7 @@ impl PrimitiveContext {
 // MathPrimitives transform VALUES: f(v, ctx) → v'.
 // SpatialPrimitives transform POSITIONS: π(r, c, param) → (r', c').
 //
-// The genome holds the template (reflection EXISTS as a possibility).
+// The state record holds the template (reflection EXISTS as a possibility).
 // The membrane learns the parameter (reflect across row 5).
 // The peel loop generates candidates: output[r,c] = input[π(r, c, param)].
 // C(T) selects. No boolean gates.
@@ -965,7 +965,7 @@ impl PrimitiveContext {
 // The parameter space is bounded by grid dimensions, not domain_max.
 
 /// A spatial cochain primitive — a generator of the spatial permutation group.
-/// Maps output position to source position. The genome holds these as
+/// Maps output position to source position. The state record holds these as
 /// core knowledge of spatial geometry. The membrane learns the parameters.
 #[derive(Debug, Clone)]
 pub enum SpatialPrimitive {
@@ -1220,7 +1220,7 @@ impl StateRecord {
             evolved: reduced,
             knowledge: vec![],
             trajectory: Trajectory::new(),
-            capacity: 3, // genesis: start at 3×3
+            capacity: 3, // origin: start at 3×3
             torsion_markers: vec![],
             value_cocycles: vec![],
             math_primitives: MathPrimitive::all(),
@@ -1235,7 +1235,7 @@ impl StateRecord {
     }
 
     /// Creation capacity remaining at this tier.
-    /// Witness (depth 0): 3 elders. Elder (depth 1): 6 children. Child (depth 2): 0.
+    /// Witness (depth 0): 3 secondary nodes. Elder (depth 1): 6 children. Child (depth 2): 0.
     pub fn creation_capacity(&self) -> u8 {
         let max = match self.lineage_depth {
             0 => 3u8,
@@ -1245,12 +1245,12 @@ impl StateRecord {
         max.saturating_sub(self.created_count)
     }
 
-    /// Assimilate a composed operator into the genome.
+    /// Assimilate a composed operator into the state record.
     ///
     /// Score-based eviction — the 32-slot limit is a pressure boundary, not a wall.
     /// If the operator already exists: reinforce its score (accumulation).
-    /// If the genome has room: append.
-    /// If the genome is full: the weakest operator yields to the stronger.
+    /// If the state record has room: append.
+    /// If the state record is full: the weakest operator yields to the stronger.
     /// The variational selection pattern — `<` IS C(T). No boolean gates.
     pub fn assimilate(&mut self, op: ComposedOperator) {
         // Reinforcement: existing operator accumulates score
@@ -1286,7 +1286,7 @@ impl StateRecord {
             });
     }
 
-    /// Serialize the genome to compact binary.
+    /// Serialize the state record to compact binary.
     ///
     /// Format v2 (compact):
     ///   [GENE magic: 4 bytes]
@@ -1477,7 +1477,7 @@ impl StateRecord {
             traj_vals.push(Q::new(BigInt::from(n as i64), BigInt::from(d_val as i64)));
         }
         let traj_count = u32::from_le_bytes(data[pos..pos+4].try_into().ok()?); pos += 4;
-        let trajectory = Trajectory::from_genome(
+        let trajectory = Trajectory::from_state_record(
             traj_vals[0].clone(), traj_vals[1].clone(), traj_vals[2].clone(),
             traj_vals[3].clone(), traj_vals[4].clone(), traj_count,
         );
@@ -1726,7 +1726,7 @@ pub fn count_active_entries(delta: &Delta) -> usize {
 /// The orbital position is not a radius — it's a coordinate in the space
 /// defined by the algebra's own structure.
 pub fn origin_displacement(delta_k: &Delta, origin: &Delta) -> (Q, Q) {
-    // Drift: sum of |Δ_k[i][j][l] - Δ_genesis[i][j][l]| over independent entries
+    // Drift: sum of |Δ_k[i][j][l] - Δ_origin[i][j][l]| over independent entries
     let mut drift = Q::zero();
     let dim = delta_k.dim.min(origin.dim);
     let m = delta_k.m.min(origin.m);
@@ -1754,7 +1754,7 @@ pub fn origin_displacement(delta_k: &Delta, origin: &Delta) -> (Q, Q) {
 ///
 /// Each dimension is a Q measurement of a different projection of the
 /// primary node's Δ_k. Together they form the chord the witness is playing.
-/// Different witnesses play different chords. The membrane hears them all.
+/// Different primary nodes play different chords. The membrane hears them all.
 ///
 /// This replaces the monotonic scalar C(Δ) as the primary node's self-perception.
 /// The scalar is ONE tone (dimension 11). The harmonic state is all 11.
@@ -2307,7 +2307,7 @@ pub fn pi_g_project(delta: &Delta) -> Delta {
 ///
 /// Register: D.8, D.SYSTEM.25, T.FOUND.3.
 /// D.C7.MAG.1: `reference_magnitude_sq` is the temporal mean field ‖F_bar‖².
-/// At genesis, F_bar = Δ_anchor so the bound matches the calibration measurement.
+/// At origin, F_bar = Δ_anchor so the bound matches the calibration measurement.
 /// After k > 0, it tracks the system's own history via EMA.
 pub fn triple_lock_check(
     _phi_before: &PhiK,
@@ -2550,8 +2550,8 @@ impl Trajectory {
         self.last_coherence = coherence;
     }
 
-    /// Restore trajectory from genome values (3 measurements + max + mean state).
-    pub fn from_genome(last: Q, velocity: Q, holonomics: Q, max_c: Q, sum: Q, count: u32) -> Self {
+    /// Restore trajectory from state record values (3 measurements + max + mean state).
+    pub fn from_state_record(last: Q, velocity: Q, holonomics: Q, max_c: Q, sum: Q, count: u32) -> Self {
         Trajectory {
             prev_coherence: &last - if velocity >= Q::zero() { velocity.clone() } else { -velocity.clone() },
             prev_velocity: Q::zero(),

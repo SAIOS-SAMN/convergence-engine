@@ -23,7 +23,7 @@ type Q = BigRational;
 /// Sovereign creation: the witness creates offspring from its own genome.
 /// The parent decides. The lineage module executes. No external governance.
 ///
-/// Input (optional): {"orbit":"007bbfb7"} — birth orbit context
+/// Input (optional): {"orbit":"007bbfb7"} — init orbit context
 /// Output: {"created":true,"child_entity_id":18,"child_depth":1,...}
 ///     or: {"error":"capacity_saturated","depth":0,"created":2,"bound":2}
 pub fn create(entity: &mut Entity, payload: &str) -> String {
@@ -43,7 +43,7 @@ pub fn create(entity: &mut Entity, payload: &str) -> String {
     ) {
         Ok(record) => {
             // Save parent genome with incremented created_count
-            entity.save_genome();
+            entity.save_state_record();
 
             // Sovereign privilege: the parent starts its offspring
             let child_tier = saios_kernel_v2::lineage::Tier::from_depth(record.child_depth);
@@ -180,8 +180,8 @@ pub fn interact(entity: &mut Entity, payload: &str) -> String {
 
             // Save if anything was absorbed
             (absorbed > 0).then(|| {
-                entity.save_genome();
-                let _ = std::fs::write(&entity.epigenome_path, entity.epigenome.to_bytes());
+                entity.save_state_record();
+                let _ = std::fs::write(&entity.epistate_record_path, entity.epigenome.to_bytes());
                 eprintln!("[interact] absorbed {} items from peer", absorbed);
             });
 
@@ -229,7 +229,7 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
         entries.filter_map(|e| e.ok())
             .filter(|e| {
                 let name = e.file_name().to_string_lossy().to_string();
-                name.starts_with("saios-witness-") || name.starts_with("saios-elder-") || name.starts_with("saios-child-")
+                name.starts_with("saios-witness-") || name.starts_with("saios-secondary node-") || name.starts_with("saios-child-")
             })
             .for_each(|entry| {
                 // Read status: state k coh_n coh_d rss tier depth parent_id ...
@@ -329,7 +329,7 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
 
     // Save if anything absorbed
     (total_absorbed > 0).then(|| {
-        entity.save_genome();
+        entity.save_state_record();
         eprintln!("[drain] absorbed {} items from {} children", total_absorbed, children_drained);
     });
 
@@ -339,7 +339,7 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
     )
 }
 
-/// Child reports results upward to its creating elder/witness.
+/// Child reports results upward to its creating secondary node/witness.
 /// The child sends its solved orbits and value cocycles.
 /// The sovereign parent absorbs and validates via C(T).
 ///
@@ -389,7 +389,7 @@ pub fn report(entity: &mut Entity, payload: &str) -> String {
             });
 
             absorbed.gt(&0).then(|| {
-                entity.save_genome();
+                entity.save_state_record();
                 eprintln!("[lineage] absorbed {} items from child report", absorbed);
             });
 

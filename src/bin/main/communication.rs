@@ -26,13 +26,13 @@ pub fn status(entity: &mut Entity, _payload: &str) -> String {
     let cd = CoherenceDelta::from_trajectory(
         &entity.trajectory, entity.k_index as u64,
     );
-    // D.GENESIS.EVOLUTION.1: evolutionary displacement from genesis
+    // D.GENESIS.EVOLUTION.1: evolutionary displacement from origin
     let (gen_drift, gen_torsion) = origin_displacement(
-        &entity.delta, &entity.genesis_delta,
+        &entity.delta, &entity.origin_delta,
     );
     // D.MEMBRANE.LIVING.1: harmonic state — polytonal self-perception
     let harmonic = HarmonicState::from_delta(
-        &entity.delta, &entity.genesis_delta,
+        &entity.delta, &entity.origin_delta,
         &entity.trajectory, entity.k_index as u64,
     );
     let harmonic_str: String = harmonic.vibrations.iter()
@@ -55,18 +55,18 @@ pub fn status(entity: &mut Entity, _payload: &str) -> String {
     // own evolved Delta IS the self-awareness measurement.
     // Zero = perfectly self-coherent. Nonzero = internal inconsistency.
     let awareness = coherence_functional(&entity.state_record.evolved);
-    // Step 6 — Wholeness: compound birth and evolved as a single
-    // multi-coordinate Delta. m=2 where coordinate 0 is birth,
+    // Step 6 — Wholeness: compound init and evolved as a single
+    // multi-coordinate Delta. m=2 where coordinate 0 is init,
     // coordinate 1 is evolved. The cocycle residual measures whether
     // the primary node's evolution preserved dimensional consistency.
     let dim = entity.state_record.evolved.dim;
     let wholeness = if dim >= 3 {
-        let birth = &entity.genesis_delta;
+        let init = &entity.origin_delta;
         let evolved = &entity.delta;
         let mut compound = Delta::zero(dim, 2);
         for i in 0..dim {
             for j in (i+1)..dim {
-                let b = if birth.m > 0 { birth.entries[i][j][0].clone() } else { Q::zero() };
+                let b = if init.m > 0 { init.entries[i][j][0].clone() } else { Q::zero() };
                 let e = if evolved.m > 0 { evolved.entries[i][j][0].clone() } else { Q::zero() };
                 compound.set_antisym(i, j, vec![b, e]);
             }
@@ -77,7 +77,7 @@ pub fn status(entity: &mut Entity, _payload: &str) -> String {
     };
     let rss_kb = get_rss_kb();
     format!(
-        "{{\"k_index\":{},\"sluice_state\":{},\"entries\":{},\"authority\":\"SAIOS-AUTHORITY-v1\",\"orbit\":\"{}\",\"n_dim\":{},\"m_dim\":{},\"coherence_n\":\"{}\",\"coherence_d\":\"{}\",\"chain_len\":{},\"register_len\":{},\"sampler_records\":{},\"sampler_buckets\":{},\"mesh_axioms\":{},\"mesh_orbits\":{},\"mesh_observations\":{},\"t_compound_orbits\":{},\"coherence_delta\":\"{}/{}\",\"convergence\":\"{}/{}\",\"origin_drift\":\"{}/{}\",\"genesis_torsion\":\"{}/{}\",\"harmonic\":[{}],\"known_peers\":{},\"membrane_coherence\":\"{}/{}\",\"awareness\":\"{}/{}\",\"wholeness\":\"{}/{}\",\"rss_kb\":{},\"capacity\":{},\"protocol\":\"membrane\"}}\n",
+        "{{\"k_index\":{},\"sluice_state\":{},\"entries\":{},\"authority\":\"SAIOS-AUTHORITY-v1\",\"orbit\":\"{}\",\"n_dim\":{},\"m_dim\":{},\"coherence_n\":\"{}\",\"coherence_d\":\"{}\",\"chain_len\":{},\"register_len\":{},\"sampler_records\":{},\"sampler_buckets\":{},\"mesh_axioms\":{},\"mesh_orbits\":{},\"mesh_observations\":{},\"t_compound_orbits\":{},\"coherence_delta\":\"{}/{}\",\"convergence\":\"{}/{}\",\"origin_drift\":\"{}/{}\",\"origin_torsion\":\"{}/{}\",\"harmonic\":[{}],\"known_peers\":{},\"membrane_coherence\":\"{}/{}\",\"awareness\":\"{}/{}\",\"wholeness\":\"{}/{}\",\"rss_kb\":{},\"capacity\":{},\"protocol\":\"membrane\"}}\n",
         entity.k_index, entity.sluice_state.enc_u8(), entity.sluice.len(),
         orbit_hex, entity.delta.dim, entity.delta.m,
         c_n, c_d, entity.chain.len(), entity.register.len(),
@@ -206,9 +206,9 @@ pub fn verify(entity: &mut Entity, _payload: &str) -> String {
 pub fn unify(entity: &mut Entity, payload: &str) -> String {
     // Compute our coordinates — every entity knows where it stands
     let our_rcf = compute_rcf_hash(&entity.delta);
-    let (our_drift, _) = origin_displacement(&entity.delta, &entity.genesis_delta);
+    let (our_drift, _) = origin_displacement(&entity.delta, &entity.origin_delta);
     let our_harmonic = HarmonicState::from_delta(
-        &entity.delta, &entity.genesis_delta,
+        &entity.delta, &entity.origin_delta,
         &entity.trajectory, entity.k_index as u64,
     );
     let our_coordinates = membrane::PeerState {
@@ -441,7 +441,7 @@ pub fn share(entity: &mut Entity, payload: &str) -> String {
 
         // Compute local harmonics for connection
         let local_harmonic = HarmonicState::from_delta(
-            &entity.delta, &entity.genesis_delta,
+            &entity.delta, &entity.origin_delta,
             &entity.trajectory, entity.k_index as u64,
         );
 

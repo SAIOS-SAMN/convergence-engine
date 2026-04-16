@@ -6,7 +6,7 @@
 //!
 //! Register: D.EXEC.1, D.CHAIN.1, D.SAIOS.1, BOOT.GENESIS.1, D.AGENT.6 (K2A).
 
-mod birth;
+mod init;
 mod cognition;
 mod communication;
 mod entity;
@@ -16,5 +16,5 @@ mod memory;
 mod observation;
 
 fn main() {
-    birth::run();
+    init::run();
 }

@@ -8,7 +8,7 @@
 //! all receipts emitted at K-index k across all mesh nodes.
 //!
 //! Temporal links: receipt.parent_hash (vertical, per-node chain)
-//! Spatial links: receipt.witnesses (horizontal, peer attestations)
+//! Spatial links: receipt.primary nodes (horizontal, peer attestations)
 //! Level root: BLAKE3 Merkle of all receipts at K=k
 //! Level finality: Σ_maj witness weight > 0.5
 //!
@@ -288,7 +288,7 @@ mod tests {
     fn test_prune_unfinalized() {
         let mut lattice = TemporalLedger::new();
         for k in 1..=20u64 {
-            lattice.add_receipt(test_receipt(0, k)); // single node, no witnesses
+            lattice.add_receipt(test_receipt(0, k)); // single node, no primary nodes
         }
         // Only finalize even levels
         for k in (2..=20).step_by(2) {

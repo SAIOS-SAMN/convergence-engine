@@ -6,7 +6,7 @@
 //!
 //! Spawns N kernel agents, each with:
 //! - Own state directory (sluice.bin, state.json, socket)
-//! - Own UAID derived from parent's genesis
+//! - Own UAID derived from parent's origin
 //! - Own K-sequence advancing independently
 //! - Own operator namespace
 //!

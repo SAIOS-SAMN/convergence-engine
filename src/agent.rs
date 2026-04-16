@@ -152,7 +152,7 @@ pub fn derive_child_key(parent_rcf: &[u8; 32]) -> (ed25519_dalek::SigningKey, ed
 }
 
 /// D.AGENT.7 — Sub-agent spawn record.
-/// Links a child agent's genesis to the parent's current state.
+/// Links a child agent's origin to the parent's current state.
 #[derive(Debug, Clone)]
 pub struct SpawnRecord {
     /// Parent's UAID at time of spawning.

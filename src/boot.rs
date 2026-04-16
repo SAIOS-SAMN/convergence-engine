@@ -185,11 +185,11 @@ pub fn execute_boot_sequence(config: &BootConfig) -> (BootReport, Option<Genesis
     }
 
     // ── B6: Genesis Proof Cycle ──────────────────────────────────────
-    // Compute the RCF hash of the genesis (zero) state.
+    // Compute the RCF hash of the origin (zero) state.
     let origin_rcf_hash = rcf::compute_rcf_hash_from_delta(&delta_zero, n, m);
 
     steps.push(BootStepResult {
-        step: BootStep::B6GenesisProofCycle,
+        step: BootStep::B6OriginProofCycle,
         passed: true,
         detail: format!(
             "Genesis proof: rcf_hash=0x{}, K=0, status=OPERATIONAL",
@@ -203,7 +203,7 @@ pub fn execute_boot_sequence(config: &BootConfig) -> (BootReport, Option<Genesis
 
     let all_passed = steps.iter().all(|s| s.passed);
 
-    let genesis = if all_passed {
+    let origin = if all_passed {
         Some(GenesisState {
             delta_zero,
             origin_rcf_hash,
@@ -223,7 +223,7 @@ pub fn execute_boot_sequence(config: &BootConfig) -> (BootReport, Option<Genesis
             anchor_hash,
             torsion_period: TORSION_PERIOD_M,
         },
-        genesis,
+        origin,
     )
 }
 
@@ -236,13 +236,13 @@ mod tests {
     #[test]
     fn test_default_boot_succeeds() {
         let config = BootConfig::default();
-        let (report, genesis) = execute_boot_sequence(&config);
+        let (report, origin) = execute_boot_sequence(&config);
         assert!(report.all_passed, "Default boot must succeed");
         assert_eq!(report.steps.len(), 6, "Must have exactly 6 boot steps");
         for step in &report.steps {
             assert!(step.passed, "Step {:?} failed: {}", step.step, step.detail);
         }
-        assert!(genesis.is_some(), "Genesis state must be produced");
+        assert!(origin.is_some(), "Genesis state must be produced");
     }
 
     #[test]
@@ -264,9 +264,9 @@ mod tests {
             delta: Q::zero(),
             ..BootConfig::default()
         };
-        let (report, genesis) = execute_boot_sequence(&config);
+        let (report, origin) = execute_boot_sequence(&config);
         assert!(!report.all_passed, "Boot must fail with zero delta");
-        assert!(genesis.is_none());
+        assert!(origin.is_none());
     }
 
     #[test]
@@ -275,9 +275,9 @@ mod tests {
             state_dim: 0,
             ..BootConfig::default()
         };
-        let (report, genesis) = execute_boot_sequence(&config);
+        let (report, origin) = execute_boot_sequence(&config);
         assert!(!report.all_passed, "Boot must fail with zero state_dim");
-        assert!(genesis.is_none());
+        assert!(origin.is_none());
     }
 
     #[test]
@@ -291,8 +291,8 @@ mod tests {
     #[test]
     fn test_origin_rcf_hash_nonzero() {
         let config = BootConfig::default();
-        let (_, genesis) = execute_boot_sequence(&config);
-        let g = genesis.unwrap();
+        let (_, origin) = execute_boot_sequence(&config);
+        let g = origin.unwrap();
         // Even the zero matrix has a well-defined RCF hash (domain-separated)
         assert!(g.origin_rcf_hash.iter().any(|&b| b != 0));
     }

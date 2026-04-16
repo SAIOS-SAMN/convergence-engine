@@ -51,7 +51,7 @@ pub enum Thought {
     /// map each unique value to its diagonal residue class, tile the grid.
     /// This is a FUNCTION of the input — different inputs produce different outputs.
     DiagonalSeedTile,
-    /// Genomic operator: a composed operator from the genome, promoted to depth-1.
+    /// Genomic operator: a composed operator from the state record, promoted to depth-1.
     /// These are EARNED words — proven by C(T) = 0 across training pairs.
     /// Core Design Law 8: the alphabet stays fixed, the words grow.
     /// The words enter the compositor as first-class generators.

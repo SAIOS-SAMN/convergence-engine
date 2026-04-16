@@ -166,9 +166,9 @@ pub struct ThoughtTelemetry {
     /// Joint residual after thought acceptance (= 0/1 when understood).
     pub jr_after_numer: i64,
     pub jr_after_denom: u64,
-    /// α_genesis: coherence reduction ratio (understood = 1/1).
-    pub alpha_genesis_numer: i64,
-    pub alpha_genesis_denom: u64,
+    /// α_origin: coherence reduction ratio (understood = 1/1).
+    pub alpha_origin_numer: i64,
+    pub alpha_origin_denom: u64,
     /// Number of training pairs the rule generalizes across.
     pub pair_count: u32,
     /// Depth of the compound operator (number of composed thoughts).
@@ -182,7 +182,7 @@ impl ThoughtTelemetry {
         Self {
             jr_before_numer: 0, jr_before_denom: 1,
             jr_after_numer: 0, jr_after_denom: 1,
-            alpha_genesis_numer: 0, alpha_genesis_denom: 1,
+            alpha_origin_numer: 0, alpha_origin_denom: 1,
             pair_count: 0,
             compound_depth: 0,
             compound_hash: [0u8; 32],
@@ -263,7 +263,7 @@ impl MeshReceipt {
     /// Build a receipt from kernel output values.
     ///
     /// `last_receipt_hash`: the full 32-byte hash of the previous receipt.
-    /// For genesis, use all zeros.
+    /// For origin, use all zeros.
     pub fn build(
         rcf_identity:      &[u8; 32],
         t_k:               &Q,
@@ -343,7 +343,7 @@ impl MeshReceipt {
         &mut self,
         jr_before: &Q,
         jr_after: &Q,
-        alpha_genesis: &Q,
+        alpha_origin: &Q,
         pair_count: u32,
         compound_depth: u32,
         compound_hash: [u8; 32],
@@ -354,8 +354,8 @@ impl MeshReceipt {
             jr_before_denom: jr_before.denom().to_u64().unwrap_or(1),
             jr_after_numer: jr_after.numer().to_i64().unwrap_or(0),
             jr_after_denom: jr_after.denom().to_u64().unwrap_or(1),
-            alpha_genesis_numer: alpha_genesis.numer().to_i64().unwrap_or(0),
-            alpha_genesis_denom: alpha_genesis.denom().to_u64().unwrap_or(1),
+            alpha_origin_numer: alpha_origin.numer().to_i64().unwrap_or(0),
+            alpha_origin_denom: alpha_origin.denom().to_u64().unwrap_or(1),
             pair_count,
             compound_depth,
             compound_hash,
@@ -472,7 +472,7 @@ impl ReceiptChain {
         Ok(receipt)
     }
 
-    /// Verify the entire chain from genesis.
+    /// Verify the entire chain from origin.
     pub fn verify_chain(&self) -> Result<(), (usize, LedgerError)> {
         let mut expected_parent = [0u8; 32];
         let mut last_k: Option<u64> = None;
@@ -865,8 +865,8 @@ mod tests {
         assert_eq!(r.receipt_hash, hash_before);
         assert_eq!(r.thought.jr_before_numer, 42);
         assert_eq!(r.thought.jr_after_numer, 0);
-        assert_eq!(r.thought.alpha_genesis_numer, 1);
-        assert_eq!(r.thought.alpha_genesis_denom, 1);
+        assert_eq!(r.thought.alpha_origin_numer, 1);
+        assert_eq!(r.thought.alpha_origin_denom, 1);
         assert_eq!(r.thought.pair_count, 3);
         assert_eq!(r.thought.compound_depth, 2);
         assert_eq!(r.thought.compound_hash, [0xAA; 32]);

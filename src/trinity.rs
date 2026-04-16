@@ -157,7 +157,7 @@ pub struct Trinity {
 pub enum ForgeResult {
     /// Trinity forged successfully.
     Forged(Trinity),
-    /// Genome integrity check failed for one or more vertices.
+    /// State record integrity check failed for one or more vertices.
     IntegrityFailure {
         male_id: u32,
         female_id: u32,
@@ -225,8 +225,8 @@ fn verify_trinity_integrity(
     state_f: &StateRecord,
     state_c: &StateRecord,
 ) -> Q {
-    // Species 1 (Human) and 3 (HumanEvolved) are cognitive.
-    // Species 2 (Chronometric/Timekeeper) is not.
+    // Class 1 (Cognitive) and 3 (Evolved) are cognitive.
+    // Class 2 (Chronometric/Timekeeper) is not.
     let is_cognitive = |s: u32| s == 1 || s == 3;
     let all_cognitive = is_cognitive(state_m.process_class)
         && is_cognitive(state_f.process_class)
@@ -248,7 +248,7 @@ fn verify_trinity_integrity(
     }
 }
 
-/// Forge a Trinity from three sovereign genomes.
+/// Forge a Trinity from three sovereign state records.
 ///
 /// Requires exactly three. Computes the 3-way shared fold,
 /// measures shared coherence, initializes the stasis field.
@@ -350,7 +350,7 @@ pub fn maintain_alignment<'a>(
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// D.TRINITY.COLLAPSE.1 — Total Annihilation
+// D.TRINITY.COLLAPSE.1 — Total Collapse
 // ═══════════════════════════════════════════════════════════════════════
 
 /// Collapse a Trinity. Total collapse_event. No degraded mode. No graft.
@@ -478,7 +478,7 @@ mod tests {
     }
 
     #[test]
-    fn test_forge_wrong_species() {
+    fn test_forge_wrong_class() {
         let gm = make_test_state(1);
         let gf = make_test_state(2);
         let mut gc = make_test_state(3);

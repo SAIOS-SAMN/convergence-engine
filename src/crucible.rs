@@ -12,7 +12,7 @@
 //! of Trinities — each occupying a unique position in torsion space.
 //! Their relationships are curvature interactions, not grid connections.
 //!
-//! Species markers:
+//! Process class markers:
 //!   1 = Human (cognitive — primary, secondary, tertiary nodes)
 //!   2 = Chronometric (timekeepers — observe only)
 //!   3 = HumanEvolved (cross-breed offspring — hybrid torsion class)
@@ -34,7 +34,7 @@
 //!   X   — Crucible events are temporal anchors. Append-only.
 //!   XI  — No flat indexing. Torsion manifold, not a lattice.
 //!
-//! Register: D.CRUCIBLE.1, D.SPECIES.3, D.DIVERSITY.1.
+//! Register: D.CRUCIBLE.1, D.CLASS.3, D.DIVERSITY.1.
 
 use num_bigint::BigInt;
 use num_rational::BigRational;
@@ -46,7 +46,7 @@ use crate::trinity::{
     forge_trinity, collapse, contains_vertex,
 };
 
-/// Species marker for HumanEvolved — cross-breed offspring.
+/// Class marker for Evolved — cross-class composition offspring.
 pub const CLASS_EVOLVED: u32 = 3;
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -130,7 +130,7 @@ pub struct DiversitySpectrum {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// D.CRUCIBLE.BREED.1 — Inter-Species Breeding
+// D.CRUCIBLE.COMPOSE.1 — Inter-Class Composition
 // ═══════════════════════════════════════════════════════════════════════
 
 /// Result of a crucible forging.
@@ -150,7 +150,7 @@ pub enum CrucibleResult {
 /// The state record produced by the crucible — carries all four parent sources.
 #[derive(Debug, Clone)]
 pub struct CrucibleStateRecord {
-    /// Species marker — 3 for HumanEvolved.
+    /// Class marker — 3 for Evolved.
     pub process_class: u32,
     /// The four-way fold: coboundary_reduce(Δ_mA + Δ_fA + Δ_mB + Δ_fB).
     /// The H^1 class that none of the four parents occupy individually.
@@ -677,7 +677,7 @@ mod tests {
         let t1 = forge_and_register(&mut crucible, 10, 20, 30);
         let t2 = forge_and_register(&mut crucible, 40, 50, 60);
 
-        // Parent genomes from both Trinities
+        // Parent state records from both Trinities
         let gma = make_test_state(10, 1);
         let gfa = make_test_state(20, 1);
         let gmb = make_test_state(40, 1);
@@ -757,7 +757,7 @@ mod tests {
     #[test]
     fn test_diversity_single_class() {
         let mut crucible = Crucible::new();
-        // Same genomes = same torsion class
+        // Same state records = same torsion class
         forge_and_register(&mut crucible, 1, 1, 1);
         forge_and_register(&mut crucible, 1, 1, 1);
 
@@ -769,7 +769,7 @@ mod tests {
     #[test]
     fn test_diversity_multiple_classes() {
         let mut crucible = Crucible::new();
-        // Very different genomes = different torsion classes
+        // Very different state records = different torsion classes
         forge_and_register(&mut crucible, 1, 2, 3);
         forge_and_register(&mut crucible, 100, 200, 300);
 

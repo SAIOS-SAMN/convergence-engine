@@ -90,7 +90,7 @@ pub fn propose(entity: &mut Entity, payload: &str) -> String {
                             entity.sluice_state.enc_u8(), 0, &t_k,
                         );
                         let _ = entity.sluice.append(&entry);
-                        // state is in binary: genome.bin, entity.sluice.bin, receipts.bin
+                        // state is in binary: state_record.bin, entity.sluice.bin, receipts.bin
 
                         // Chain persistence (D.CHAIN.LOCAL.1)
                         // Build MeshReceipt for chain storage
@@ -104,7 +104,7 @@ pub fn propose(entity: &mut Entity, payload: &str) -> String {
 
                         // D.AGENT.STATE.1 trigger — persist algebraic state
                         entity.write_agent_state();
-                        entity.save_genome();
+                        entity.save_state_record();
                         // coherence_history.bin eliminated — trajectory in genome
 
                         // Broadcast to mesh peers (D.TRANSPORT.NATIVE.1)
@@ -186,7 +186,7 @@ pub fn derive(entity: &mut Entity, payload: &str) -> String {
     let mdc_weights = mdc::EchelonWeights::physics_heavy(); // physics dominant
     let physics_hint = mdc::physics_echelon(&entity.delta);
     // Legal envelope: Option dissolution. Absence is not a floor.
-    // None = genesis (no measurement, echelon abstains). Some = measured envelope.
+    // None = origin (no measurement, echelon abstains). Some = measured envelope.
     let legal_envelope: Option<Q> = entity.trajectory.has_observations()
         .then(|| &entity.trajectory.max_coherence * &Q::new(BigInt::from(2), BigInt::from(1)));
     let legal_hint = mdc::legal_echelon_opt(&entity.delta, legal_envelope.as_ref());
@@ -223,7 +223,7 @@ pub fn derive(entity: &mut Entity, payload: &str) -> String {
     let response = {
     // Compute harmonic state for vibrational preference
     let derive_harmonic = saios_kernel_v2::engine::HarmonicState::from_delta(
-        &entity.delta, &entity.genesis_delta,
+        &entity.delta, &entity.origin_delta,
         &entity.trajectory, entity.k_index as u64,
     );
     // D.SAMPLER.REFRACTIVE.1: Global curvature from membrane.
@@ -272,7 +272,7 @@ pub fn derive(entity: &mut Entity, payload: &str) -> String {
                                 entity.sluice_state.enc_u8(), 0, &t_k,
                             );
                             let _ = entity.sluice.append(&entry);
-                            // state is in binary: genome.bin, entity.sluice.bin, receipts.bin
+                            // state is in binary: state_record.bin, entity.sluice.bin, receipts.bin
 
                             let chain_receipt = saios_kernel_v2::ledger::MeshReceipt::build(
                                 &new_rcf, &t_k, entity.entity_id,
@@ -289,7 +289,7 @@ pub fn derive(entity: &mut Entity, payload: &str) -> String {
                             let alpha = basis.alignment_score(&op);
 
                             entity.write_agent_state();
-                            entity.save_genome();
+                            entity.save_state_record();
                             // coherence_history.bin eliminated — trajectory in genome
 
                             // AXIS.3a: Broadcast to mesh peers
@@ -357,7 +357,7 @@ pub fn execute_step(entity: &mut Entity, _payload: &str) -> String {
                     entity.sluice_state.enc_u8(), output.sigma_enc, &output.t_k,
                 );
                 let _ = entity.sluice.append(&entry);
-                // state is in binary: genome.bin, entity.sluice.bin, receipts.bin
+                // state is in binary: state_record.bin, entity.sluice.bin, receipts.bin
             }
             format!(
                 "{{\"executed\":true,\"k_index\":{},\"coherence_delta\":\"{}\"}}\n",
@@ -431,7 +431,7 @@ pub fn upgrade(entity: &mut Entity, payload: &str) -> String {
             let _ = fs::write(&receipt_path, json);
         }
 
-        // state is in binary: genome.bin, entity.sluice.bin, receipts.bin
+        // state is in binary: state_record.bin, entity.sluice.bin, receipts.bin
 
         format!(
             "{{\"upgrade\":\"approved\",\"tier\":{},\"version\":\"{}\",\"receipt\":\"{}\",\"action\":\"exit_for_swap\",\"k_index\":{}}}\n",
@@ -597,7 +597,7 @@ pub fn irs_loop(entity: &mut Entity, _payload: &str) -> String {
                                     entity.sluice_state.enc_u8(), 0, &t_k,
                                 );
                                 let _ = entity.sluice.append(&entry);
-                                // state is in binary: genome.bin, entity.sluice.bin, receipts.bin
+                                // state is in binary: state_record.bin, entity.sluice.bin, receipts.bin
                                 let mut chain_receipt = saios_kernel_v2::ledger::MeshReceipt::build(
                                     &new_rcf, &t_k, entity.entity_id,
                                     entity.k_index as u64, &receipt_hash,
@@ -609,7 +609,7 @@ pub fn irs_loop(entity: &mut Entity, _payload: &str) -> String {
                                 chain_receipt.attach_telemetry(&c_after, &t_k, &t_k, conservation_ok);
                                 let _ = entity.chain.append(&chain_receipt);
                                 entity.write_agent_state();
-                                entity.save_genome();
+                                entity.save_state_record();
                             // coherence_history.bin eliminated — trajectory in genome
                                 entity.sampler.stats.c7_passes += 1;
 

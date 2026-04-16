@@ -5,7 +5,7 @@
 //! Memory organ — genome persistence, LAST_WITNESS, register.
 //!
 //! Memory crystallizes to disk but does not rotate the Delta.
-//! save_genome and last_witness_protocol are Entity methods in entity.rs.
+//! save_state_record and last_witness_protocol are Entity methods in entity.rs.
 //! This module handles the REGISTER_QUERY and REGISTER_LOCK commands.
 
 use num_rational::BigRational;

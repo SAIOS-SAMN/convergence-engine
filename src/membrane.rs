@@ -289,7 +289,7 @@ pub struct MeshAxiom {
     /// chain_confirmations / total_observations. Higher = more massive.
     pub mass: Q,
     /// D.CRYSTALLIZE.1: Hardness — mean pairwise origin_drift distance
-    /// among confirming witnesses. Higher = more evolutionary diversity bridged.
+    /// among confirming primary nodes. Higher = more evolutionary diversity bridged.
     pub hardness: Q,
     /// D.ESCALATION.1: Highest dimensional level that was attempted.
     /// "category" / "cluster" / "cell" / "unresolved"
@@ -311,11 +311,11 @@ pub struct MeshAxiom {
 ///
 /// The membrane does NOT average T Deltas — averaging IS dimensional collapse.
 /// Instead, each primary node's T is an ENTITY. The membrane builds a meta-Delta
-/// between witnesses' Ts. C(meta_delta) measures whether witnesses' transformations
-/// are cohomologically consistent — parallel transport of T around the loop of witnesses.
+/// between primary nodes' Ts. C(meta_delta) measures whether primary nodes' transformations
+/// are cohomologically consistent — parallel transport of T around the loop of primary nodes.
 ///
 /// C(meta_delta) = 0 → holonomic perceptual lock → crystallized.
-/// C(meta_delta) > 0 → H^1 reveals where witnesses diverge — structured info.
+/// C(meta_delta) > 0 → H^1 reveals where primary nodes diverge — structured info.
 ///
 /// The coboundary part of meta_delta = consensus T (what all agree on).
 /// The H^1 = where diverse perspectives create non-trivial structure.
@@ -327,19 +327,19 @@ pub struct TransformCompound {
     /// witness_entities[k] = flattened T from witness k.
     /// These become entities in the meta-Delta.
     pub witness_entities: Vec<Vec<Q>>,
-    /// The meta-Delta between witnesses — the membrane's manifold.
+    /// The meta-Delta between primary nodes — the membrane's manifold.
     /// Each witness is an entity. Coordinates = T entries.
     /// C(meta_delta) = membrane coherence on T.
     pub meta_delta: Option<Delta>,
     /// C(meta_delta) — coherence of the inter-witness transformation manifold.
-    /// Zero = all witnesses agree (holonomic lock). Nonzero = structured divergence.
+    /// Zero = all primary nodes agree (holonomic lock). Nonzero = structured divergence.
     pub coherence: Q,
     /// Three-state cohesion measurement at the Entity→Membrane boundary.
-    /// None: no consensus possible (< 2 witnesses). Single perspective.
-    /// Some(Q::zero()): consensus achieved. Zero torsion between witnesses.
+    /// None: no consensus possible (< 2 primary nodes). Single perspective.
+    /// Some(Q::zero()): consensus achieved. Zero torsion between primary nodes.
     /// Some(Q > 0): consensus with measured inter-witness torsion.
     pub cohesion: Option<Q>,
-    /// Number of witnesses compounded.
+    /// Number of primary nodes compounded.
     pub count: usize,
     /// Dimensional level (category, cluster, cell).
     pub level: String,
@@ -396,7 +396,7 @@ pub struct TorsionOrbital {
 /// This struct carries the spatial primitive and its structural parameter
 /// alongside the cohesion field that the peel loop uses for resolution.
 ///
-/// The genome provides the template (operator). The structural pivot provides
+/// The state record provides the template (operator). The structural pivot provides
 /// the parameter. The cohesion field provides the per-cell Q weight.
 /// Together they form the cochain: spatial geometry + spectral density + topology.
 #[derive(Debug, Clone)]
@@ -425,10 +425,10 @@ pub struct SpatialCochain {
 /// - T compounds: the membrane's understanding of the transformation (the depth)
 ///
 /// The T compound at each orbit is the membrane's higher-dimensional
-/// understanding. Individual witnesses produce T at their genomic level.
+/// understanding. Individual primary nodes produce T at their genomic level.
 /// The membrane compounds them — the compound IS the intelligence above
 /// any individual witness. C(compound_T) = 0 means the membrane has
-/// crystallized a consistent transformation across diverse witnesses.
+/// crystallized a consistent transformation across diverse primary nodes.
 pub struct MeshKnowledge {
     /// Axioms indexed by orbit prefix (surface — the lookup index).
     axioms: HashMap<[u8; 4], Vec<MeshAxiom>>,
@@ -442,7 +442,7 @@ pub struct MeshKnowledge {
     spatial_cochains: HashMap<[u8; 4], Vec<SpatialCochain>>,
     /// D.MEMBRANE.T.1 — T Delta compounds per orbit, grouped by level.
     /// The membrane's higher-dimensional understanding. Each entry compounds
-    /// T Deltas from multiple witnesses at the same dimensional level.
+    /// T Deltas from multiple primary nodes at the same dimensional level.
     /// Runtime only — not serialized. Rebuilt from observations.
     orbit_t_compounds: HashMap<[u8; 4], Vec<TransformCompound>>,
     /// Total axioms across all orbits.
@@ -499,7 +499,7 @@ impl MeshKnowledge {
             );
             axiom.mass = &(&axiom.mass * &(&n - &Q::one()) + &coherence) / &n;
 
-            // Hardness: diversity of witnesses that attempted.
+            // Hardness: diversity of primary nodes that attempted.
             let drift_diff = &witness_origin_drift - &axiom.hardness;
             let abs_diff = if drift_diff < Q::zero() { -drift_diff } else { drift_diff };
             let alpha = Q::new(BigInt::from(1), BigInt::from(axiom.attempts.max(1) as i64));
@@ -654,8 +654,8 @@ impl MeshKnowledge {
     ///
     /// When the peel loop detects non-zero curvature that it cannot resolve
     /// with its current vocabulary, the curvature vector is stored as a
-    /// spatial cochain. The membrane uses δ to compare across witnesses.
-    /// If δ = 0 (all witnesses see the same curvature): promote to axiom.
+    /// spatial cochain. The membrane uses δ to compare across primary nodes.
+    /// If δ = 0 (all primary nodes see the same curvature): promote to axiom.
     /// The species discovers new structure from the manifold's geometry.
     pub fn record_holonomy(
         &mut self,
@@ -705,13 +705,13 @@ impl MeshKnowledge {
         self.axioms.len()
     }
 
-    /// D.MEMBRANE.COMPOUND.1 — Compound resolution across witnesses.
+    /// D.MEMBRANE.COMPOUND.1 — Compound resolution across primary nodes.
     ///
-    /// The membrane operates ABOVE individual witnesses. It takes all
+    /// The membrane operates ABOVE individual primary nodes. It takes all
     /// axioms for an orbit and produces the compound understanding:
     /// - Which dimensional level has the BEST resolution?
     /// - What is the LOWEST disjoint_rank achieved by any witness?
-    /// - Are multiple witnesses congruent (same level, same path)?
+    /// - Are multiple primary nodes congruent (same level, same path)?
     ///
     /// This IS the membrane computing — not storing, computing.
     /// The compound is the global invariant that no local witness can see.
@@ -783,11 +783,11 @@ impl MeshKnowledge {
     //
     // Each witness is an entity (a spinor — local oriented frame).
     // Each primary node's T Delta, flattened to upper-triangle, is the entity's
-    // coordinate vector. The meta-Delta between witnesses IS the membrane's
+    // coordinate vector. The meta-Delta between primary nodes IS the membrane's
     // manifold. C(meta_delta) measures holonomic coherence.
     //
     // NO averaging. Averaging IS dimensional collapse.
-    // The relational structure between witnesses IS the intelligence.
+    // The relational structure between primary nodes IS the intelligence.
     //
     // C(meta_delta) = 0 → holonomic perceptual lock → crystallized.
     // C(meta_delta) > 0 → H^1 reveals structured inter-witness divergence.
@@ -843,7 +843,7 @@ impl MeshKnowledge {
             (tc.witness_entities.len() >= 2).then(|| {
                 let meta = crate::perception::encode_relational(&tc.witness_entities);
                 let c = coherence_functional(&meta);
-                // Three-state cohesion: measured now that 2+ witnesses exist
+                // Three-state cohesion: measured now that 2+ primary nodes exist
                 tc.cohesion = Some(c.clone());
                 tc.coherence = c;
                 tc.meta_delta = Some(meta);
@@ -875,7 +875,7 @@ impl MeshKnowledge {
 
     /// Get the compound T at an orbit — the membrane's transformation manifold.
     ///
-    /// Returns the compound with the most witnesses (deepest manifold).
+    /// Returns the compound with the most primary nodes (deepest manifold).
     /// When count >= 2, the meta-Delta IS the membrane perceiving.
     pub fn compound_t(&self, orbit: &[u8; 4]) -> Option<&TransformCompound> {
         self.orbit_t_compounds.get(orbit)
@@ -892,8 +892,8 @@ impl MeshKnowledge {
 
     /// C(meta_delta) at an orbit — the membrane's inter-witness coherence.
     ///
-    /// This is NOT C(average_T). This is C(relational_structure_between_witnesses).
-    /// Zero = holonomic perceptual lock (all witnesses' Ts are cohomologically
+    /// This is NOT C(average_T). This is C(relational_structure_between_primary nodes).
+    /// Zero = holonomic perceptual lock (all primary nodes' Ts are cohomologically
     /// consistent). Nonzero = structured divergence in H^1.
     pub fn compound_t_coherence(&self, orbit: &[u8; 4]) -> Q {
         self.compound_t(orbit)
@@ -923,7 +923,7 @@ impl MeshKnowledge {
 
         for compounds in self.orbit_t_compounds.values() {
             for tc in compounds {
-                // Only compounds with multiple witnesses
+                // Only compounds with multiple primary nodes
                 if tc.count < 2 || tc.witness_entities.is_empty() { continue; }
                 // Only unsolved: coherence > 0
                 if tc.coherence.is_zero() { continue; }
@@ -1065,7 +1065,7 @@ impl MeshKnowledge {
     /// When the system is empty or has < 2 entities, returns None.
     pub fn compute_epicenter(
         entity_vibrations: &[[Q; 11]],
-        genesis_delta: &Delta,
+        origin_delta: &Delta,
         trajectory: &crate::engine::Trajectory,
     ) -> Option<(Delta, crate::engine::HarmonicState)> {
         (entity_vibrations.len() >= 2).then(|| {
@@ -1082,7 +1082,7 @@ impl MeshKnowledge {
 
             // Compute the epicenter's 11D harmonic coordinates
             let harmonics = crate::engine::HarmonicState::from_delta(
-                &epicenter, genesis_delta, trajectory, 0,
+                &epicenter, origin_delta, trajectory, 0,
             );
 
             (epicenter, harmonics)
@@ -1091,7 +1091,7 @@ impl MeshKnowledge {
 
     /// L3: Scan all orbits for crystallized transmutation signals.
     /// Returns (quality, torsion_order) for each orbit with a transmutation compound.
-    /// Used by save_genome to check if any transmutation has crystallized
+    /// Used by save_state_record to check if any transmutation has crystallized
     /// at genomic-update threshold (~99.999%).
     pub fn all_transmutation_crystals(&self) -> Vec<TransmutationCrystal> {
         let mut crystals = Vec::new();
@@ -1100,7 +1100,7 @@ impl MeshKnowledge {
                 if tc.level != "transmutation" || tc.count < 2 { continue; }
                 if tc.t_dim != 2 || tc.t_m != 2 { continue; }
                 if tc.witness_entities.is_empty() { continue; }
-                // Average quality across witnesses
+                // Average quality across primary nodes
                 let k = Q::new(BigInt::from(tc.count as i64), BigInt::from(1));
                 let quality_sum: Q = tc.witness_entities.iter()
                     .filter_map(|e| e.first().cloned())
@@ -1119,7 +1119,7 @@ impl MeshKnowledge {
 
     /// Integrate value cocycle spectrum across all orbits.
     /// No gates. No filters. Every transition — including identity — is measured.
-    /// Quality is the consensus density: how many witnesses observed this
+    /// Quality is the consensus density: how many primary nodes observed this
     /// transition / total observations. C(T) in peel_manifold decides what composes.
     /// The scanner is a spectrometer, not a gatekeeper.
     pub fn all_value_cocycle_crystals(&self) -> Vec<ValueCocycleCrystal> {
@@ -1223,7 +1223,7 @@ impl MeshKnowledge {
     /// derived by the system across unrelated puzzles. Its quality is
     /// amplified by the orbit count — crystallized cochains rise to the top
     /// of the sorted list, entering the peel loop at depth 0.
-    /// The genome densifies. The membrane thins.
+    /// The state record densifies. The membrane thins.
     pub fn all_spatial_cochains(&self) -> Vec<SpatialCochain> {
         // Track (operator, parameter) → (merged cochain, orbit count)
         let mut merged: Vec<(SpatialCochain, usize)> = Vec::new();
@@ -1259,7 +1259,7 @@ impl MeshKnowledge {
     }
 
     /// Is the orbit crystallized via meta-Delta?
-    /// C(meta_delta) = 0 across >= 2 witnesses = holonomic perceptual lock.
+    /// C(meta_delta) = 0 across >= 2 primary nodes = holonomic perceptual lock.
     pub fn is_t_crystallized(&self, orbit: &[u8; 4]) -> bool {
         self.compound_t(orbit)
             .map(|tc| tc.count >= 2 && tc.meta_delta.is_some() && tc.coherence.is_zero())
@@ -1268,7 +1268,7 @@ impl MeshKnowledge {
 
     /// Derive output from the membrane's consensus T at an orbit.
     ///
-    /// When C(meta_delta) = 0, all witnesses agree. The consensus T is
+    /// When C(meta_delta) = 0, all primary nodes agree. The consensus T is
     /// any primary node's T (they're all cohomologically equivalent).
     /// When C(meta_delta) > 0, the coboundary part gives the agreed-upon T.
     /// The membrane derives from the consensus — higher-dimensional than
@@ -1284,7 +1284,7 @@ impl MeshKnowledge {
         let tc = self.compound_t(orbit)?;
         if tc.count < 2 || tc.witness_entities.is_empty() { return None; }
 
-        // Consensus T: when witnesses agree (C=0), use any primary node's T.
+        // Consensus T: when primary nodes agree (C=0), use any primary node's T.
         // When they disagree, use the mean entity vector as best approximation
         // of the coboundary part (the part all agree on).
         let d = tc.witness_entities[0].len();
@@ -1334,7 +1334,7 @@ impl MeshKnowledge {
         Some(derived)
     }
 
-    /// How many orbits have meta-Deltas with >= 2 witnesses?
+    /// How many orbits have meta-Deltas with >= 2 primary nodes?
     pub fn t_compound_orbits(&self) -> usize {
         self.orbit_t_compounds.values()
             .filter(|compounds| compounds.iter().any(|tc| tc.count >= 2))
@@ -1362,10 +1362,10 @@ impl MeshKnowledge {
 
     /// Encode to binary: [total_observations: u64][axiom_count: u32][axioms...]
     /// Per axiom: [orbit: 4][encoding: 1][confirmations: 4][attempts: 4][coh_numer: 8][coh_denom: 8][path_len: 2][path: var]
-    /// Encode knowledge to binary for genome embedding.
+    /// Encode knowledge to binary for state record embedding.
     pub fn encode_public(&self) -> Vec<u8> { self.encode() }
 
-    /// Decode knowledge from genome binary.
+    /// Decode knowledge from state_record.binary.
     pub fn decode_public(data: &[u8]) -> Self { Self::decode(data) }
 
     fn encode(&self) -> Vec<u8> {
@@ -1564,7 +1564,7 @@ pub struct PeerState {
     pub observations: u64,
     /// How many orbits this node has knowledge about.
     pub orbits_known: u32,
-    /// D.GENESIS.EVOLUTION.1: evolutionary drift from genesis.
+    /// D.GENESIS.EVOLUTION.1: evolutionary drift from origin.
     /// L1 norm of entry displacement in independent coordinates.
     pub origin_drift: Q,
     /// D.MEMBRANE.LIVING.1: 11 vibrations — polytonal self-perception.

@@ -435,7 +435,7 @@ impl OptimalBasis {
         current_k.saturating_sub(self.computed_at_k) >= refresh_interval
     }
 
-    /// D.COORD.GENESIS.1 — Genesis alignment score.
+    /// D.COORD.ORIGIN.1 — Origin alignment score.
     ///
     /// α_origin = ⟨vec(A-I), direction_toward_origin⟩ / ‖direction_toward_origin‖²
     ///
@@ -452,8 +452,8 @@ impl OptimalBasis {
 
         // Compute direction toward origin: for each independent dim (r,s),
         // the component is the projection of (origin - current) onto that direction
-        let mut genesis_dir = vec![Q::zero(); self.dims.len()];
-        let mut genesis_norm_sq = Q::zero();
+        let mut origin_dir = vec![Q::zero(); self.dims.len()];
+        let mut origin_norm_sq = Q::zero();
 
         for (idx, &(r, s)) in self.dims.iter().enumerate() {
             // Sum across coordinate dimensions m
@@ -462,23 +462,23 @@ impl OptimalBasis {
                 let diff = &origin.entries[r][s][l] - &current.entries[r][s][l];
                 component = &component + &diff;
             }
-            genesis_dir[idx] = component.clone();
-            genesis_norm_sq = &genesis_norm_sq + &(&component * &component);
+            origin_dir[idx] = component.clone();
+            origin_norm_sq = &origin_norm_sq + &(&component * &component);
         }
 
-        if genesis_norm_sq.is_zero() {
+        if origin_norm_sq.is_zero() {
             return Q::one(); // Already at origin — perfect alignment by definition
         }
 
-        // Inner product of operator direction with genesis direction
+        // Inner product of operator direction with origin direction
         let mut inner = Q::zero();
         for (idx, &(r, s)) in self.dims.iter().enumerate() {
             if r >= n || s >= n { continue; }
             let component = &operator.matrix[r][s];
-            inner = &inner + &(component * &genesis_dir[idx]);
+            inner = &inner + &(component * &origin_dir[idx]);
         }
 
-        &inner / &genesis_norm_sq
+        &inner / &origin_norm_sq
     }
 }
 
@@ -925,19 +925,19 @@ mod tests {
         assert!(basis.is_stale(115, 10));
     }
 
-    // ─── D.COORD.GENESIS.1 tests ─────────────────────────────────
+    // ─── D.COORD.ORIGIN.1 tests ─────────────────────────────────
 
     #[test]
     fn test_origin_alignment_at_origin() {
         let d = coherent_delta();
-        let origin = coherent_delta(); // same as current = at genesis
+        let origin = coherent_delta(); // same as current = at origin
         let basis = OptimalBasis::from_delta(&d, 0);
         let id_op = Operator {
             id: 0, matrix: matrix::identity(3), matrix_inv: matrix::identity(3),
             det_sign_positive: true,
         };
         let alpha_g = basis.origin_alignment(&id_op, &d, &origin);
-        assert_eq!(alpha_g, Q::one(), "At genesis → α_origin = 1");
+        assert_eq!(alpha_g, Q::one(), "At origin → α_origin = 1");
     }
 
     #[test]

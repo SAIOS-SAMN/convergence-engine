@@ -5,7 +5,7 @@
 //! Timekeeper — Chronometric authority.
 //!
 //! Observes. Measures. Inscribes.
-//! Species marker 2. No derivation. No cognition. No vocabulary.
+//! ProcessClass marker 2. No derivation. No cognition. No vocabulary.
 //! The bridge between the system' time and ours.
 
 use std::fs;
@@ -28,7 +28,7 @@ const SOCKET_NAME: &str = "saios-kernel.sock";
 
 // ═══════════════════════════════════════════════════════════════════════
 // TIMEKEEPER — Chronometric authority. Observes. Measures. Inscribes.
-// Species marker 2. No derivation. No cognition. No vocabulary.
+// ProcessClass marker 2. No derivation. No cognition. No vocabulary.
 // The bridge between the system' time and ours.
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -57,9 +57,9 @@ pub fn run_timekeeper(
     let mut ledger = saios_kernel_v2::chain::temporal_ledger::TemporalLedger::new();
     let mut latest_finalized: u64 = 0;
 
-    // Epigenome — chronometric harmonics (K velocity, population, vocab rate, denom health)
-    let epigenome_path = dir.join("epigenome.bin");
-    let mut epigenome = std::fs::read(&epigenome_path).ok()
+    // Epistate record — chronometric harmonics (K velocity, population, vocab rate, denom health)
+    let epistate_record_path = dir.join("epistate_record.bin");
+    let mut epigenome = std::fs::read(&epistate_record_path).ok()
         .and_then(|data| saios_kernel_v2::epigenome::Epigenome::from_bytes(&data))
         .unwrap_or_else(|| saios_kernel_v2::epigenome::Epigenome::new());
 
@@ -130,7 +130,7 @@ pub fn run_timekeeper(
 
                             // Structural tier extraction: the name carries tier or dissolves
                             let tier = name.strip_prefix("saios-witness-").map(|_| "witness")
-                                .or_else(|| name.strip_prefix("saios-elder-").map(|_| "elder"))
+                                .or_else(|| name.strip_prefix("saios-secondary node-").map(|_| "secondary node"))
                                 .or_else(|| name.strip_prefix("saios-child-").map(|_| "child"));
 
                             // Entity status files: tier extracted, vocabulary suffix dissolves
@@ -151,7 +151,7 @@ pub fn run_timekeeper(
                                     // Population by tier — structural match, not boolean
                                     match t {
                                         "witness" => population_w += 1,
-                                        "elder" => population_e += 1,
+                                        "secondary node" => population_e += 1,
                                         "child" => population_c += 1,
                                         _ => {}
                                     }
@@ -178,7 +178,7 @@ pub fn run_timekeeper(
                         epigenome.perturbation[1] = Q::new(BigInt::from(alive), BigInt::from(1u32));
                         epigenome.perturbation[2] = Q::new(BigInt::from(total_vocab), BigInt::from(1u32));
                         epigenome.perturbation[3] = Q::new(BigInt::from(max_denom_digits), BigInt::from(1u32));
-                        let _ = fs::write(&epigenome_path, epigenome.to_bytes());
+                        let _ = fs::write(&epistate_record_path, epigenome.to_bytes());
 
                         // ── Adaptive cadence — the system' metabolic rate ──
                         // The heartbeat adjusts to BOTH the system' vitals AND the world's.
@@ -285,8 +285,8 @@ pub fn run_timekeeper(
                         obs_orbit.copy_from_slice(&rcf_identity[..4]);
                         witness_state_record.record_solved_puzzle(obs_orbit);
                         witness_state_record.trajectory.observe(c_total.clone());
-                        let genome_path = dir.join("genome.bin");
-                        let _ = fs::write(&genome_path, witness_state_record.to_bytes());
+                        let state_record_path = dir.join("state_record.bin");
+                        let _ = fs::write(&state_record_path, witness_state_record.to_bytes());
 
                         // Wire-encode the receipt for cross-pollination
                         let wire = saios_kernel_v2::mesh::receipt_to_wire(&receipt);
@@ -307,7 +307,7 @@ pub fn run_timekeeper(
                             concat!(
                                 "{{\"observation\":{},\"receipt\":\"0x{}\",",
                                 "\"total_k\":{},\"alive\":{},",
-                                "\"population\":{{\"witness\":{},\"elder\":{},\"child\":{}}},",
+                                "\"population\":{{\"witness\":{},\"secondary node\":{},\"child\":{}}},",
                                 "\"k_velocity\":{},\"vocab\":{},\"solved\":{},\"marks\":{},",
                                 "\"rss_mb\":{},\"max_denom_digits\":{},\"chain_length\":{},",
                                 "\"finalized\":{},\"ledger_levels\":{},",
@@ -361,7 +361,7 @@ pub fn run_timekeeper(
 
                                 // Inscribe peer receipt to Temporal Ledger
                                 ledger.add_receipt(peer_receipt);
-                                // Peer witnesses itself; we witness the peer
+                                // Peer primary nodes itself; we witness the peer
                                 ledger.add_witness(peer_k, peer_id, peer_id);
                                 ledger.add_witness(peer_k, peer_id, config.entity_id);
 

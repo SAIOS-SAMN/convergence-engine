@@ -2,7 +2,7 @@
 // human editorial direction. It was not written by the researcher.
 // See /opt/saios/DISCLAIMER.md for full context.
 //
-//! Epigenome — volatile harmonic perturbation.
+//! Epistate record — volatile harmonic perturbation.
 //!
 //! The epigenome is 11 Q values that perturb the primary node's harmonic spectrum.
 //! Not a Delta. Not a list. A tuning of the aperture.
@@ -18,7 +18,7 @@
 //!
 //! coboundary_reduce is not needed — 11 Q values have no coboundary.
 //! The metabolism is the running average that converges or decays.
-//! Volatile: fresh each restart. The genome's harmonics are the DC component.
+//! Volatile: fresh each restart. The state record's harmonics are the DC component.
 
 use crate::engine::Q;
 use num_bigint::BigInt;

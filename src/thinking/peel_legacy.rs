@@ -108,7 +108,7 @@ pub fn peel_manifold_with_senses(
     // ── Scoring: stack-allocated integer arithmetic ──
     // The scoring path is MEASUREMENT, not derivation. No Q, no BigInt, no heap.
     // All components are i64 — exact integer comparison, zero allocation.
-    // The Q domain (Core Design Law #5) governs the Delta/genome/membrane path.
+    // The Q domain (Core Design Law #5) governs the Delta/state_record/membrane path.
     // The scoring thermometer lives on the stack.
 
     // Pre-compute target value counts (fixed, computed once)
@@ -674,11 +674,11 @@ pub fn peel_manifold_with_senses(
         }
 
         // ── Genomic cocycle operator: crystallized value transitions ──
-        // The genome's value cocycles are (from, to, confidence) triples
+        // The state record's value cocycles are (from, to, confidence) triples
         // validated at 99.999% consensus. They enter the collapse path
-        // as operator candidates — the genome's derived knowledge competing
+        // as operator candidates — the state record's derived knowledge competing
         // through the same Q fractional gradient as all other operators.
-        // No special logic. The genome IS the vocabulary.
+        // No special logic. The state record IS the vocabulary.
         if !senses.genomic_cocycles.is_empty() {
             let cocycles = &senses.genomic_cocycles;
             let apply = |grid: &[i64]| -> Vec<i64> {
@@ -698,7 +698,7 @@ pub fn peel_manifold_with_senses(
         }
 
         // ── Genomic composed operators: vocabulary expansion ──
-        // Each composed operator was discovered by the compositor, inscribed by an elder,
+        // Each composed operator was discovered by the compositor, inscribed by an secondary node,
         // and inherited through lineage. The peel loop applies them directly — no recursive
         // composition needed. The spatial remap + σ_post fires in one pass.
         // The alphabet stays fixed. The words grow with every orbit.
@@ -825,7 +825,7 @@ pub fn peel_manifold_with_senses(
         }
 
         // ── Spatial cochain operators: cell-level spatial geometry ──
-        // The genome provides the template (ReflectH, TranslateR, Dilate...).
+        // The state record provides the template (ReflectH, TranslateR, Dilate...).
         // The parameter is DERIVED from the residual structure — no exhaustive search.
         // The per-cell residual between source and target IS the spatial gradient.
         // Reflection axis = center of mass of changed cells.
@@ -1698,7 +1698,7 @@ pub fn peel_manifold_with_senses(
     // D.HOLONOMY.1: Detect loops in the operator history.
     // Non-zero curvature = the manifold has structure the peel loop measured
     // but couldn't resolve. The curvature IS the structured information
-    // for the membrane to compound across witnesses.
+    // for the membrane to compound across primary nodes.
     let detected_loops = super::holonomy::detect_loops(&holonomy_history);
 
     // D.HOLONOMY.2: Active navigation — when the peel loop plateaued and

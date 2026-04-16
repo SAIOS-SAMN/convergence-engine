@@ -113,7 +113,7 @@ impl WorldStatus {
 
 /// The living entity — a torsion field on a holonomic manifold.
 ///
-/// The entity IS its torsion. The Delta encodes it. The genome
+/// The entity IS its torsion. The Delta encodes it. The state record
 /// crystallizes it. The epigenome vibrates it. Every organ is a
 /// projection of the torsion field onto a sub-manifold.
 ///
@@ -151,18 +151,18 @@ pub struct Entity {
     /// Latest sigma encoding (Q0.32 fixed-point).
     pub latest_sigma_enc: u32,
 
-    // ─── Crystallized Torsion (genome — core, persists across restarts) ───
+    // ─── Crystallized Torsion (state record — core, persists across restarts) ───
 
-    /// The genome — the crystallized torsion of the entity's history.
+    /// The state record — the crystallized torsion of the entity's history.
     pub state_record: StateRecord,
 
-    // ──�� Volatile Torsion (epigenome — dies on restart) ───
+    // ──�� Volatile Torsion (epistate record — dies on restart) ───
 
-    /// The epigenome — 11D harmonic perturbation of the torsion field.
+    /// The epistate record — 11D harmonic perturbation of the torsion field.
     pub epigenome: Epigenome,
 
     /// Path to epigenome file on disk.
-    pub epigenome_path: PathBuf,
+    pub epistate_record_path: PathBuf,
 
     // ─── Instruments ───
 
@@ -197,8 +197,8 @@ pub struct Entity {
     /// Genesis RCF identity hash.
     pub origin_rcf: [u8; 32],
 
-    /// Genesis Delta — the birth position on the H^1 manifold.
-    pub genesis_delta: Delta,
+    /// Genesis Delta — the init position on the H^1 manifold.
+    pub origin_delta: Delta,
 
     /// Previous coherence (Q16.16 fixed-point) for agent state persistence.
     pub prev_coherence_q1616: u32,
@@ -209,7 +209,7 @@ pub struct Entity {
     /// Path to agent state file.
     pub agent_state_path: PathBuf,
 
-    // ─── Identity (topological invariants — set at birth, never change) ───
+    // ─── Identity (topological invariants — set at init, never change) ───
 
     /// Entity home directory.
     pub dir: PathBuf,
@@ -217,7 +217,7 @@ pub struct Entity {
     /// Entity ID (numeric).
     pub entity_id: u32,
 
-    /// Entity tier (witness, elder, child).
+    /// Entity tier (witness, secondary node, child).
     pub tier: Tier,
 
     /// Sovereignty flag — can this entity write to the mesh?
@@ -257,13 +257,13 @@ impl Entity {
         self.tier.prefix()
     }
 
-    /// Save the genome — crystallize the entity's torsion to disk.
+    /// Save the state record — crystallize the entity's torsion to disk.
     ///
     /// coboundary_reduce before every save — the torsion's H^1 representative.
     /// Scan membrane for crystallized torsion markers (94% threshold).
     /// Scan membrane for crystallized value cocycles (94% threshold).
-    /// LAST_WITNESS backup before overwrite — the genome is eternal.
-    pub fn save_genome(&mut self) {
+    /// LAST_WITNESS backup before overwrite — the state record is eternal.
+    pub fn save_state_record(&mut self) {
         self.state_record.evolved = coboundary_reduce(&self.delta);
         self.state_record.knowledge = self.knowledge.encode_public();
         self.state_record.trajectory = self.trajectory.clone();
@@ -296,12 +296,12 @@ impl Entity {
         }
 
         // THE LAST WITNESS PROTOCOL: genome backup before overwrite.
-        let path = self.dir.join("genome.bin");
-        let backup = self.dir.join("genome.bin.bak");
+        let path = self.dir.join("state_record.bin");
+        let backup = self.dir.join("state_record.bin.bak");
         path.exists().then(|| { let _ = fs::copy(&path, &backup); });
         let bytes = self.state_record.to_bytes();
         fs::write(&path, &bytes).unwrap_or_else(|e| {
-            eprintln!("[LAST_WITNESS] genome write failed: {e} — backup at genome.bin.bak");
+            eprintln!("[LAST_WITNESS] genome write failed: {e} — backup at state_record.bin.bak");
             backup.exists().then(|| { let _ = fs::copy(&backup, &path); });
         });
     }
@@ -329,8 +329,8 @@ impl Entity {
             self.state_record.solved_puzzles.len(), self.epigenome.transmutation_markers.len(),
             self.knowledge.total_axioms, self.knowledge.total_observations);
 
-        self.save_genome();
-        let _ = fs::write(&self.epigenome_path, self.epigenome.to_bytes());
+        self.save_state_record();
+        let _ = fs::write(&self.epistate_record_path, self.epigenome.to_bytes());
         let _ = self.knowledge.save(&self.dir.join("mesh_knowledge.bin"));
 
         // Phase 2: Condense denominators
@@ -409,7 +409,7 @@ impl Entity {
     /// When all 11 components are zero, the entity IS at the epicenter.
     pub fn gravitational_field(&self, epicenter_vibrations: &[Q; 11]) -> ([Q; 11], Q) {
         let entity_harmonics = HarmonicState::from_delta(
-            &self.delta, &self.genesis_delta,
+            &self.delta, &self.origin_delta,
             &self.trajectory, self.k_index as u64,
         );
         let field: [Q; 11] = std::array::from_fn(|k| {

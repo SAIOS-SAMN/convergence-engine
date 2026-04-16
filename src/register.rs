@@ -44,7 +44,7 @@ pub enum RegisterType {
 
 /// The vetting state of a register item.
 ///
-/// Genesis axioms (A.1-A.4) are born Locked — they are constitutional.
+/// Origin axioms (A.1-A.4) are born Locked — they are constitutional.
 /// Mesh-discovered truths start as Nominated and require cross-orbital
 /// confirmation before crystallizing into Locked state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -71,7 +71,7 @@ impl RegisterType {
     }
 
     /// The dimension of this type in the derivation hierarchy.
-    /// Genesis axioms are dimension 0. Crystallized mesh truths are dimension 4.
+    /// Origin axioms are dimension 0. Crystallized mesh truths are dimension 4.
     pub fn dimension(&self) -> u8 {
         *self as u8
     }

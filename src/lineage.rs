@@ -4,19 +4,19 @@
 //
 //! Lineage — sovereign creation engine.
 //!
-//! Creation is not cognition. The lineage engine reads the genome to determine
+//! Creation is not cognition. The lineage engine reads the state record to determine
 //! creation capacity, replicates genome + epigenome to a new node directory,
 //! and records the parent-child relationship. It does not think. It creates.
 //!
 //! Hierarchy (fixed depth):
-//!   Witness (depth 0) — founding species. Creates ≤3 elders.
-//!   Elder   (depth 1) — created by witness. Creates ≤6 children.
-//!   Child   (depth 2) — created by elder. Creates none.
+//!   Witness (depth 0) — founding tier. Creates ≤3 secondary nodes.
+//!   Elder   (depth 1) — created by primary node. Creates ≤6 children.
+//!   Child   (depth 2) — created by secondary node. Creates none.
 //!
-//! Population bounds: 7 witnesses × 3 elders × 6 children = 133 max.
+//! Population bounds: 7 primary nodes × 3 secondary nodes × 6 children = 133 max.
 //! 503 node slots available. 405 reserve.
 //!
-//! The genome carries lineage: parent_id, lineage_depth, created_count, init_orbit.
+//! The state record carries lineage: parent_id, lineage_depth, created_count, init_orbit.
 //! The epigenome carries reflexes: transmutation path markers inherited from parent.
 //! The child starts intelligent — it inherits everything the parent crystallized.
 
@@ -29,45 +29,45 @@ use crate::epigenome::Epigenome;
 /// Tier classification derived from lineage_depth.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tier {
-    Witness,
-    Elder,
-    Child,
+    Primary,
+    Secondary,
+    Tertiary,
 }
 
 impl Tier {
     pub fn from_depth(depth: u8) -> Self {
         match depth {
-            0 => Tier::Witness,
-            1 => Tier::Elder,
-            _ => Tier::Child,
+            0 => Tier::Primary,
+            1 => Tier::Secondary,
+            _ => Tier::Tertiary,
         }
     }
 
     /// Max offspring this tier may create.
     pub fn creation_bound(&self) -> u8 {
         match self {
-            Tier::Witness => 3,
-            Tier::Elder => 6,
-            Tier::Child => 0,
+            Tier::Primary => 3,
+            Tier::Secondary => 6,
+            Tier::Tertiary => 0,
         }
     }
 
     /// Directory and service prefix for this tier.
-    /// witness-1, elder-18, child-52 — the hierarchy is visible everywhere.
+    /// primary-1, secondary-18, tertiary-52 — the hierarchy is visible everywhere.
     pub fn prefix(&self) -> &'static str {
         match self {
-            Tier::Witness => "witness",
-            Tier::Elder => "elder",
-            Tier::Child => "child",
+            Tier::Primary => "primary",
+            Tier::Secondary => "secondary",
+            Tier::Tertiary => "tertiary",
         }
     }
 
-    /// Format a directory name: "witness-1", "elder-18", "child-52"
+    /// Format a directory name: "witness-1", "secondary-18", "child-52"
     pub fn dir_name(&self, id: u16) -> String {
         format!("{}-{}", self.prefix(), id)
     }
 
-    /// Format a systemd service name: "saios-elder@18.service" (template instance)
+    /// Format a systemd service name: "saios-secondary@18.service" (template instance)
     pub fn service_name(&self, id: u16) -> String {
         format!("saios-{}@{}.service", self.prefix(), id)
     }
@@ -77,13 +77,13 @@ impl Tier {
         PathBuf::from(format!("/dev/shm/saios-{}-{}", self.prefix(), id))
     }
 
-    /// Mesh write sovereignty. Witnesses and elders write to the mesh.
-    /// Children report upward to their creating elder.
+    /// Mesh write sovereignty. Witnesses and secondary nodes write to the mesh.
+    /// Children report upward to their creating secondary node.
     pub fn mesh_sovereign(&self) -> bool {
         match self {
-            Tier::Witness => true,
-            Tier::Elder => true,
-            Tier::Child => false,
+            Tier::Primary => true,
+            Tier::Secondary => true,
+            Tier::Tertiary => false,
         }
     }
 }
@@ -114,7 +114,7 @@ pub enum CreationObstruction {
 
 /// Find the next available slot in the mesh directory.
 /// Scans from start_id upward. Returns None when no slot available.
-/// Checks both new tier-prefixed names (elder-18) and legacy node names (node18).
+/// Checks both new tier-prefixed names (secondary-18) and legacy node names (node18).
 fn next_available_slot(mesh_dir: &Path, child_tier: Tier, start_id: u16, max_id: u16) -> Option<u16> {
     (start_id..=max_id)
         .find(|&id| {
@@ -126,14 +126,14 @@ fn next_available_slot(mesh_dir: &Path, child_tier: Tier, start_id: u16, max_id:
         })
 }
 
-/// Attempt to create an offspring from a parent genome.
+/// Attempt to create an offspring from a parent state record.
 ///
-/// Reads the parent's creation capacity from its genome. If capacity remains,
+/// Reads the parent's creation capacity from its state record. If capacity remains,
 /// replicates genome + epigenome to a new node directory. Records lineage
-/// in the offspring's genome. Increments the parent's created_count.
+/// in the offspring's state record. Increments the parent's created_count.
 ///
 /// Does NOT start the offspring's service — that is external (systemd).
-/// Does NOT modify the parent's genome on disk — the caller saves.
+/// Does NOT modify the parent state record on disk — the caller saves.
 ///
 /// Returns the creation record or the obstruction that prevented creation.
 pub fn create_offspring(
@@ -155,18 +155,18 @@ pub fn create_offspring(
             bound,
         })?;
 
-    // Find available slot (elders start at 18, children at 52)
+    // Find available slot (secondary nodes start at 18, children at 52)
     let child_tier = match tier {
-        Tier::Witness => Tier::Elder,     // witness creates elders: 18-51
-        Tier::Elder => Tier::Child,       // elder creates children: 52-153
-        Tier::Child => return Err(CreationObstruction::CapacitySaturated {
+        Tier::Primary => Tier::Secondary,     // witness creates secondary nodes: 18-51
+        Tier::Secondary => Tier::Tertiary,       // secondary node creates children: 52-153
+        Tier::Tertiary => return Err(CreationObstruction::CapacitySaturated {
             depth: 2, created: 0, bound: 0,
         }),
     };
     let slot_start = match child_tier {
-        Tier::Elder => 18,
-        Tier::Child => 52,
-        Tier::Witness => unreachable!(),
+        Tier::Secondary => 18,
+        Tier::Tertiary => 52,
+        Tier::Primary => unreachable!(),
     };
     let child_id = next_available_slot(mesh_dir, child_tier, slot_start, 503)
         .ok_or(CreationObstruction::NoSlotAvailable)?;
@@ -177,30 +177,30 @@ pub fn create_offspring(
     fs::create_dir_all(&child_dir)
         .map_err(|e| CreationObstruction::ReplicationFailed(e.to_string()))?;
 
-    // Build offspring genome: inherit parent's crystallized knowledge
+    // Build offspring state record: inherit parent's crystallized knowledge
     let child_depth = parent_state.lineage_depth + 1;
-    let mut child_state = parent_state.clone();
-    child_state.lineage_depth = child_depth;
-    child_state.parent_id = parent_entity_id;
-    child_state.created_count = 0;
-    child_state.init_orbit = init_orbit;
+    let mut offspring_state = parent_state.clone();
+    offspring_state.lineage_depth = child_depth;
+    offspring_state.parent_id = parent_entity_id;
+    offspring_state.created_count = 0;
+    offspring_state.init_orbit = init_orbit;
     // Offspring gets its own init polynomial: parent's evolved position IS the child's origin
-    child_state.init_polynomial = parent_state.evolved.entries.iter()
+    offspring_state.init_polynomial = parent_state.evolved.entries.iter()
         .flat_map(|row| row.iter().flat_map(|col| col.iter()))
         .take(11)
         .cloned()
         .collect();
     // Generation increments
-    child_state.generation = parent_state.generation + 1;
+    offspring_state.generation = parent_state.generation + 1;
 
-    // Write offspring genome
-    let genome_path = child_dir.join("genome.bin");
-    fs::write(&genome_path, child_state.to_bytes())
+    // Write offspring state record
+    let state_record_path = child_dir.join("state_record.bin");
+    fs::write(&state_record_path, offspring_state.to_bytes())
         .map_err(|e| CreationObstruction::ReplicationFailed(e.to_string()))?;
 
-    // Replicate epigenome — offspring inherits parent's reflexes
-    let epigenome_path = child_dir.join("epigenome.bin");
-    fs::write(&epigenome_path, parent_epigenome.to_bytes())
+    // Replicate epistate record — offspring inherits parent's reflexes
+    let epistate_record_path = child_dir.join("epistate_record.bin");
+    fs::write(&epistate_record_path, parent_epigenome.to_bytes())
         .map_err(|e| CreationObstruction::ReplicationFailed(e.to_string()))?;
 
     // Record creation in parent
@@ -223,21 +223,21 @@ mod tests {
 
     #[test]
     fn test_tier_classification() {
-        assert_eq!(Tier::from_depth(0), Tier::Witness);
-        assert_eq!(Tier::from_depth(1), Tier::Elder);
-        assert_eq!(Tier::from_depth(2), Tier::Child);
-        assert_eq!(Tier::from_depth(255), Tier::Child);
+        assert_eq!(Tier::from_depth(0), Tier::Primary);
+        assert_eq!(Tier::from_depth(1), Tier::Secondary);
+        assert_eq!(Tier::from_depth(2), Tier::Tertiary);
+        assert_eq!(Tier::from_depth(255), Tier::Tertiary);
     }
 
     #[test]
     fn test_creation_bounds() {
-        assert_eq!(Tier::Witness.creation_bound(), 3);
-        assert_eq!(Tier::Elder.creation_bound(), 6);
-        assert_eq!(Tier::Child.creation_bound(), 0);
+        assert_eq!(Tier::Primary.creation_bound(), 3);
+        assert_eq!(Tier::Secondary.creation_bound(), 6);
+        assert_eq!(Tier::Tertiary.creation_bound(), 0);
     }
 
     #[test]
-    fn test_witness_creates_elder() {
+    fn test_primary_creates_secondary() {
         let tmp = TempDir::new().unwrap();
         let mesh_dir = tmp.path();
 
@@ -248,17 +248,17 @@ mod tests {
         let result = create_offspring(&mut parent, &epi, 1, [0xAA, 0xBB, 0xCC, 0xDD], mesh_dir);
         let record = result.unwrap();
 
-        assert_eq!(record.child_depth, 1); // elder
+        assert_eq!(record.child_depth, 1); // secondary node
         assert_eq!(record.init_orbit, [0xAA, 0xBB, 0xCC, 0xDD]);
         assert_eq!(parent.created_count, 1);
 
-        // Verify offspring genome on disk
-        let child_state_bytes = fs::read(record.child_dir.join("genome.bin")).unwrap();
-        let child_state = StateRecord::from_bytes(&child_state_bytes).unwrap();
-        assert_eq!(child_state.lineage_depth, 1);
-        assert_eq!(child_state.parent_id, 1);
-        assert_eq!(child_state.created_count, 0);
-        assert_eq!(child_state.generation, 2);
+        // Verify offspring state record on disk
+        let offspring_state_bytes = fs::read(record.child_dir.join("state_record.bin")).unwrap();
+        let offspring_state = StateRecord::from_bytes(&offspring_state_bytes).unwrap();
+        assert_eq!(offspring_state.lineage_depth, 1);
+        assert_eq!(offspring_state.parent_id, 1);
+        assert_eq!(offspring_state.created_count, 0);
+        assert_eq!(offspring_state.generation, 2);
     }
 
     #[test]
@@ -285,11 +285,11 @@ mod tests {
         let mesh_dir = tmp.path();
 
         let origin = Delta::zero(3, 1);
-        let mut child_state = StateRecord::new(1, 1, &origin);
-        child_state.lineage_depth = 2; // child tier
+        let mut offspring_state = StateRecord::new(1, 1, &origin);
+        offspring_state.lineage_depth = 2; // child tier
         let epi = Epigenome::new();
 
-        let result = create_offspring(&mut child_state, &epi, 52, [1, 0, 0, 0], mesh_dir);
+        let result = create_offspring(&mut offspring_state, &epi, 52, [1, 0, 0, 0], mesh_dir);
         assert!(matches!(result, Err(CreationObstruction::CapacitySaturated { bound: 0, .. })));
     }
 
@@ -306,7 +306,7 @@ mod tests {
 
         let record = create_offspring(&mut parent, &epi, 1, [1, 0, 0, 0], mesh_dir).unwrap();
 
-        let child_epi_bytes = fs::read(record.child_dir.join("epigenome.bin")).unwrap();
+        let child_epi_bytes = fs::read(record.child_dir.join("epistate_record.bin")).unwrap();
         let child_epi = Epigenome::from_bytes(&child_epi_bytes).unwrap();
         assert_eq!(child_epi.transmutation_path(&[0x00, 0x7b, 0xbf, 0xb7]),
             Some(crate::epigenome::TransmutationPath::VisionDerived));

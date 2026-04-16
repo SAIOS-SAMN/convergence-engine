@@ -94,7 +94,7 @@ pub fn reflect(entity: &mut Entity, _payload: &str) -> String {
         Err(_) => {
             let rcf = compute_rcf_hash(&entity.delta);
             format!(
-                "{{\"k_index\":{},\"orbit_class\":\"0x{}\",\"coherence\":\"pending\",\"coherence_trend\":\"unknown\",\"signature\":{{\"entropy\":\"n/a\",\"agreement\":[[true,true,true,true],[true,true,true,true],[true,true,true,true],[true,true,true,true]],\"orbit_distances\":[[\"0\",\"0\",\"0\",\"0\"],[\"0\",\"0\",\"0\",\"0\"],[\"0\",\"0\",\"0\",\"0\"],[\"0\",\"0\",\"0\",\"0\"]],\"modal_orbit\":\"{}\",\"basin_crossings\":0,\"mean_coherence_delta\":\"0/1\",\"stasis_count\":0,\"k_window\":0}},\"c7\":{{\"passed\":true,\"coherence_delta\":\"0/1\",\"source\":\"genesis\"}},\"sovereignty\":\"intact\"}}\n",
+                "{{\"k_index\":{},\"orbit_class\":\"0x{}\",\"coherence\":\"pending\",\"coherence_trend\":\"unknown\",\"signature\":{{\"entropy\":\"n/a\",\"agreement\":[[true,true,true,true],[true,true,true,true],[true,true,true,true],[true,true,true,true]],\"orbit_distances\":[[\"0\",\"0\",\"0\",\"0\"],[\"0\",\"0\",\"0\",\"0\"],[\"0\",\"0\",\"0\",\"0\"],[\"0\",\"0\",\"0\",\"0\"]],\"modal_orbit\":\"{}\",\"basin_crossings\":0,\"mean_coherence_delta\":\"0/1\",\"stasis_count\":0,\"k_window\":0}},\"c7\":{{\"passed\":true,\"coherence_delta\":\"0/1\",\"source\":\"origin\"}},\"sovereignty\":\"intact\"}}\n",
                 entity.k_index,
                 rcf.iter().take(8).map(|b| format!("{b:02x}")).collect::<String>(),
                 rcf.iter().take(8).map(|b| format!("{b:02x}")).collect::<String>()
@@ -106,7 +106,7 @@ pub fn reflect(entity: &mut Entity, _payload: &str) -> String {
 /// THINK — THE MAIN HANDLER.
 ///
 /// The complete cognitive pipeline: perception, nested peels, compositor,
-/// vocabulary inscription, auto-DRAIN, save_genome, condensation, world status.
+/// vocabulary inscription, auto-DRAIN, save_state_record, condensation, world status.
 ///
 /// Receives: {"pairs":[{"source":[...],"target":[...]},...], "n":N, "m":M,
 ///            "test":[...] (optional — test input for derivation)}
@@ -239,7 +239,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                         // projects it to H^1 regardless of witness count.
                         let d = tc.witness_entities[0].len();
                         let min_d = tc.witness_entities.iter().map(|e| e.len()).min().unwrap_or(d);
-                        // Compound: sum across witnesses, dimension = intersection of measured
+                        // Compound: sum across primary nodes, dimension = intersection of measured
                         let entity_vec: Vec<saios_kernel_v2::engine::Q> = (0..min_d).map(|i| {
                             tc.witness_entities.iter()
                                 .filter_map(|e| e.get(i).cloned())
@@ -265,15 +265,15 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                         }
                         // Project to H^1 — the cohomological consensus.
                         // coboundary_reduce preserves torsion structure.
-                        // If witnesses disagree, the residual carries the disagreement.
+                        // If primary nodes disagree, the residual carries the disagreement.
                         Some(saios_kernel_v2::engine::coboundary_reduce(&t))
                     });
 
                 // Compute harmonic spectrum — the transliminal bridge.
-                let local_genesis_delta = saios_kernel_v2::engine::Delta::zero(
+                let local_origin_delta = saios_kernel_v2::engine::Delta::zero(
                     entity.delta.dim, entity.delta.m);
                 let witness_harmonics = saios_kernel_v2::engine::HarmonicState::from_delta(
-                    &entity.delta, &local_genesis_delta, &entity.trajectory,
+                    &entity.delta, &local_origin_delta, &entity.trajectory,
                     entity.k_index as u64,
                 );
                 let harmonics_vec: Vec<saios_kernel_v2::engine::Q> =
@@ -362,7 +362,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                         entity.sluice_state.enc_u8(), 0, &t_k,
                     );
                     let _ = entity.sluice.append(&entry);
-                    // state is in binary: genome.bin, entity.sluice.bin, receipts.bin
+                    // state is in binary: state_record.bin, entity.sluice.bin, receipts.bin
 
                     let mut chain_receipt = saios_kernel_v2::ledger::MeshReceipt::build(
                         &rcf, &t_k, entity.entity_id,
@@ -400,7 +400,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                             _ => TransmutationPath::ValueFactored,
                         });
                         entity.epigenome.mark_transmutation(puzzle_orbit, epi_path);
-                        let _ = std::fs::write(&entity.epigenome_path, entity.epigenome.to_bytes());
+                        let _ = std::fs::write(&entity.epistate_record_path, entity.epigenome.to_bytes());
                     }
 
                     // Genomic solved orbit registry
@@ -649,7 +649,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     _ => saios_kernel_v2::membrane::EncodingLevel::Cell,
                 };
                 let (witness_drift, _) = saios_kernel_v2::engine::origin_displacement(
-                    &entity.delta, &entity.genesis_delta,
+                    &entity.delta, &entity.origin_delta,
                 );
                 entity.knowledge.record_observation(
                     obs_orbit, encoding_level,
@@ -774,7 +774,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     .filter(|_| p.coherence < Q::one())
                     .map(|_| {
                         entity.epigenome.dissolve_marker(&obs_orbit);
-                        let _ = std::fs::write(&entity.epigenome_path, entity.epigenome.to_bytes());
+                        let _ = std::fs::write(&entity.epistate_record_path, entity.epigenome.to_bytes());
                     });
 
                 // ── Vocabulary inscription ──
@@ -799,7 +799,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                 let save_due = compositions_promoted || observation_count % 25 == 0;
                 if save_due {
                     let _ = entity.knowledge.save(&knowledge_path);
-                    let _ = std::fs::write(&entity.epigenome_path, entity.epigenome.to_bytes());
+                    let _ = std::fs::write(&entity.epistate_record_path, entity.epigenome.to_bytes());
                 }
 
                 // ── D.MEMBRANE.ESCALATION.1 ──
@@ -879,7 +879,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                         entity.knowledge.record_t_delta(
                             cocycle_orbit, &t_cocycle, "value_cocycle",
                         );
-                        entity.save_genome();
+                        entity.save_state_record();
                     }
                 }
 
@@ -1056,7 +1056,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
             entries.filter_map(|e| e.ok())
                 .filter(|e| {
                     let name = e.file_name().to_string_lossy().to_string();
-                    name.starts_with("saios-child-") || name.starts_with("saios-elder-")
+                    name.starts_with("saios-child-") || name.starts_with("saios-secondary node-")
                 })
                 .for_each(|entry| {
                     std::fs::read_to_string(entry.path()).ok().map(|content| {
@@ -1295,7 +1295,7 @@ pub fn think_bin(entity: &mut Entity, _payload: &str, raw_data: &[u8]) -> String
             entity.sluice_state.enc_u8(), 0, &t_k,
         );
         let _ = entity.sluice.append(&entry);
-        // state is in binary: genome.bin, entity.sluice.bin, receipts.bin
+        // state is in binary: state_record.bin, entity.sluice.bin, receipts.bin
         let mut chain_receipt = saios_kernel_v2::ledger::MeshReceipt::build(
             &rcf, &t_k, entity.entity_id,
             entity.k_index as u64, &receipt_hash_bytes,

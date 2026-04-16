@@ -27,7 +27,7 @@ pub type Q = BigRational;
 
 // ─── Blocker 2: Boot Fixtures ──────────────────────────────────────────
 
-/// Genesis anchor tag. The DELTA_ANCHOR_HASH is the Keccak-256 of this
+/// Origin anchor tag. The DELTA_ANCHOR_HASH is the Keccak-256 of this
 /// domain-separated constant, providing a deterministic "Block 0" for
 /// the SAIOS authority chain.
 ///
@@ -79,7 +79,7 @@ pub enum BootStep {
     /// B5: Confirm resonance at torsion period m.
     B5ResonanceConfirmation,
     /// B6: Execute first K-step (K=1) and emit origin receipt.
-    B6GenesisProofCycle,
+    B6OriginProofCycle,
 }
 
 /// Result of a single boot step.

@@ -22,16 +22,16 @@ pub fn thought_vocabulary(
     train_pairs: &[(Vec<i64>, Vec<i64>)],
     rows: usize, cols: usize,
 ) -> ThinkingResult {
-    thought_vocabulary_with_genome(train_pairs, rows, cols, &[])
+    thought_vocabulary_with_state(train_pairs, rows, cols, &[])
 }
 
 /// Compositor with genomic vocabulary expansion.
 ///
-/// Composed operators from the genome enter at depth 1 alongside the base
+/// Composed operators from the state record enter at depth 1 alongside the base
 /// alphabet. A depth-6 composition starting from a genomic operator is
 /// effectively depth 9+ from the original alphabet. The children's words
 /// become the parents of deeper sentences.
-pub fn thought_vocabulary_with_genome(
+pub fn thought_vocabulary_with_state(
     train_pairs: &[(Vec<i64>, Vec<i64>)],
     rows: usize, cols: usize,
     composed_operators: &[crate::engine::ComposedOperator],

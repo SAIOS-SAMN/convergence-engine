@@ -57,7 +57,7 @@ pub fn verify_credential(
     }
 
     let mut last_k: Option<u64> = None;
-    let mut expected_parent = [0u8; 32]; // genesis parent = all zeros for first receipt
+    let mut expected_parent = [0u8; 32]; // origin parent = all zeros for first receipt
 
     for (i, receipt) in chain.iter().enumerate() {
         // Condition 2a: hash integrity

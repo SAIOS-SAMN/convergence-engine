@@ -33,7 +33,7 @@ pub struct SymmetryElement {
     /// Transmutation residual: R(φ) = ‖φ(source) - target‖.
     /// Measures how well this symmetry element relates source to target.
     /// Zero = the grid has transmuted through exactly this symmetry.
-    /// The witness perceives the transmutation, it does not execute it.
+    /// The primary node perceives the transmutation, it does not execute it.
     pub transmutation_residual: Q,
 }
 
@@ -299,14 +299,14 @@ pub fn compute_symmetry_group(values: &[i64], rows: usize, cols: usize) -> Symme
 ///
 /// R_g(φ) = ‖W_k · (φ(source) - target)‖
 ///
-/// Each cell's contribution to the residual is weighted by the genome's
+/// Each cell's contribution to the residual is weighted by the state record's
 /// harmonic curvature at that position. The Householder metric W_k is
 /// derived from the harmonic spectrum: cells at positions that resonate
-/// with the genome's spatial harmonics contribute MORE to the residual.
-/// Cells that fall outside the genome's aperture contribute LESS.
+/// with the state record's spatial harmonics contribute MORE to the residual.
+/// Cells that fall outside the state record's aperture contribute LESS.
 ///
-/// Result: a spatial-centric genome amplifies spatial discrepancies.
-/// A value-centric genome amplifies value discrepancies. Each witness
+/// Result: a spatial-centric state record amplifies spatial discrepancies.
+/// A value-centric state record amplifies value discrepancies. Each primary node
 /// perceives the SAME grid through a DIFFERENT curvature.
 ///
 /// harmonics[0] = value weight, harmonics[1] = row weight, harmonics[2] = col weight.
@@ -329,8 +329,8 @@ pub fn measure_transmutation(
     //
     // where N = rows*cols (normalizer ensuring no cell is invisible),
     // h0_n/h1_n/h2_n are harmonic numerators (denominator scales the sum).
-    // This produces a smooth gradient: spatial-centric genomes (high h1,h2)
-    // amplify cells at large r,c. Value-centric genomes (high h0) amplify
+    // This produces a smooth gradient: spatial-centric state records (high h1,h2)
+    // amplify cells at large r,c. Value-centric state records (high h0) amplify
     // cells with large value deltas uniformly. No saturation, no binary split.
     //
     // The denominator product ensures the weight stays in integer space
@@ -344,7 +344,7 @@ pub fn measure_transmutation(
     let denom = (h0_d * h1_d * h2_d) as u64;
     // Base = denom (not n*denom). Each cell contributes base weight 1.
     // Spatial term adds on top — at high (r,c), spatial dominates base.
-    // This makes the aperture spatially selective: the genome's harmonic
+    // This makes the aperture spatially selective: the state record's harmonic
     // direction creates genuine asymmetry between symmetry elements.
     let base = denom;
 

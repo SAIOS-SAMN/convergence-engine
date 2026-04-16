@@ -982,7 +982,7 @@ pub fn escalate(
 ///
 /// The membrane_t is the consensus T Delta from the membrane's meta-Delta.
 /// It constrains the congruent core: value mappings confirmed by the membrane
-/// (multiple witnesses across diverse genomes) are stronger priors than
+/// (multiple primary nodes across diverse state records) are stronger priors than
 /// mappings from this primary node's training pairs alone.
 ///
 /// This IS gauge cooling — the primary node's local frame rotates toward the
@@ -1079,7 +1079,7 @@ pub fn escalate_with_membrane(
     //
     // ── D.MEMBRANE.V.1: Gauge cooling ──
     // If the membrane has a consensus T, it compounds with the category T.
-    // The membrane's T is a stronger prior (confirmed across witnesses).
+    // The membrane's T is a stronger prior (confirmed across primary nodes).
     // Compound = apply membrane T to the category entities, re-encode.
     let category_t: Option<crate::engine::Delta> = levels.last().map(|l| l.t_delta.clone());
 
@@ -1091,7 +1091,7 @@ pub fn escalate_with_membrane(
     let category_t: Option<crate::engine::Delta> = match (category_t, membrane_t) {
         (Some(mut local_t), Some(mem_t)) if local_t.dim == mem_t.dim && local_t.m == mem_t.m => {
             // Compound: local T + membrane T (gauge cooling)
-            // The membrane's T is the accumulated consensus from all witnesses
+            // The membrane's T is the accumulated consensus from all primary nodes
             // at this orbit. Adding it shifts the derivation toward what the
             // mesh has collectively measured.
             for i in 0..local_t.dim {
@@ -1513,7 +1513,7 @@ pub struct SenseData {
     /// Harmonic spectrum from the primary node's Delta_k — the transliminal bridge.
     /// 11 vibrations. Each amplitude weights a dimension of the entity encoding.
     /// harmonics[0] weights dimension 0 (value), [1] weights dimension 1 (row),
-    /// [2] weights dimension 2 (col). The genome shapes what the witness can derive.
+    /// [2] weights dimension 2 (col). The state record shapes what the primary node can derive.
     pub harmonics: Vec<Q>,
     /// Transmutation candidates from vision: (permutation, residual).
     /// Each candidate is a symmetry operator perceived through the genomic aperture.
@@ -1521,14 +1521,14 @@ pub struct SenseData {
     /// These enter peel_manifold as generator candidates. C selects.
     pub transmutation_candidates: Vec<(Vec<usize>, Q)>,
     /// Genomic value cocycles: (from_value, to_value, confidence).
-    /// Crystallized knowledge from the core genome — permanent value transitions
-    /// validated at 99.999% consensus across witnesses. These are the genome's
+    /// Crystallized knowledge from the core state record — permanent value transitions
+    /// validated at 99.999% consensus across primary nodes. These are the state record's
     /// derived operators, entering the collapse path through combined_score.
     pub genomic_cocycles: Vec<(i16, i16, Q)>,
-    /// Mathematical primitives from the core genome — composable operations.
+    /// Mathematical primitives from the core state record — composable operations.
     pub math_primitives: Vec<crate::engine::MathPrimitive>,
-    /// Spatial cochain primitives from the core genome — universal spatial geometry.
-    /// The genome holds the template. The membrane learns the parameter.
+    /// Spatial cochain primitives from the core state record — universal spatial geometry.
+    /// The state record holds the template. The membrane learns the parameter.
     pub spatial_primitives: Vec<crate::engine::SpatialPrimitive>,
     /// Spatial cochains from the membrane — the marrow's relational experience.
     /// Each cochain carries operator + parameter + per-cell cohesion field.
@@ -1542,9 +1542,9 @@ pub struct SenseData {
     /// Strict-less-than in evaluate_candidate means first-evaluated wins ties.
     /// The intent aligns tie-breaking with the manifold's topology.
     pub semantic_intent: Option<crate::irs::CoherenceIntent>,
-    /// Crystallized composed operators from the genome — vocabulary expansion.
+    /// Crystallized composed operators from the state record — vocabulary expansion.
     /// Each is a spatial primitive + parameter + σ_post, discovered by the compositor
-    /// and inscribed by an elder. The peel loop applies them directly.
+    /// and inscribed by an secondary node. The peel loop applies them directly.
     pub composed_operators: Vec<crate::engine::ComposedOperator>,
 }
 
@@ -1844,12 +1844,12 @@ pub fn think_and_solve(
     rows: usize, cols: usize,
     knowledge: &mut KnowledgeBase,
 ) -> Option<(Vec<i64>, ThinkingResult)> {
-    think_and_solve_with_genome(train_pairs, test_input, rows, cols, knowledge, &[])
+    think_and_solve_with_state(train_pairs, test_input, rows, cols, knowledge, &[])
 }
 
 /// Think with genomic vocabulary expansion.
-/// Composed operators from the genome enter the compositor at depth 1.
-pub fn think_and_solve_with_genome(
+/// Composed operators from the state record enter the compositor at depth 1.
+pub fn think_and_solve_with_state(
     train_pairs: &[(Vec<i64>, Vec<i64>)],
     test_input: &[i64],
     rows: usize, cols: usize,
@@ -1873,7 +1873,7 @@ pub fn think_and_solve_with_genome(
     }
 
     // Think: iterate vocabulary with genomic words at depth 1
-    let result = thought_vocabulary_with_genome(train_pairs, rows, cols, composed_operators);
+    let result = thought_vocabulary_with_state(train_pairs, rows, cols, composed_operators);
 
     // If understood: remember (with empty comprehension — caller can upgrade)
     if result.understood {
@@ -2901,7 +2901,7 @@ pub fn evolve_and_solve(
     }
 
     // Phase 2: Analyze what's missing
-    let base_result = thought_vocabulary_with_genome(train_pairs, rows, cols, &[]);
+    let base_result = thought_vocabulary_with_state(train_pairs, rows, cols, &[]);
     let best_pred = base_result.best_thought.apply_to_values(&train_pairs[0].0, rows, cols);
     let residuals = analyze_residuals(&best_pred, &train_pairs[0].1, rows, cols,
         vec![base_result.best_thought.name()]);

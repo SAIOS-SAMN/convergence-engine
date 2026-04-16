@@ -9,7 +9,7 @@
 //! - KLag: node stops advancing K for N ticks then resumes
 //! - OrbitFork: node's state diverges into a different conjugacy class
 //!
-//! All nodes boot from identical Δ_Anchor (uniform genesis).
+//! All nodes boot from identical Δ_Anchor (uniform origin).
 //! A cyclic permutation operator produces T_k > 0 while preserving
 //! the RCF conjugacy class exactly (orthogonal → ‖PΔPᵀ‖² = ‖Δ‖²).
 //!
