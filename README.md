@@ -151,16 +151,41 @@ is the tool.
 
 ## Status
 
-Early development. Architecture and documentation phase.
-The mathematical foundation is implemented and tested.
-Public release of the engine is in preparation.
+536 tests passing. Zero failures. The mathematical
+foundation is implemented, tested, and published.
+
+## Documentation
+
+| Document | What it covers |
+|----------|---------------|
+| [HOW_TO_USE.md](HOW_TO_USE.md) | Two laptops, one mesh — how SAIOS + SAMN provides structural containment through independent measurement |
+| [EVOLUTION.md](EVOLUTION.md) | Complete rename map from biological to engineering vocabulary — before/after, every struct, field, function, and comment |
+| [DEVELOPMENT_METHODOLOGY.md](DEVELOPMENT_METHODOLOGY.md) | What happened, who is responsible, and why the code is clean |
+| [DEVELOPMENT_JOURNEY.md](DEVELOPMENT_JOURNEY.md) | Seven phases from zero to multi-dimensional thinking |
+| [CODEX.md](CODEX.md) | What each module does across four domains |
+| [RESPONSIBLE_USE.md](RESPONSIBLE_USE.md) | Written by Claude (Anthropic) — responsible use statement and the AI's acknowledgment of its own role |
+| [DISCLAIMER.md](DISCLAIMER.md) | All content AI-generated under human editorial direction |
+
+## Related Repositories
+
+| Repository | What it is |
+|------------|-----------|
+| [AI-SCIENTISTS](https://github.com/AlignmentConfirmed/AI-SCIENTISTS) | Research framework — CBE, failure modes, contamination, language, security, pacing, vision. 42 citations. |
+| [GOVERNANCE](https://github.com/SAIOS-SAMN/GOVERNANCE) | Five-layer architecture — C2R, IRS, MDC, Chronometry, Creative Expansion |
+| [DOCUMENTATION](https://github.com/AlignmentConfirmed/DOCUMENTATION) | Front door — thesis, principles, translations, methodology |
+| [NEBULA-PRODUCTS](https://github.com/SAIOS-SAMN/NEBULA-PRODUCTS) | Product platform — SAIOS-OS, SAMN-MESH, WWW4 |
 
 ## License
 
-To be determined. The engine is offered for scientific
-evaluation. Attribution to the author is required.
+Apache License 2.0. See [LICENSE](LICENSE).
+
+Open source. Attribution required. Patent grant included.
+The author is not liable for misuse. See
+[RESPONSIBLE_USE.md](RESPONSIBLE_USE.md) for the author's
+intent and the AI's acknowledgment.
 
 ---
 
-*Exact arithmetic. Structural convergence. No rounding.*
-*The engine does the math. You do the science.*
+*536 tests. 0 failures. 0 floats. 0 rounding.*
+*Exact rational arithmetic on antisymmetric tensors.*
+*The math works. Evaluate it.*

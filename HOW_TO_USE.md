@@ -147,11 +147,14 @@ architecture requires convergence.
 The stasis field between nodes is the membrane's consensus
 measurement applied to the mesh.
 
-No node can push unverified content through the mesh
-without another node independently arriving at the same
-result. This is structural containment — built into the
-measurement, not dependent on either operator's awareness
-of their own cognitive state.
+Content from any single node remains that node's output
+until another node independently arrives at the same
+result. Only then does the membrane crystallize it as a
+MeshAxiom. The node is not blocked — its output simply
+is not elevated to shared verified knowledge without
+independent agreement. This is structural containment —
+built into the measurement, not dependent on either
+operator's awareness of their own cognitive state.
 
 The operator experiencing CBE does not need to know they
 are experiencing CBE for the containment to work. The
