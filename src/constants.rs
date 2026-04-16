@@ -9,7 +9,7 @@
 //! lifetime of a Phase 1 deployment.
 //!
 //! ## Blocker 2: Boot Fixtures
-//! - `DELTA_ANCHOR_HASH`: 32-byte genesis hash for B2 anchor handshake.
+//! - `DELTA_ANCHOR_HASH`: 32-byte origin hash for B2 anchor handshake.
 //! - `TORSION_PERIOD_M`: Resonance confirmation period for B5/C5.
 //!
 //! ## Blocker 3: Transcendental Containment
@@ -31,10 +31,10 @@ pub type Q = BigRational;
 /// domain-separated constant, providing a deterministic "Block 0" for
 /// the SAIOS authority chain.
 ///
-/// Register: D.CHAIN.1 (genesis receipt), D.EXEC.1 B2.
-pub const DELTA_ANCHOR_TAG: &[u8] = b"SAIOS_GENESIS_ANCHOR_2026_V001";
+/// Register: D.CHAIN.1 (origin receipt), D.EXEC.1 B2.
+pub const DELTA_ANCHOR_TAG: &[u8] = b"SAIOS_ORIGIN_ANCHOR_2026_V001";
 
-/// Compute the 32-byte genesis anchor hash.
+/// Compute the 32-byte origin anchor hash.
 ///
 /// This is the Keccak-256 of the domain-separated anchor tag,
 /// providing a deterministic zero-state hash for B2 handshake.
@@ -61,7 +61,7 @@ pub const TORSION_PERIOD_M: u32 = 1024;
 /// Phase 1 boot sequence step identifiers.
 ///
 /// B1: Substrate audit (encoding integrity)
-/// B2: Anchor handshake (verify genesis hash)
+/// B2: Anchor handshake (verify origin hash)
 /// B3: Mesh sync (Phase 1 no-op — single node)
 /// B4: Environment/config load
 /// B5: Resonance confirmation (torsion period m)
@@ -70,7 +70,7 @@ pub const TORSION_PERIOD_M: u32 = 1024;
 pub enum BootStep {
     /// B1: Verify substrate encoding integrity for all initial state.
     B1SubstrateAudit,
-    /// B2: Verify DELTA_ANCHOR_HASH matches compiled genesis constant.
+    /// B2: Verify DELTA_ANCHOR_HASH matches compiled origin constant.
     B2AnchorHandshake,
     /// B3: Mesh sync — no-op for Phase 1 single node.
     B3MeshSync,
@@ -78,7 +78,7 @@ pub enum BootStep {
     B4EnvironmentLoad,
     /// B5: Confirm resonance at torsion period m.
     B5ResonanceConfirmation,
-    /// B6: Execute first K-step (K=1) and emit genesis receipt.
+    /// B6: Execute first K-step (K=1) and emit origin receipt.
     B6GenesisProofCycle,
 }
 

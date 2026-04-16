@@ -27,7 +27,7 @@ type Q = BigRational;
 /// Output: {"created":true,"child_entity_id":18,"child_depth":1,...}
 ///     or: {"error":"capacity_saturated","depth":0,"created":2,"bound":2}
 pub fn create(entity: &mut Entity, payload: &str) -> String {
-    let birth_orbit: [u8; 4] = serde_json::from_str::<serde_json::Value>(payload).ok()
+    let init_orbit: [u8; 4] = serde_json::from_str::<serde_json::Value>(payload).ok()
         .and_then(|v| v.get("orbit").and_then(|o| o.as_str()).and_then(|s| {
             let bytes: Vec<u8> = (0..s.len()).step_by(2)
                 .filter_map(|i| u8::from_str_radix(s.get(i..i+2)?, 16).ok())
@@ -38,8 +38,8 @@ pub fn create(entity: &mut Entity, payload: &str) -> String {
 
     let mesh_dir = entity.dir.parent().unwrap_or(&entity.dir);
     match saios_kernel_v2::lineage::create_offspring(
-        &mut entity.genome, &entity.epigenome,
-        entity.entity_id as u16, birth_orbit, mesh_dir,
+        &mut entity.state_record, &entity.epigenome,
+        entity.entity_id as u16, init_orbit, mesh_dir,
     ) {
         Ok(record) => {
             // Save parent genome with incremented created_count
@@ -57,15 +57,15 @@ pub fn create(entity: &mut Entity, payload: &str) -> String {
             let child_tier_name = child_tier.prefix();
             eprintln!("[lineage] {}-{} created {}-{} at orbit {:02x}{:02x}{:02x}{:02x} — service {}",
                 entity.tier_str(), entity.entity_id, child_tier_name, record.child_entity_id,
-                birth_orbit[0], birth_orbit[1], birth_orbit[2], birth_orbit[3],
+                init_orbit[0], init_orbit[1], init_orbit[2], init_orbit[3],
                 started.then(|| "started").unwrap_or("not started"));
 
             format!(
-                "{{\"created\":true,\"child_entity_id\":{},\"child_depth\":{},\"tier\":\"{}\",\"child_dir\":\"{}\",\"birth_orbit\":\"{:02x}{:02x}{:02x}{:02x}\",\"parent_created_count\":{},\"service_started\":{}}}\n",
+                "{{\"created\":true,\"child_entity_id\":{},\"child_depth\":{},\"tier\":\"{}\",\"child_dir\":\"{}\",\"init_orbit\":\"{:02x}{:02x}{:02x}{:02x}\",\"parent_created_count\":{},\"service_started\":{}}}\n",
                 record.child_entity_id, record.child_depth, child_tier_name,
                 record.child_dir.display(),
-                birth_orbit[0], birth_orbit[1], birth_orbit[2], birth_orbit[3],
-                entity.genome.created_count, started,
+                init_orbit[0], init_orbit[1], init_orbit[2], init_orbit[3],
+                entity.state_record.created_count, started,
             )
         }
         Err(saios_kernel_v2::lineage::CreationObstruction::CapacitySaturated { depth, created, bound }) => {
@@ -93,7 +93,7 @@ pub fn interact(entity: &mut Entity, payload: &str) -> String {
     // Sovereignty guard — children cannot interact on the mesh
     if !entity.mesh_sovereign {
         return format!("{{\"error\":\"not_sovereign\",\"tier\":\"{:?}\",\"depth\":{}}}\n",
-            entity.tier, entity.genome.lineage_depth);
+            entity.tier, entity.state_record.lineage_depth);
     }
 
     serde_json::from_str::<serde_json::Value>(payload).ok()
@@ -109,11 +109,11 @@ pub fn interact(entity: &mut Entity, payload: &str) -> String {
                         let n = e.get(2)?.as_i64()?;
                         let d = e.get(3)?.as_i64()?.max(1);
                         let quality = Q::new(BigInt::from(n), BigInt::from(d));
-                        entity.genome.value_cocycles.iter()
+                        entity.state_record.value_cocycles.iter()
                             .find(|(f, t, _)| *f == from_v && *t == to_v)
                             .is_none()
                             .then(|| {
-                                entity.genome.value_cocycles.push((from_v, to_v, quality));
+                                entity.state_record.value_cocycles.push((from_v, to_v, quality));
                                 absorbed += 1;
                             });
                         Some(())
@@ -130,7 +130,7 @@ pub fn interact(entity: &mut Entity, payload: &str) -> String {
                             .collect();
                         (bytes.len() >= 4).then(|| {
                             let orbit = [bytes[0], bytes[1], bytes[2], bytes[3]];
-                            entity.genome.record_solved_puzzle(orbit);
+                            entity.state_record.record_solved_puzzle(orbit);
                             absorbed += 1;
                         })
                     });
@@ -156,7 +156,7 @@ pub fn interact(entity: &mut Entity, payload: &str) -> String {
             });
 
             // Absorb peer's composed operators — vocabulary multiplication via assimilate()
-            let pre_len = entity.genome.composed_operators.len();
+            let pre_len = entity.state_record.composed_operators.len();
             v.get("composed_operators").and_then(|a| a.as_array()).map(|arr| {
                 arr.iter().for_each(|entry| {
                     entry.as_array().and_then(|e| {
@@ -169,14 +169,14 @@ pub fn interact(entity: &mut Entity, payload: &str) -> String {
                             }).collect();
                         let score = e.get(3).and_then(|s| s.as_i64()).unwrap_or(1);
                         (!sigma.is_empty()).then(|| {
-                            entity.genome.assimilate(
+                            entity.state_record.assimilate(
                                 saios_kernel_v2::engine::ComposedOperator { opcode, parameter, sigma, score });
                         });
                         Some(())
                     });
                 });
             });
-            absorbed += entity.genome.composed_operators.len().saturating_sub(pre_len);
+            absorbed += entity.state_record.composed_operators.len().saturating_sub(pre_len);
 
             // Save if anything was absorbed
             (absorbed > 0).then(|| {
@@ -186,17 +186,17 @@ pub fn interact(entity: &mut Entity, payload: &str) -> String {
             });
 
             // Emit our vocabulary for the peer to absorb
-            let our_cocycles: String = entity.genome.value_cocycles.iter()
+            let our_cocycles: String = entity.state_record.value_cocycles.iter()
                 .map(|(f, t, q)| format!("[{},{},{},{}]", f, t, q.numer(), q.denom()))
                 .collect::<Vec<_>>().join(",");
-            let our_orbits: String = entity.genome.solved_puzzles.iter()
+            let our_orbits: String = entity.state_record.solved_puzzles.iter()
                 .map(|o| format!("\"{:02x}{:02x}{:02x}{:02x}\"", o[0], o[1], o[2], o[3]))
                 .collect::<Vec<_>>().join(",");
             let our_markers: String = entity.epigenome.transmutation_markers.iter()
                 .map(|(o, p)| format!("[{},{},{},{},{}]", o[0], o[1], o[2], o[3], *p as u8))
                 .collect::<Vec<_>>().join(",");
 
-            let our_ops: String = entity.genome.composed_operators.iter()
+            let our_ops: String = entity.state_record.composed_operators.iter()
                 .map(|op| {
                     let sigma: String = op.sigma.iter()
                         .map(|(f, t)| format!("[{},{}]", f, t))
@@ -267,7 +267,7 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
                                         let n_cocycles = data[pos] as usize;
                                         pos += 1;
 
-                                        entity.genome.record_solved_puzzle(orbit);
+                                        entity.state_record.record_solved_puzzle(orbit);
                                         total_absorbed += 1;
 
                                         // Each cocycle: from_i16 + to_i16 + numer_i16 + denom_u16 = 8 bytes
@@ -279,12 +279,12 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
                                                 let d = u16::from_le_bytes(data[pos+6..pos+8].try_into().unwrap_or([0; 2]));
                                                 pos += 8;
                                                 let d_val = d.max(1);
-                                                entity.genome.value_cocycles.iter()
+                                                entity.state_record.value_cocycles.iter()
                                                     .find(|(f, t, _)| *f == from_v && *t == to_v)
                                                     .is_none()
                                                     .then(|| {
                                                         let quality = Q::new(BigInt::from(n as i64), BigInt::from(d_val as i64));
-                                                        entity.genome.value_cocycles.push((from_v, to_v, quality));
+                                                        entity.state_record.value_cocycles.push((from_v, to_v, quality));
                                                         total_absorbed += 1;
                                                     });
                                             });
@@ -310,7 +310,7 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
                                                     }
                                                     // Assimilate — score-based eviction, no boolean gates
                                                     (!sigma.is_empty()).then(|| {
-                                                        entity.genome.assimilate(
+                                                        entity.state_record.assimilate(
                                                             saios_kernel_v2::engine::ComposedOperator { opcode, parameter, sigma, score: 1 });
                                                         total_absorbed += 1;
                                                     });
@@ -359,7 +359,7 @@ pub fn report(entity: &mut Entity, payload: &str) -> String {
                             .collect();
                         (bytes.len() >= 4).then(|| {
                             let orbit = [bytes[0], bytes[1], bytes[2], bytes[3]];
-                            entity.genome.record_solved_puzzle(orbit);
+                            entity.state_record.record_solved_puzzle(orbit);
                             absorbed += 1;
                         })
                     });
@@ -376,11 +376,11 @@ pub fn report(entity: &mut Entity, payload: &str) -> String {
                         let d = e.get(3)?.as_i64()?.max(1);
                         let quality = Q::new(BigInt::from(n), BigInt::from(d));
                         // Dedup: only absorb if not already present
-                        entity.genome.value_cocycles.iter()
+                        entity.state_record.value_cocycles.iter()
                             .find(|(f, t, _)| *f == from_v && *t == to_v)
                             .is_none()
                             .then(|| {
-                                entity.genome.value_cocycles.push((from_v, to_v, quality));
+                                entity.state_record.value_cocycles.push((from_v, to_v, quality));
                                 absorbed += 1;
                             });
                         Some(())

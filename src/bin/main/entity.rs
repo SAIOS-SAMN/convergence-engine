@@ -151,10 +151,10 @@ pub struct Entity {
     /// Latest sigma encoding (Q0.32 fixed-point).
     pub latest_sigma_enc: u32,
 
-    // ─── Crystallized Torsion (genome — sacred, persists across restarts) ───
+    // ─── Crystallized Torsion (genome — core, persists across restarts) ───
 
     /// The genome — the crystallized torsion of the entity's history.
-    pub genome: Genome,
+    pub state_record: StateRecord,
 
     // ──�� Volatile Torsion (epigenome — dies on restart) ───
 
@@ -169,7 +169,7 @@ pub struct Entity {
     /// The sampler — derives operators from the torsion field's gradient.
     pub sampler: AlgebraicSampler,
 
-    /// The membrane — accumulated mesh knowledge. The SHARED torsion of the species.
+    /// The membrane — accumulated mesh knowledge. The SHARED torsion of the system.
     pub knowledge: MeshKnowledge,
 
     /// The kernel — operator set. The algebraic instruments.
@@ -195,7 +195,7 @@ pub struct Entity {
     // ─── Agent State ───
 
     /// Genesis RCF identity hash.
-    pub genesis_rcf: [u8; 32],
+    pub origin_rcf: [u8; 32],
 
     /// Genesis Delta — the birth position on the H^1 manifold.
     pub genesis_delta: Delta,
@@ -264,9 +264,9 @@ impl Entity {
     /// Scan membrane for crystallized value cocycles (94% threshold).
     /// LAST_WITNESS backup before overwrite — the genome is eternal.
     pub fn save_genome(&mut self) {
-        self.genome.evolved = coboundary_reduce(&self.delta);
-        self.genome.knowledge = self.knowledge.encode_public();
-        self.genome.trajectory = self.trajectory.clone();
+        self.state_record.evolved = coboundary_reduce(&self.delta);
+        self.state_record.knowledge = self.knowledge.encode_public();
+        self.state_record.trajectory = self.trajectory.clone();
 
         // L3 Holonomic: Check membrane for crystallized transmutation.
         // When quality ≥ 94/100, the transition becomes a permanent genomic marker.
@@ -274,8 +274,8 @@ impl Entity {
         for tc in self.knowledge.all_transmutation_crystals() {
             if tc.quality >= genomic_threshold && tc.order > 0 {
                 let order = tc.order as u16;
-                if !self.genome.torsion_markers.iter().any(|(o, _)| *o == order) {
-                    self.genome.torsion_markers.push((order, tc.quality.clone()));
+                if !self.state_record.torsion_markers.iter().any(|(o, _)| *o == order) {
+                    self.state_record.torsion_markers.push((order, tc.quality.clone()));
                     eprintln!("[genome] L3 crystallized torsion marker: order={} quality={}/{}",
                         order, tc.quality.numer(), tc.quality.denom());
                 }
@@ -287,8 +287,8 @@ impl Entity {
             if vc.quality >= genomic_threshold {
                 let from_v = vc.from_value as i16;
                 let to_v = vc.to_value as i16;
-                if !self.genome.value_cocycles.iter().any(|(f, t, _)| *f == from_v && *t == to_v) {
-                    self.genome.value_cocycles.push((from_v, to_v, vc.quality.clone()));
+                if !self.state_record.value_cocycles.iter().any(|(f, t, _)| *f == from_v && *t == to_v) {
+                    self.state_record.value_cocycles.push((from_v, to_v, vc.quality.clone()));
                     eprintln!("[genome] L3 crystallized value cocycle: {}→{} quality={}/{}",
                         from_v, to_v, vc.quality.numer(), vc.quality.denom());
                 }
@@ -299,7 +299,7 @@ impl Entity {
         let path = self.dir.join("genome.bin");
         let backup = self.dir.join("genome.bin.bak");
         path.exists().then(|| { let _ = fs::copy(&path, &backup); });
-        let bytes = self.genome.to_bytes();
+        let bytes = self.state_record.to_bytes();
         fs::write(&path, &bytes).unwrap_or_else(|e| {
             eprintln!("[LAST_WITNESS] genome write failed: {e} — backup at genome.bin.bak");
             backup.exists().then(|| { let _ = fs::copy(&backup, &path); });
@@ -324,9 +324,9 @@ impl Entity {
         // Phase 1: Save everything
         let tier_str = self.tier_str().to_string();
         self.world_status.write("PRESERVING", self.k_index as u64,
-            "0", "1", rss, &tier_str, self.genome.lineage_depth,
-            self.genome.parent_id, self.genome.created_count,
-            self.genome.solved_puzzles.len(), self.epigenome.transmutation_markers.len(),
+            "0", "1", rss, &tier_str, self.state_record.lineage_depth,
+            self.state_record.parent_id, self.state_record.created_count,
+            self.state_record.solved_puzzles.len(), self.epigenome.transmutation_markers.len(),
             self.knowledge.total_axioms, self.knowledge.total_observations);
 
         self.save_genome();
@@ -356,7 +356,7 @@ impl Entity {
     pub fn write_agent_state(&mut self) {
         let record = AgentStateRecord::from_node_state(
             &self.to_witness_state(),
-            &self.genesis_rcf,
+            &self.origin_rcf,
             self.chain.len() as u32,
             self.prev_coherence_q1616,
             &[0u8; 32],
@@ -429,8 +429,8 @@ impl Entity {
         self.world_status.write(state, self.k_index as u64,
             &coherence_functional(&self.delta).numer().to_string(),
             &coherence_functional(&self.delta).denom().to_string(),
-            get_rss_kb(), tier_str, self.genome.lineage_depth, self.genome.parent_id,
-            self.genome.created_count, self.genome.solved_puzzles.len(),
+            get_rss_kb(), tier_str, self.state_record.lineage_depth, self.state_record.parent_id,
+            self.state_record.created_count, self.state_record.solved_puzzles.len(),
             self.epigenome.transmutation_markers.len(),
             self.knowledge.total_axioms, self.knowledge.total_observations);
     }

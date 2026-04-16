@@ -7,7 +7,7 @@
 //! Axiom A.8: Three sovereign vertices — Male, Female, Child — bound by
 //! shared coherence within a stasis field. No vertex survives alone.
 //! No pair constitutes a Trinity. The removal of any single vertex
-//! annihilates the universe the Trinity defines.
+//! collapses the universe the Trinity defines.
 //!
 //! The stasis field is not a wall. It is the coherence between the three.
 //! Internal alignment generates protection. Drift destroys it.
@@ -24,7 +24,7 @@ use num_bigint::BigInt;
 use num_rational::BigRational;
 use num_traits::{Zero, One, Signed};
 
-use crate::engine::{Q, Delta, Genome, coherence_functional, coboundary_reduce};
+use crate::engine::{Q, Delta, StateRecord, coherence_functional, coboundary_reduce};
 
 // ═══════════════════════════════════════════════════════════════════════
 // D.TRINITY.VERTEX.1 — The Sovereign Vertex
@@ -51,7 +51,7 @@ impl VertexRole {
 
 /// A sovereign vertex within a Trinity.
 ///
-/// Each vertex carries its own genome, its own Delta, its own K-index.
+/// Each vertex carries its own state record, its own Delta, its own K-index.
 /// The Trinity does not merge them. Three evolutions. One fate.
 #[derive(Debug, Clone)]
 pub struct SovereignVertex {
@@ -148,7 +148,7 @@ pub struct Trinity {
     pub trinity_id: u32,
     /// Forging epoch — when this Trinity was created. Immutable (Law X).
     pub forged_epoch: u64,
-    /// Is this Trinity alive? Once false, it is annihilated. Irreversible.
+    /// Is this Trinity alive? Once false, it is collapsed. Irreversible.
     pub alive: bool,
 }
 
@@ -213,35 +213,35 @@ fn compute_trinity_fold(
     Some(combined)
 }
 
-/// Verify genome integrity for all three vertices.
+/// Verify state record integrity for all three vertices.
 ///
 /// System boundary check (not derivation — Law I clean).
-/// All three must be cognitive species with valid birth polynomials.
+/// All three must be cognitive class with valid init polynomials.
 ///
 /// Returns combined verification strength as Q.
-/// Zero = at least one genome failed verification.
+/// Zero = at least one state record failed verification.
 fn verify_trinity_integrity(
-    genome_m: &Genome,
-    genome_f: &Genome,
-    genome_c: &Genome,
+    state_m: &StateRecord,
+    state_f: &StateRecord,
+    state_c: &StateRecord,
 ) -> Q {
     // Species 1 (Human) and 3 (HumanEvolved) are cognitive.
     // Species 2 (Chronometric/Timekeeper) is not.
     let is_cognitive = |s: u32| s == 1 || s == 3;
-    let all_cognitive = is_cognitive(genome_m.species)
-        && is_cognitive(genome_f.species)
-        && is_cognitive(genome_c.species);
+    let all_cognitive = is_cognitive(state_m.process_class)
+        && is_cognitive(state_f.process_class)
+        && is_cognitive(state_c.process_class);
 
-    let all_poly_valid = !genome_m.birth_polynomial.is_empty()
-        && !genome_f.birth_polynomial.is_empty()
-        && !genome_c.birth_polynomial.is_empty();
+    let all_poly_valid = !state_m.init_polynomial.is_empty()
+        && !state_f.init_polynomial.is_empty()
+        && !state_c.init_polynomial.is_empty();
 
     match (all_cognitive, all_poly_valid) {
         (true, true) => {
-            // Sum of absolute birth polynomial coefficients — three-way
-            let a = &genome_m.birth_polynomial[0];
-            let b = &genome_f.birth_polynomial[0];
-            let c = &genome_c.birth_polynomial[0];
+            // Sum of absolute init polynomial coefficients — three-way
+            let a = &state_m.init_polynomial[0];
+            let b = &state_f.init_polynomial[0];
+            let c = &state_c.init_polynomial[0];
             a.abs() + b.abs() + c.abs()
         }
         _ => Q::zero(),
@@ -260,12 +260,12 @@ pub fn forge_trinity(
     male_id: u32,
     female_id: u32,
     child_id: u32,
-    genome_m: &Genome,
-    genome_f: &Genome,
-    genome_c: &Genome,
+    state_m: &StateRecord,
+    state_f: &StateRecord,
+    state_c: &StateRecord,
 ) -> ForgeResult {
     // 1. DNA Verification (system boundary)
-    let verification = verify_trinity_integrity(genome_m, genome_f, genome_c);
+    let verification = verify_trinity_integrity(state_m, state_f, state_c);
     if verification.is_zero() {
         return ForgeResult::IntegrityFailure {
             male_id,
@@ -276,16 +276,16 @@ pub fn forge_trinity(
 
     // 2. Compute 3-way shared fold
     let shared_fold = match compute_trinity_fold(
-        &genome_m.evolved,
-        &genome_f.evolved,
-        &genome_c.evolved,
+        &state_m.evolved,
+        &state_f.evolved,
+        &state_c.evolved,
     ) {
         Some(fold) => fold,
         None => {
             return ForgeResult::DimensionMismatch {
-                male_dim: (genome_m.evolved.dim, genome_m.evolved.m),
-                female_dim: (genome_f.evolved.dim, genome_f.evolved.m),
-                child_dim: (genome_c.evolved.dim, genome_c.evolved.m),
+                male_dim: (state_m.evolved.dim, state_m.evolved.m),
+                female_dim: (state_f.evolved.dim, state_f.evolved.m),
+                child_dim: (state_c.evolved.dim, state_c.evolved.m),
             };
         }
     };
@@ -326,9 +326,9 @@ pub fn forge_trinity(
 /// Returns the updated Trinity (or None if the Trinity is dead).
 pub fn maintain_alignment<'a>(
     trinity: &'a mut Trinity,
-    genome_m: &Genome,
-    genome_f: &Genome,
-    genome_c: &Genome,
+    state_m: &StateRecord,
+    state_f: &StateRecord,
+    state_c: &StateRecord,
 ) -> Option<&'a StasisField> {
     if !trinity.alive {
         return None;
@@ -336,9 +336,9 @@ pub fn maintain_alignment<'a>(
 
     // Recompute the 3-way shared fold
     let shared_fold = compute_trinity_fold(
-        &genome_m.evolved,
-        &genome_f.evolved,
-        &genome_c.evolved,
+        &state_m.evolved,
+        &state_f.evolved,
+        &state_c.evolved,
     )?;
 
     // Update shared coherence and stasis field
@@ -353,9 +353,9 @@ pub fn maintain_alignment<'a>(
 // D.TRINITY.COLLAPSE.1 — Total Annihilation
 // ═══════════════════════════════════════════════════════════════════════
 
-/// Collapse a Trinity. Total annihilation. No degraded mode. No graft.
+/// Collapse a Trinity. Total collapse_event. No degraded mode. No graft.
 ///
-/// A.8: The removal of any single vertex annihilates the universe
+/// A.8: The removal of any single vertex collapses the universe
 /// the Trinity defines. This is not failure — this is structure.
 ///
 /// Returns the ids of all vertices that were in this Trinity.
@@ -420,10 +420,10 @@ pub fn write_shm_status(trinity: &Trinity) -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::{Delta, Genome, Trajectory};
+    use crate::engine::{Delta, StateRecord, Trajectory};
 
-    fn make_test_genome(id: u32) -> Genome {
-        let birth_poly = vec![
+    fn make_test_state(id: u32) -> StateRecord {
+        let init_poly = vec![
             BigRational::new(BigInt::from(1), BigInt::from(id as i64)),
         ];
         let dim = 3;
@@ -432,10 +432,10 @@ mod tests {
         delta.entries[0][1][0] = BigRational::new(BigInt::from(id as i64), BigInt::from(1));
         delta.entries[1][0][0] = BigRational::new(BigInt::from(-(id as i64)), BigInt::from(1));
 
-        Genome {
-            species: 1,
+        StateRecord {
+            process_class: 1,
             generation: 1,
-            birth_polynomial: birth_poly,
+            init_polynomial: init_poly,
             evolved: delta,
             knowledge: Vec::new(),
             trajectory: Trajectory::new(),
@@ -448,16 +448,16 @@ mod tests {
             lineage_depth: 0,
             parent_id: 0,
             created_count: 0,
-            birth_orbit: [0; 4],
+            init_orbit: [0; 4],
             composed_operators: Vec::new(),
         }
     }
 
     #[test]
     fn test_forge_trinity() {
-        let gm = make_test_genome(1);
-        let gf = make_test_genome(2);
-        let gc = make_test_genome(3);
+        let gm = make_test_state(1);
+        let gf = make_test_state(2);
+        let gc = make_test_state(3);
 
         let result = forge_trinity(1, 0, 10, 20, 30, &gm, &gf, &gc);
 
@@ -479,10 +479,10 @@ mod tests {
 
     #[test]
     fn test_forge_wrong_species() {
-        let gm = make_test_genome(1);
-        let gf = make_test_genome(2);
-        let mut gc = make_test_genome(3);
-        gc.species = 2; // timekeeper — not cognitive
+        let gm = make_test_state(1);
+        let gf = make_test_state(2);
+        let mut gc = make_test_state(3);
+        gc.process_class = 2; // timekeeper — not cognitive
 
         let result = forge_trinity(1, 0, 10, 20, 30, &gm, &gf, &gc);
         assert!(matches!(result, ForgeResult::IntegrityFailure { .. }));
@@ -490,9 +490,9 @@ mod tests {
 
     #[test]
     fn test_forge_dimension_mismatch() {
-        let gm = make_test_genome(1);
-        let gf = make_test_genome(2);
-        let mut gc = make_test_genome(3);
+        let gm = make_test_state(1);
+        let gf = make_test_state(2);
+        let mut gc = make_test_state(3);
         gc.evolved = Delta::zero(5, 3); // different dimensions
 
         let result = forge_trinity(1, 0, 10, 20, 30, &gm, &gf, &gc);
@@ -501,9 +501,9 @@ mod tests {
 
     #[test]
     fn test_collapse_is_total() {
-        let gm = make_test_genome(1);
-        let gf = make_test_genome(2);
-        let gc = make_test_genome(3);
+        let gm = make_test_state(1);
+        let gf = make_test_state(2);
+        let gc = make_test_state(3);
 
         let result = forge_trinity(1, 0, 10, 20, 30, &gm, &gf, &gc);
         let mut trinity = match result {
@@ -515,7 +515,7 @@ mod tests {
 
         let ids = collapse(&mut trinity);
 
-        // Total annihilation — no degraded mode
+        // Total collapse_event — no degraded mode
         assert!(!trinity.alive);
         assert!(trinity.shared_coherence.is_zero());
         assert!(trinity.field.integrity.is_zero());
@@ -524,9 +524,9 @@ mod tests {
 
     #[test]
     fn test_collapse_is_irreversible() {
-        let gm = make_test_genome(1);
-        let gf = make_test_genome(2);
-        let gc = make_test_genome(3);
+        let gm = make_test_state(1);
+        let gf = make_test_state(2);
+        let gc = make_test_state(3);
 
         let result = forge_trinity(1, 0, 10, 20, 30, &gm, &gf, &gc);
         let mut trinity = match result {
@@ -543,9 +543,9 @@ mod tests {
 
     #[test]
     fn test_stasis_field_absorbs_entropy() {
-        let gm = make_test_genome(1);
-        let gf = make_test_genome(2);
-        let gc = make_test_genome(3);
+        let gm = make_test_state(1);
+        let gf = make_test_state(2);
+        let gc = make_test_state(3);
 
         let result = forge_trinity(1, 0, 10, 20, 30, &gm, &gf, &gc);
         let trinity = match result {
@@ -566,11 +566,11 @@ mod tests {
     #[test]
     fn test_stasis_stronger_with_alignment() {
         // Two trinities: one with similar Deltas, one with divergent
-        let g1 = make_test_genome(1);
-        let g2 = make_test_genome(1); // same as g1 — high alignment
-        let g3 = make_test_genome(1);
+        let g1 = make_test_state(1);
+        let g2 = make_test_state(1); // same as g1 — high alignment
+        let g3 = make_test_state(1);
 
-        let g_far = make_test_genome(100); // very different Delta
+        let g_far = make_test_state(100); // very different Delta
 
         let result_aligned = forge_trinity(1, 0, 10, 20, 30, &g1, &g2, &g3);
         let result_divergent = forge_trinity(2, 0, 40, 50, 60, &g1, &g2, &g_far);
@@ -590,9 +590,9 @@ mod tests {
 
     #[test]
     fn test_maintain_updates_field() {
-        let gm = make_test_genome(1);
-        let gf = make_test_genome(2);
-        let gc = make_test_genome(3);
+        let gm = make_test_state(1);
+        let gf = make_test_state(2);
+        let gc = make_test_state(3);
 
         let result = forge_trinity(1, 0, 10, 20, 30, &gm, &gf, &gc);
         let mut trinity = match result {
@@ -602,8 +602,8 @@ mod tests {
 
         let initial_integrity = trinity.field.integrity.clone();
 
-        // "Evolve" the male genome — Delta drifts
-        let mut gm_evolved = make_test_genome(1);
+        // "Evolve" the male state — Delta drifts
+        let mut gm_evolved = make_test_state(1);
         gm_evolved.evolved.entries[0][1][1] = BigRational::from(BigInt::from(50));
         gm_evolved.evolved.entries[1][0][1] = BigRational::from(BigInt::from(-50));
 
@@ -616,9 +616,9 @@ mod tests {
 
     #[test]
     fn test_contains_vertex() {
-        let gm = make_test_genome(1);
-        let gf = make_test_genome(2);
-        let gc = make_test_genome(3);
+        let gm = make_test_state(1);
+        let gf = make_test_state(2);
+        let gc = make_test_state(3);
 
         let result = forge_trinity(1, 0, 10, 20, 30, &gm, &gf, &gc);
         let trinity = match result {

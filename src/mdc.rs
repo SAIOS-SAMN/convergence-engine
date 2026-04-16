@@ -161,7 +161,7 @@ pub fn legal_echelon(delta: &Delta, max_coherence: &Q) -> EchelonHint {
 }
 
 /// Legal echelon with Option — absence means no constraint.
-/// None = genesis state, no measurement taken. The echelon abstains (zero confidence).
+/// None = origin state, no measurement taken. The echelon abstains (zero confidence).
 /// Some(max) = measured coherence envelope.
 pub fn legal_echelon_opt(delta: &Delta, max_coherence: Option<&Q>) -> EchelonHint {
     match max_coherence {

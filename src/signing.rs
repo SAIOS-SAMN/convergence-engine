@@ -4,8 +4,8 @@
 //
 //! Ed25519 Receipt Signing — Phase 2.2.
 //!
-//! Key derivation: seed = Keccak256("SAIOS-ED25519-SEED-v1" || rcf_identity_at_genesis).
-//! Deterministic: same genesis RCF always produces the same keypair.
+//! Key derivation: seed = Keccak256("SAIOS-ED25519-SEED-v1" || rcf_identity_at_origin).
+//! Deterministic: same origin RCF always produces the same keypair.
 //! No external key generation ceremony. No HSM required.
 //!
 //! Register: D.CHAIN.KEY.1.
@@ -13,17 +13,17 @@
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use tiny_keccak::{Hasher, Keccak};
 
-/// Derive an Ed25519 signing key from a genesis RCF identity.
+/// Derive an Ed25519 signing key from a origin RCF identity.
 ///
 /// seed = Keccak256("SAIOS-ED25519-SEED-v1" || rcf_identity)
 ///
-/// Deterministic: any entity with the same genesis state produces
+/// Deterministic: any entity with the same origin state produces
 /// the same keypair. Register: D.CHAIN.KEY.1.
-pub fn derive_signing_key(genesis_rcf_identity: &[u8; 32]) -> SigningKey {
+pub fn derive_signing_key(origin_rcf_identity: &[u8; 32]) -> SigningKey {
     let mut keccak = Keccak::v256();
     let mut seed = [0u8; 32];
     keccak.update(b"SAIOS-ED25519-SEED-v1");
-    keccak.update(genesis_rcf_identity);
+    keccak.update(origin_rcf_identity);
     keccak.finalize(&mut seed);
     SigningKey::from_bytes(&seed)
 }
@@ -64,7 +64,7 @@ mod tests {
         let k1 = derive_signing_key(&rcf);
         let k2 = derive_signing_key(&rcf);
         assert_eq!(k1.to_bytes(), k2.to_bytes(),
-            "Same genesis RCF must produce same key");
+            "Same origin RCF must produce same key");
     }
 
     #[test]

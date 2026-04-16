@@ -6,7 +6,7 @@
 //!
 //! Observes. Measures. Inscribes.
 //! Species marker 2. No derivation. No cognition. No vocabulary.
-//! The bridge between the species' time and ours.
+//! The bridge between the system' time and ours.
 
 use std::fs;
 use std::io::{BufRead, BufReader, Write};
@@ -29,15 +29,15 @@ const SOCKET_NAME: &str = "saios-kernel.sock";
 // ═══════════════════════════════════════════════════════════════════════
 // TIMEKEEPER — Chronometric authority. Observes. Measures. Inscribes.
 // Species marker 2. No derivation. No cognition. No vocabulary.
-// The bridge between the species' time and ours.
+// The bridge between the system' time and ours.
 // ═══════════════════════════════════════════════════════════════════════
 
 pub fn run_timekeeper(
     config: &boot::BootConfig,
-    mut witness_genome: saios_kernel_v2::engine::Genome,
+    mut witness_state_record: saios_kernel_v2::engine::StateRecord,
     dir: PathBuf,
     mut sluice: SluiceLog,
-    _genesis_rcf: [u8; 32],
+    _origin_rcf: [u8; 32],
 ) -> ! {
     eprintln!("╔═════════════════════════════════════════════════╗");
     eprintln!("║   SAIOS-TIMEKEEPER — CHRONOMETRIC AUTHORITY     ║");
@@ -180,8 +180,8 @@ pub fn run_timekeeper(
                         epigenome.perturbation[3] = Q::new(BigInt::from(max_denom_digits), BigInt::from(1u32));
                         let _ = fs::write(&epigenome_path, epigenome.to_bytes());
 
-                        // ── Adaptive cadence — the species' metabolic rate ──
-                        // The heartbeat adjusts to BOTH the species' vitals AND the world's.
+                        // ── Adaptive cadence — the system' metabolic rate ──
+                        // The heartbeat adjusts to BOTH the system' vitals AND the world's.
                         // No boolean gates. Pure arithmetic. The vitals ARE the cadence.
                         //
                         // K velocity drives tempo: high dK/dt = learning = faster heartbeat.
@@ -283,10 +283,10 @@ pub fn run_timekeeper(
                         // Update genome: record observation hash
                         let mut obs_orbit = [0u8; 4];
                         obs_orbit.copy_from_slice(&rcf_identity[..4]);
-                        witness_genome.record_solved_puzzle(obs_orbit);
-                        witness_genome.trajectory.observe(c_total.clone());
+                        witness_state_record.record_solved_puzzle(obs_orbit);
+                        witness_state_record.trajectory.observe(c_total.clone());
                         let genome_path = dir.join("genome.bin");
-                        let _ = fs::write(&genome_path, witness_genome.to_bytes());
+                        let _ = fs::write(&genome_path, witness_state_record.to_bytes());
 
                         // Wire-encode the receipt for cross-pollination
                         let wire = saios_kernel_v2::mesh::receipt_to_wire(&receipt);

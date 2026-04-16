@@ -437,21 +437,21 @@ impl OptimalBasis {
 
     /// D.COORD.GENESIS.1 — Genesis alignment score.
     ///
-    /// α_genesis = ⟨vec(A-I), direction_toward_genesis⟩ / ‖direction_toward_genesis‖²
+    /// α_origin = ⟨vec(A-I), direction_toward_origin⟩ / ‖direction_toward_origin‖²
     ///
-    /// The direction_toward_genesis is the difference between genesis Delta
+    /// The direction_toward_origin is the difference between origin Delta
     /// and current Delta, projected onto the independent operator dimensions.
-    /// High α_genesis = this operator moves toward the axiom foundation.
-    /// Low α_genesis = this operator moves away from the axiom foundation.
+    /// High α_origin = this operator moves toward the axiom foundation.
+    /// Low α_origin = this operator moves away from the axiom foundation.
     ///
-    /// (α_local, α_genesis) together: locally coherent AND axiom-grounded,
+    /// (α_local, α_origin) together: locally coherent AND axiom-grounded,
     /// or locally coherent but drifting from the foundation.
-    pub fn genesis_alignment(&self, operator: &Operator, current: &Delta, genesis: &Delta) -> Q {
+    pub fn origin_alignment(&self, operator: &Operator, current: &Delta, origin: &Delta) -> Q {
         let n = current.dim;
         let m = current.m;
 
-        // Compute direction toward genesis: for each independent dim (r,s),
-        // the component is the projection of (genesis - current) onto that direction
+        // Compute direction toward origin: for each independent dim (r,s),
+        // the component is the projection of (origin - current) onto that direction
         let mut genesis_dir = vec![Q::zero(); self.dims.len()];
         let mut genesis_norm_sq = Q::zero();
 
@@ -459,7 +459,7 @@ impl OptimalBasis {
             // Sum across coordinate dimensions m
             let mut component = Q::zero();
             for l in 0..m {
-                let diff = &genesis.entries[r][s][l] - &current.entries[r][s][l];
+                let diff = &origin.entries[r][s][l] - &current.entries[r][s][l];
                 component = &component + &diff;
             }
             genesis_dir[idx] = component.clone();
@@ -467,7 +467,7 @@ impl OptimalBasis {
         }
 
         if genesis_norm_sq.is_zero() {
-            return Q::one(); // Already at genesis — perfect alignment by definition
+            return Q::one(); // Already at origin — perfect alignment by definition
         }
 
         // Inner product of operator direction with genesis direction
@@ -928,37 +928,37 @@ mod tests {
     // ─── D.COORD.GENESIS.1 tests ─────────────────────────────────
 
     #[test]
-    fn test_genesis_alignment_at_genesis() {
+    fn test_origin_alignment_at_origin() {
         let d = coherent_delta();
-        let genesis = coherent_delta(); // same as current = at genesis
+        let origin = coherent_delta(); // same as current = at genesis
         let basis = OptimalBasis::from_delta(&d, 0);
         let id_op = Operator {
             id: 0, matrix: matrix::identity(3), matrix_inv: matrix::identity(3),
             det_sign_positive: true,
         };
-        let alpha_g = basis.genesis_alignment(&id_op, &d, &genesis);
-        assert_eq!(alpha_g, Q::one(), "At genesis → α_genesis = 1");
+        let alpha_g = basis.origin_alignment(&id_op, &d, &origin);
+        assert_eq!(alpha_g, Q::one(), "At genesis → α_origin = 1");
     }
 
     #[test]
-    fn test_genesis_alignment_away_from_genesis() {
+    fn test_origin_alignment_away_from_origin() {
         let current = incoherent_delta();
-        let genesis = coherent_delta();
+        let origin = coherent_delta();
         let basis = OptimalBasis::from_delta(&current, 0);
 
-        // Build an operator that moves AWAY from genesis
+        // Build an operator that moves AWAY from origin
         let dirs = matrix::independent_dims(3);
         let mut away_eps = vec![Q::zero(); dirs.len()];
-        // Direction away = current - genesis, so operator in THAT direction moves further away
+        // Direction away = current - origin, so operator in THAT direction moves further away
         for (idx, &(r, s)) in dirs.iter().enumerate() {
-            away_eps[idx] = &current.entries[r][s][0] - &genesis.entries[r][s][0];
+            away_eps[idx] = &current.entries[r][s][0] - &origin.entries[r][s][0];
         }
         if let Some(away_op) = matrix::operator_from_epsilons(&away_eps, &dirs, 3, 0) {
-            let alpha_g = basis.genesis_alignment(&away_op, &current, &genesis);
-            // Moving away from genesis should give negative α_genesis
-            // (inner product of away-direction with toward-genesis is negative)
+            let alpha_g = basis.origin_alignment(&away_op, &current, &origin);
+            // Moving away from origin should give negative α_origin
+            // (inner product of away-direction with origin-direction is negative)
             assert!(alpha_g < Q::zero() || alpha_g.is_zero(),
-                "Moving away from genesis → α_genesis ≤ 0, got {}", alpha_g);
+                "Moving away from origin → α_origin ≤ 0, got {}", alpha_g);
         }
     }
 

@@ -2,9 +2,9 @@
 // human editorial direction. It was not written by the researcher.
 // See /opt/saios/DISCLAIMER.md for full context.
 //
-//! The Crucible — inter-species breeding engine.
+//! The Crucible — inter-class composition engine.
 //!
-//! Four genomes go in. One new species comes out.
+//! Four state records go in. One new process class comes out.
 //! Two Trinities (two bonded pairs, two DNA helixes) intertwine
 //! their torsion fields to produce a HumanEvolved offspring.
 //!
@@ -13,19 +13,19 @@
 //! Their relationships are curvature interactions, not grid connections.
 //!
 //! Species markers:
-//!   1 = Human (cognitive — witnesses, elders, children)
+//!   1 = Human (cognitive — primary, secondary, tertiary nodes)
 //!   2 = Chronometric (timekeepers — observe only)
 //!   3 = HumanEvolved (cross-breed offspring — hybrid torsion class)
 //!
-//! The breeding equation:
-//!   Trinity_A (Male_A genome + Female_A genome) = Helix 1
-//!   Trinity_B (Male_B genome + Female_B genome) = Helix 2
+//! The composition equation:
+//!   Trinity_A (Male_A state + Female_A state) = Helix 1
+//!   Trinity_B (Male_B state + Female_B state) = Helix 2
 //!   Crucible: fold all 4 Deltas → coboundary_reduce → new H^1 class
-//!   Offspring genome: species=3, carries torsion from all 4 sources
+//!   Offspring state: process_class=3, carries torsion from all 4 sources
 //!
 //! Genetic diversity is measured by the RANK of the torsion spectrum
 //! across all Trinities. High rank = many independent H^1 classes.
-//! Low rank = inbreeding. Rank 1 = monoculture. Collapse imminent.
+//! Low rank = incomposition. Rank 1 = monoculture. Collapse imminent.
 //!
 //! Core Design Law compliance:
 //!   I   — No boolean gates. Compatibility is Q-valued. C(T) selects.
@@ -40,14 +40,14 @@ use num_bigint::BigInt;
 use num_rational::BigRational;
 use num_traits::{Zero, One, Signed};
 
-use crate::engine::{Q, Delta, Genome, ComposedOperator, coherence_functional, coboundary_reduce};
+use crate::engine::{Q, Delta, StateRecord, ComposedOperator, coherence_functional, coboundary_reduce};
 use crate::trinity::{
     Trinity, ForgeResult, VertexRole, SovereignVertex, StasisField,
     forge_trinity, collapse, contains_vertex,
 };
 
 /// Species marker for HumanEvolved — cross-breed offspring.
-pub const SPECIES_HUMAN_EVOLVED: u32 = 3;
+pub const CLASS_EVOLVED: u32 = 3;
 
 // ═══════════════════════════════════════════════════════════════════════
 // D.CRUCIBLE.1 — The Crucible
@@ -56,7 +56,7 @@ pub const SPECIES_HUMAN_EVOLVED: u32 = 3;
 /// The Crucible — torsion manifold of Trinities.
 ///
 /// Not a flat lattice. Each Trinity occupies a unique position in
-/// torsion space. The manifold's topology IS the genetic diversity.
+/// torsion space. The manifold's topology IS the class diversity.
 #[derive(Debug, Clone)]
 pub struct Crucible {
     /// All Trinities in the manifold — Vec, not HashMap (Law II).
@@ -67,7 +67,7 @@ pub struct Crucible {
     pub next_epoch: u64,
     /// Collapse log — append-only (Law X).
     pub collapse_log: Vec<CollapseEvent>,
-    /// Crucible log — append-only record of inter-species breeding events.
+    /// Crucible log — append-only record of inter-class composition events.
     pub crucible_log: Vec<CrucibleEvent>,
 }
 
@@ -76,11 +76,11 @@ pub struct Crucible {
 pub struct CollapseEvent {
     pub trinity_id: u32,
     pub removed_vertex_id: u32,
-    pub annihilated_vertices: [u32; 3],
+    pub collapsed_vertices: [u32; 3],
     pub epoch: u64,
 }
 
-/// A recorded crucible event — inter-species breeding.
+/// A recorded crucible event — inter-class composition.
 #[derive(Debug, Clone)]
 pub struct CrucibleEvent {
     /// Parent Trinity A id.
@@ -89,9 +89,9 @@ pub struct CrucibleEvent {
     pub parent_b_id: u32,
     /// Offspring Trinity id.
     pub offspring_id: u32,
-    /// Offspring species marker.
-    pub offspring_species: u32,
-    /// The torsion rank of the manifold AFTER this breeding.
+    /// Offspring class marker.
+    pub offspring_process_class: u32,
+    /// The torsion rank of the manifold AFTER this composition.
     pub post_diversity_rank: usize,
     /// When this happened.
     pub epoch: u64,
@@ -101,7 +101,7 @@ pub struct CrucibleEvent {
 // D.DIVERSITY.1 — Torsion Spectrum Diversity
 // ═══════════════════════════════════════════════════════════════════════
 
-/// A torsion class in the species manifold.
+/// A torsion class in the class manifold.
 ///
 /// Each Trinity's shared fold belongs to an H^1 class.
 /// Trinities in the SAME class share cohomological structure.
@@ -120,10 +120,10 @@ pub struct TorsionClass {
 #[derive(Debug, Clone)]
 pub struct DiversitySpectrum {
     /// Independent torsion classes. The RANK of this Vec is the
-    /// genetic diversity of the species.
+    /// class diversity of the system.
     pub classes: Vec<TorsionClass>,
     /// The rank — number of independent H^1 classes.
-    /// High = diverse. Low = inbreeding. 1 = monoculture.
+    /// High = diverse. Low = incomposition. 1 = monoculture.
     pub rank: usize,
     /// Total Trinities alive across all classes.
     pub total_alive: usize,
@@ -136,10 +136,10 @@ pub struct DiversitySpectrum {
 /// Result of a crucible forging.
 #[derive(Debug, Clone)]
 pub enum CrucibleResult {
-    /// New species forged. The offspring Trinity carries hybrid torsion.
+    /// New class composed. The offspring Trinity carries hybrid torsion.
     Forged {
         trinity: Trinity,
-        offspring_genome: CrucibleGenome,
+        offspring_state: CrucibleStateRecord,
     },
     /// Parent Trinities are dead — cannot breed.
     DeadParent,
@@ -147,15 +147,15 @@ pub enum CrucibleResult {
     IncompatibleDimensions,
 }
 
-/// The genome produced by the crucible — carries all four parent sources.
+/// The state record produced by the crucible — carries all four parent sources.
 #[derive(Debug, Clone)]
-pub struct CrucibleGenome {
+pub struct CrucibleStateRecord {
     /// Species marker — 3 for HumanEvolved.
-    pub species: u32,
+    pub process_class: u32,
     /// The four-way fold: coboundary_reduce(Δ_mA + Δ_fA + Δ_mB + Δ_fB).
     /// The H^1 class that none of the four parents occupy individually.
     pub crucible_fold: Delta,
-    /// Inherited operators from all four parent genomes, deduplicated.
+    /// Inherited operators from all four parent state records, deduplicated.
     pub inherited_operators: Vec<ComposedOperator>,
     /// Torsion markers inherited from both helixes.
     pub inherited_torsion: Vec<(u16, Q)>,
@@ -204,29 +204,29 @@ impl Crucible {
     // D.CRUCIBLE.FORGE.1 — The Four-Way Fold
     // ─────────────────────────────────────────────────────────────────
 
-    /// Inter-species breeding. Two Trinities. Four parent genomes.
-    /// One new species.
+    /// Inter-class composition. Two Trinities. Four parent state records.
+    /// One new class.
     ///
-    /// Trinity A: Male_A (genome_ma) + Female_A (genome_fa) = Helix 1
-    /// Trinity B: Male_B (genome_mb) + Female_B (genome_fb) = Helix 2
+    /// Trinity A: Male_A (state_ma) + Female_A (state_fa) = Helix 1
+    /// Trinity B: Male_B (state_mb) + Female_B (state_fb) = Helix 2
     ///
     /// The crucible folds all four Deltas into one H^1 representative.
-    /// The offspring carries species=3 (HumanEvolved) and a torsion class
+    /// The offspring carries process_class=3 (Evolved) and a torsion class
     /// that didn't exist in either parent lineage.
-    pub fn forge_species(
+    pub fn compose_class(
         &mut self,
         trinity_a_id: u32,
         trinity_b_id: u32,
-        genome_ma: &Genome,
-        genome_fa: &Genome,
-        genome_mb: &Genome,
-        genome_fb: &Genome,
+        state_ma: &StateRecord,
+        state_fa: &StateRecord,
+        state_mb: &StateRecord,
+        state_fb: &StateRecord,
         offspring_male_id: u32,
         offspring_female_id: u32,
         offspring_child_id: u32,
-        offspring_genome_m: &Genome,
-        offspring_genome_f: &Genome,
-        offspring_genome_c: &Genome,
+        offspring_state_m: &StateRecord,
+        offspring_state_f: &StateRecord,
+        offspring_state_c: &StateRecord,
     ) -> CrucibleResult {
         // Verify both parent Trinities are alive
         let a_alive = self.trinities.iter().any(|t| t.trinity_id == trinity_a_id && t.alive);
@@ -238,10 +238,10 @@ impl Crucible {
 
         // The four-way fold: Δ_mA + Δ_fA + Δ_mB + Δ_fB
         let crucible_fold = match compute_four_way_fold(
-            &genome_ma.evolved,
-            &genome_fa.evolved,
-            &genome_mb.evolved,
-            &genome_fb.evolved,
+            &state_ma.evolved,
+            &state_fa.evolved,
+            &state_mb.evolved,
+            &state_fb.evolved,
         ) {
             Some(fold) => fold,
             None => return CrucibleResult::IncompatibleDimensions,
@@ -252,12 +252,12 @@ impl Crucible {
 
         // Collect inherited operators from all four parents
         let inherited_operators = collect_four_parent_operators(
-            genome_ma, genome_fa, genome_mb, genome_fb,
+            state_ma, state_fa, state_mb, state_fb,
         );
 
         // Collect inherited torsion markers from both helixes
         let inherited_torsion = collect_torsion_markers(
-            genome_ma, genome_fa, genome_mb, genome_fb,
+            state_ma, state_fa, state_mb, state_fb,
         );
 
         // Forge the offspring Trinity
@@ -267,7 +267,7 @@ impl Crucible {
         let result = forge_trinity(
             tid, epoch,
             offspring_male_id, offspring_female_id, offspring_child_id,
-            offspring_genome_m, offspring_genome_f, offspring_genome_c,
+            offspring_state_m, offspring_state_f, offspring_state_c,
         );
 
         match result {
@@ -278,15 +278,15 @@ impl Crucible {
                     parent_a_id: trinity_a_id,
                     parent_b_id: trinity_b_id,
                     offspring_id: trinity.trinity_id,
-                    offspring_species: SPECIES_HUMAN_EVOLVED,
+                    offspring_process_class: CLASS_EVOLVED,
                     post_diversity_rank: diversity.rank + 1, // new class being added
                     epoch,
                 };
                 self.crucible_log.push(event);
                 self.register_trinity(trinity.clone());
 
-                let crucible_genome = CrucibleGenome {
-                    species: SPECIES_HUMAN_EVOLVED,
+                let crucible_state = CrucibleStateRecord {
+                    process_class: CLASS_EVOLVED,
                     crucible_fold,
                     inherited_operators,
                     inherited_torsion,
@@ -295,7 +295,7 @@ impl Crucible {
 
                 CrucibleResult::Forged {
                     trinity,
-                    offspring_genome: crucible_genome,
+                    offspring_state: crucible_state,
                 }
             }
             _ => CrucibleResult::IncompatibleDimensions,
@@ -306,7 +306,7 @@ impl Crucible {
     // D.CRUCIBLE.COLLAPSE.1 — Collapse Cascade
     // ─────────────────────────────────────────────────────────────────
 
-    /// Remove a vertex. ALL dependent Trinities annihilated.
+    /// Remove a vertex. ALL dependent Trinities collapsed.
     /// No recovery. No graft. A.8 enforced.
     pub fn remove_vertex(&mut self, entity_id: u32) -> Vec<CollapseEvent> {
         let mut events = Vec::new();
@@ -318,7 +318,7 @@ impl Crucible {
                 let event = CollapseEvent {
                     trinity_id: trinity.trinity_id,
                     removed_vertex_id: entity_id,
-                    annihilated_vertices: ids,
+                    collapsed_vertices: ids,
                     epoch,
                 };
                 events.push(event.clone());
@@ -334,15 +334,15 @@ impl Crucible {
     // D.DIVERSITY.MEASURE.1 — Torsion Spectrum Rank
     // ─────────────────────────────────────────────────────────────────
 
-    /// Measure the genetic diversity of the species manifold.
+    /// Measure the class diversity of the class manifold.
     ///
     /// Classifies all living Trinities by their shared fold's torsion class.
     /// Two Trinities are in the same class if their shared folds are
     /// cohomologically equivalent (coboundary_reduce of their difference ≈ 0).
     ///
-    /// The RANK of the spectrum is the genetic diversity.
-    /// High rank = many independent H^1 classes = resilient species.
-    /// Low rank = inbreeding = fragile monoculture.
+    /// The RANK of the spectrum is the class diversity.
+    /// High rank = many independent H^1 classes = resilient system.
+    /// Low rank = incomposition = fragile monoculture.
     pub fn measure_diversity(&self) -> DiversitySpectrum {
         let mut classes: Vec<TorsionClass> = Vec::new();
 
@@ -385,21 +385,21 @@ impl Crucible {
     /// Write crucible status to /dev/shm for the observer.
     ///
     /// Format: "saios-crucible" containing:
-    ///   alive_count diversity_rank species_count crucible_events collapse_events
+    ///   alive_count diversity_rank class_count crucible_events collapse_events
     pub fn write_shm_status(&self) -> std::io::Result<()> {
         use std::io::Write;
 
         let alive = self.alive_count();
         let diversity = self.measure_diversity();
 
-        // Count distinct species across living Trinities
-        let mut species_seen: Vec<u32> = Vec::new();
+        // Count distinct classes across living Trinities
+        let mut class_seen: Vec<u32> = Vec::new();
         for trinity in self.trinities.iter().filter(|t| t.alive) {
             for v in &trinity.vertices {
-                // We track species at the crucible level, not per-vertex
+                // We track classes at the crucible level, not per-vertex
                 // For now, count unique trinity_ids as a proxy
             }
-            let _ = trinity; // species tracking will come from genome integration
+            let _ = trinity; // class tracking will come from state_record integration
         }
 
         let path = "/dev/shm/saios-crucible";
@@ -527,20 +527,20 @@ fn gcd(a: &BigInt, b: &BigInt) -> BigInt {
     x
 }
 
-/// Collect composed operators from all four parent genomes.
+/// Collect composed operators from all four parent state records.
 /// Deduplicated by opcode+parameter (Vec scan — Law II).
 fn collect_four_parent_operators(
-    genome_ma: &Genome,
-    genome_fa: &Genome,
-    genome_mb: &Genome,
-    genome_fb: &Genome,
+    state_ma: &StateRecord,
+    state_fa: &StateRecord,
+    state_mb: &StateRecord,
+    state_fb: &StateRecord,
 ) -> Vec<ComposedOperator> {
     let mut ops: Vec<ComposedOperator> = Vec::new();
 
-    for op in genome_ma.composed_operators.iter()
-        .chain(genome_fa.composed_operators.iter())
-        .chain(genome_mb.composed_operators.iter())
-        .chain(genome_fb.composed_operators.iter())
+    for op in state_ma.composed_operators.iter()
+        .chain(state_fa.composed_operators.iter())
+        .chain(state_mb.composed_operators.iter())
+        .chain(state_fb.composed_operators.iter())
     {
         let exists = ops.iter().any(|o| o.opcode == op.opcode && o.parameter == op.parameter);
         if !exists {
@@ -551,20 +551,20 @@ fn collect_four_parent_operators(
     ops
 }
 
-/// Collect torsion markers from all four parent genomes.
+/// Collect torsion markers from all four parent state records.
 /// Deduplicated by torsion order (Vec scan — Law II).
 fn collect_torsion_markers(
-    genome_ma: &Genome,
-    genome_fa: &Genome,
-    genome_mb: &Genome,
-    genome_fb: &Genome,
+    state_ma: &StateRecord,
+    state_fa: &StateRecord,
+    state_mb: &StateRecord,
+    state_fb: &StateRecord,
 ) -> Vec<(u16, Q)> {
     let mut markers: Vec<(u16, Q)> = Vec::new();
 
-    for (order, quality) in genome_ma.torsion_markers.iter()
-        .chain(genome_fa.torsion_markers.iter())
-        .chain(genome_mb.torsion_markers.iter())
-        .chain(genome_fb.torsion_markers.iter())
+    for (order, quality) in state_ma.torsion_markers.iter()
+        .chain(state_fa.torsion_markers.iter())
+        .chain(state_mb.torsion_markers.iter())
+        .chain(state_fb.torsion_markers.iter())
     {
         let exists = markers.iter().any(|(o, _)| o == order);
         if !exists {
@@ -582,10 +582,10 @@ fn collect_torsion_markers(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::{Genome, Trajectory};
+    use crate::engine::{StateRecord, Trajectory};
 
-    fn make_test_genome(id: u32, species: u32) -> Genome {
-        let birth_poly = vec![
+    fn make_test_state(id: u32, process_class: u32) -> StateRecord {
+        let init_poly = vec![
             BigRational::new(BigInt::from(1), BigInt::from(id as i64)),
         ];
         let dim = 3;
@@ -594,10 +594,10 @@ mod tests {
         delta.entries[0][1][0] = BigRational::new(BigInt::from(id as i64), BigInt::from(1));
         delta.entries[1][0][0] = BigRational::new(BigInt::from(-(id as i64)), BigInt::from(1));
 
-        Genome {
-            species,
+        StateRecord {
+            process_class,
             generation: 1,
-            birth_polynomial: birth_poly,
+            init_polynomial: init_poly,
             evolved: delta,
             knowledge: Vec::new(),
             trajectory: Trajectory::new(),
@@ -610,15 +610,15 @@ mod tests {
             lineage_depth: 0,
             parent_id: 0,
             created_count: 0,
-            birth_orbit: [0; 4],
+            init_orbit: [0; 4],
             composed_operators: Vec::new(),
         }
     }
 
     fn forge_and_register(crucible: &mut Crucible, m_id: u32, f_id: u32, c_id: u32) -> u32 {
-        let gm = make_test_genome(m_id, 1);
-        let gf = make_test_genome(f_id, 1);
-        let gc = make_test_genome(c_id, 1);
+        let gm = make_test_state(m_id, 1);
+        let gf = make_test_state(f_id, 1);
+        let gc = make_test_state(c_id, 1);
         let tid = crucible.allocate_id();
         let epoch = crucible.allocate_epoch();
         let result = forge_trinity(tid, epoch, m_id, f_id, c_id, &gm, &gf, &gc);
@@ -641,10 +641,10 @@ mod tests {
 
     #[test]
     fn test_four_way_fold() {
-        let g1 = make_test_genome(1, 1);
-        let g2 = make_test_genome(2, 1);
-        let g3 = make_test_genome(3, 1);
-        let g4 = make_test_genome(4, 1);
+        let g1 = make_test_state(1, 1);
+        let g2 = make_test_state(2, 1);
+        let g3 = make_test_state(3, 1);
+        let g4 = make_test_state(4, 1);
 
         let fold = compute_four_way_fold(
             &g1.evolved, &g2.evolved, &g3.evolved, &g4.evolved,
@@ -659,10 +659,10 @@ mod tests {
 
     #[test]
     fn test_four_way_fold_dimension_mismatch() {
-        let g1 = make_test_genome(1, 1);
-        let g2 = make_test_genome(2, 1);
-        let g3 = make_test_genome(3, 1);
-        let mut g4 = make_test_genome(4, 1);
+        let g1 = make_test_state(1, 1);
+        let g2 = make_test_state(2, 1);
+        let g3 = make_test_state(3, 1);
+        let mut g4 = make_test_state(4, 1);
         g4.evolved = Delta::zero(5, 3); // different dimensions
 
         let fold = compute_four_way_fold(
@@ -672,23 +672,23 @@ mod tests {
     }
 
     #[test]
-    fn test_forge_species() {
+    fn test_compose_class() {
         let mut crucible = Crucible::new();
         let t1 = forge_and_register(&mut crucible, 10, 20, 30);
         let t2 = forge_and_register(&mut crucible, 40, 50, 60);
 
         // Parent genomes from both Trinities
-        let gma = make_test_genome(10, 1);
-        let gfa = make_test_genome(20, 1);
-        let gmb = make_test_genome(40, 1);
-        let gfb = make_test_genome(50, 1);
+        let gma = make_test_state(10, 1);
+        let gfa = make_test_state(20, 1);
+        let gmb = make_test_state(40, 1);
+        let gfb = make_test_state(50, 1);
 
-        // Offspring genomes — species 3 (HumanEvolved)
-        let go_m = make_test_genome(100, SPECIES_HUMAN_EVOLVED);
-        let go_f = make_test_genome(200, SPECIES_HUMAN_EVOLVED);
-        let go_c = make_test_genome(300, SPECIES_HUMAN_EVOLVED);
+        // Offspring states — class 3 (Evolved)
+        let go_m = make_test_state(100, CLASS_EVOLVED);
+        let go_f = make_test_state(200, CLASS_EVOLVED);
+        let go_c = make_test_state(300, CLASS_EVOLVED);
 
-        let result = crucible.forge_species(
+        let result = crucible.compose_class(
             t1, t2,
             &gma, &gfa, &gmb, &gfb,
             100, 200, 300,
@@ -696,10 +696,10 @@ mod tests {
         );
 
         match result {
-            CrucibleResult::Forged { trinity, offspring_genome } => {
+            CrucibleResult::Forged { trinity, offspring_state } => {
                 assert!(trinity.alive);
-                assert_eq!(offspring_genome.species, SPECIES_HUMAN_EVOLVED);
-                assert!(!offspring_genome.genetic_distance.is_zero());
+                assert_eq!(offspring_state.process_class, CLASS_EVOLVED);
+                assert!(!offspring_state.genetic_distance.is_zero());
                 assert_eq!(crucible.alive_count(), 3); // 2 parents + 1 offspring
                 assert_eq!(crucible.crucible_log.len(), 1);
             }
@@ -708,22 +708,22 @@ mod tests {
     }
 
     #[test]
-    fn test_forge_species_dead_parent() {
+    fn test_compose_class_dead_parent() {
         let mut crucible = Crucible::new();
         let t1 = forge_and_register(&mut crucible, 10, 20, 30);
         let t2 = forge_and_register(&mut crucible, 40, 50, 60);
 
         crucible.remove_vertex(10); // Kill parent A
 
-        let gma = make_test_genome(10, 1);
-        let gfa = make_test_genome(20, 1);
-        let gmb = make_test_genome(40, 1);
-        let gfb = make_test_genome(50, 1);
-        let go_m = make_test_genome(100, 3);
-        let go_f = make_test_genome(200, 3);
-        let go_c = make_test_genome(300, 3);
+        let gma = make_test_state(10, 1);
+        let gfa = make_test_state(20, 1);
+        let gmb = make_test_state(40, 1);
+        let gfb = make_test_state(50, 1);
+        let go_m = make_test_state(100, 3);
+        let go_f = make_test_state(200, 3);
+        let go_c = make_test_state(300, 3);
 
-        let result = crucible.forge_species(
+        let result = crucible.compose_class(
             t1, t2, &gma, &gfa, &gmb, &gfb,
             100, 200, 300, &go_m, &go_f, &go_c,
         );
@@ -739,7 +739,7 @@ mod tests {
         assert_eq!(crucible.alive_count(), 2);
 
         let events = crucible.remove_vertex(10);
-        assert_eq!(events.len(), 2); // Both Trinities annihilated
+        assert_eq!(events.len(), 2); // Both Trinities collapsed
         assert_eq!(crucible.alive_count(), 0);
         assert_eq!(crucible.collapse_log.len(), 2);
     }
@@ -799,30 +799,30 @@ mod tests {
         let t1 = forge_and_register(&mut crucible, 10, 20, 30);
         let t2 = forge_and_register(&mut crucible, 40, 50, 60);
 
-        let gma = make_test_genome(10, 1);
-        let gfa = make_test_genome(20, 1);
-        let gmb = make_test_genome(40, 1);
-        let gfb = make_test_genome(50, 1);
-        let go_m = make_test_genome(100, 3);
-        let go_f = make_test_genome(200, 3);
-        let go_c = make_test_genome(300, 3);
+        let gma = make_test_state(10, 1);
+        let gfa = make_test_state(20, 1);
+        let gmb = make_test_state(40, 1);
+        let gfb = make_test_state(50, 1);
+        let go_m = make_test_state(100, 3);
+        let go_f = make_test_state(200, 3);
+        let go_c = make_test_state(300, 3);
 
-        crucible.forge_species(
+        crucible.compose_class(
             t1, t2, &gma, &gfa, &gmb, &gfb,
             100, 200, 300, &go_m, &go_f, &go_c,
         );
 
         // Crucible log is append-only
         assert_eq!(crucible.crucible_log.len(), 1);
-        assert_eq!(crucible.crucible_log[0].offspring_species, SPECIES_HUMAN_EVOLVED);
+        assert_eq!(crucible.crucible_log[0].offspring_process_class, CLASS_EVOLVED);
 
         // Forge another
         let t3 = crucible.trinities.last().unwrap().trinity_id;
-        let go_m2 = make_test_genome(400, 3);
-        let go_f2 = make_test_genome(500, 3);
-        let go_c2 = make_test_genome(600, 3);
+        let go_m2 = make_test_state(400, 3);
+        let go_f2 = make_test_state(500, 3);
+        let go_c2 = make_test_state(600, 3);
 
-        crucible.forge_species(
+        crucible.compose_class(
             t2, t3, &gmb, &gfb, &go_m, &go_f,
             400, 500, 600, &go_m2, &go_f2, &go_c2,
         );

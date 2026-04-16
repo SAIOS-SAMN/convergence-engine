@@ -4,10 +4,10 @@
 //
 //! Epigenome — volatile harmonic perturbation.
 //!
-//! The epigenome is 11 Q values that perturb the witness's harmonic spectrum.
+//! The epigenome is 11 Q values that perturb the primary node's harmonic spectrum.
 //! Not a Delta. Not a list. A tuning of the aperture.
 //!
-//! H_total = H_sacred + H_epigenetic
+//! H_total = H_core + H_epigenetic
 //!
 //! The harmonics bridge dim=3 (delta_k) to dim=n (observation) to dim=17 (mesh).
 //! The epigenome perturbs the bridge — shifting sensitivity across dimensions:
@@ -64,13 +64,13 @@ impl TransmutationPath {
     }
 }
 
-/// The epigenome: 11 harmonic perturbations that tune the witness's aperture,
+/// The epigenome: 11 harmonic perturbations that tune the primary node's aperture,
 /// plus transmutation path markers that encode which perception path solved
 /// each orbit. The markers are pointers — the kernel holds the definitions.
 #[derive(Debug, Clone)]
 pub struct Epigenome {
     /// 11 Q values — one per harmonic dimension.
-    /// These ADD to the witness's sacred harmonics before entering perception.
+    /// These ADD to the primary node's core harmonics before entering perception.
     pub perturbation: [Q; 11],
     /// Observation count per dimension — tracks how many measurements
     /// contributed to each harmonic, for running average convergence.
@@ -174,7 +174,7 @@ impl Epigenome {
         self.counts[dim] += 1;
     }
 
-    /// Export as 11 Q values to add to the witness's harmonics.
+    /// Export as 11 Q values to add to the primary node's harmonics.
     pub fn as_harmonic_bias(&self) -> [Q; 11] {
         self.perturbation.clone()
     }

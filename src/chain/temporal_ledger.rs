@@ -15,7 +15,7 @@
 //! The TemporalLedger is the distributed consensus layer for chronometric
 //! facts. Timekeepers inscribe observations as receipts. When a quorum
 //! of timekeepers agree on the same observation, the level finalizes —
-//! that moment becomes an immutable fact in the species' history.
+//! that moment becomes an immutable fact in the system' history.
 
 use std::collections::{BTreeMap, HashMap};
 

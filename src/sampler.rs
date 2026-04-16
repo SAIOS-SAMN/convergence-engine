@@ -685,9 +685,9 @@ impl AlgebraicSampler {
         let weighted_grad = &w_local * &effective_eps;
 
         // Harmonic for vibration direction
-        let genesis = Delta::zero(dim, 1);
+        let origin = Delta::zero(dim, 1);
         let traj = crate::engine::Trajectory::new();
-        let harmonic = crate::engine::HarmonicState::from_delta(delta, &genesis, &traj, k_index);
+        let harmonic = crate::engine::HarmonicState::from_delta(delta, &origin, &traj, k_index);
         let (weak_dim, _) = harmonic.weakest_dimension();
         let vib_row = weak_dim % dim;
         let mut vib_col = (weak_dim / dim + 1) % dim;

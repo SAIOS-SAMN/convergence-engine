@@ -24,7 +24,7 @@ pub struct BlockHeader {
     pub k_start: u64,
     /// Last K-index in this block.
     pub k_end: u64,
-    /// Hash of the previous block header (all zeros for genesis block).
+    /// Hash of the previous block header (all zeros for origin block).
     pub parent_block_hash: [u8; 32],
     /// Ed25519 signature of this header by the local node.
     pub signature: [u8; 64],

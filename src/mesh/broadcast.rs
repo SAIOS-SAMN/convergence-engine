@@ -173,8 +173,8 @@ mod tests {
 
     #[test]
     fn test_native_loopback_roundtrip() {
-        let genesis_rcf = [0x42; 32];
-        let sk = derive_signing_key(&genesis_rcf);
+        let origin_rcf = [0x42; 32];
+        let sk = derive_signing_key(&origin_rcf);
         let pk = signing::public_key(&sk);
         let receipt = test_receipt();
         let frame = frame_signed_receipt(&receipt, &sk);

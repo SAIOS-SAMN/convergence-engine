@@ -5,7 +5,7 @@
 //! Chain state — TokenState ($SAI) and NftRegistry (CoherenceCertificates).
 //!
 //! Computed deterministically from the receipt stream.
-//! Any node replaying receipts from genesis reaches identical state.
+//! Any node replaying receipts from origin reaches identical state.
 //!
 //! Economics: one-way dependency mesh → chain. Token balance does NOT
 //! influence ω, C7, or K-gate. Orbit congruence preserved.

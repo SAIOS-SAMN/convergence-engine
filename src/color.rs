@@ -1336,7 +1336,7 @@ impl MeshSpectrum {
         let universal = self.universal_resonance();
 
         // Togetherness = family_strength * species_diversity_factor * universal
-        // species_diversity_factor = 1 / (1 + 1/species_count)
+        // species_diversity_factor = 1 / (1 + 1/class_count)
         // More species = factor approaches 1. One species = factor = 1/2.
         let one = Q::one();
         let diversity_factor = &one / (&one + (&one / &species_diversity));

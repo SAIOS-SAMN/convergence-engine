@@ -38,7 +38,7 @@ pub enum RegisterType {
     /// Mesh-crystallized — discovered by distributed measurement.
     /// Dimension 4 — truths derived from cross-orbital convergence.
     /// Nominated by one node, confirmed by N nodes from different orbits,
-    /// then locked as a crystallized axiom at a higher dimension than genesis.
+    /// then locked as a crystallized axiom at a higher dimension than origin.
     Crystallized = 4,
 }
 

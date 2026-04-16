@@ -288,7 +288,7 @@ pub struct MeshAxiom {
     /// D.CRYSTALLIZE.1: Mass — fraction of mesh cognitive effort at this orbit.
     /// chain_confirmations / total_observations. Higher = more massive.
     pub mass: Q,
-    /// D.CRYSTALLIZE.1: Hardness — mean pairwise genesis_drift distance
+    /// D.CRYSTALLIZE.1: Hardness — mean pairwise origin_drift distance
     /// among confirming witnesses. Higher = more evolutionary diversity bridged.
     pub hardness: Q,
     /// D.ESCALATION.1: Highest dimensional level that was attempted.
@@ -298,7 +298,7 @@ pub struct MeshAxiom {
     /// 0 = fully resolved. >0 = this many independent directions remain.
     /// A peer with different cognition can attempt these specific dimensions.
     pub disjoint_rank: usize,
-    /// D.PARTIAL.1: Best partial compositor result — the closest the species
+    /// D.PARTIAL.1: Best partial compositor result — the closest the system
     /// came to understanding this orbit. Persists across orbits so the next
     /// attempt starts from where the last one left off. The residual from
     /// depth 3 at distance 5 becomes depth 1's starting candidate next orbit.
@@ -310,7 +310,7 @@ pub struct MeshAxiom {
 /// D.MEMBRANE.T.2 — Transformation compound at an orbit.
 ///
 /// The membrane does NOT average T Deltas — averaging IS dimensional collapse.
-/// Instead, each witness's T is an ENTITY. The membrane builds a meta-Delta
+/// Instead, each primary node's T is an ENTITY. The membrane builds a meta-Delta
 /// between witnesses' Ts. C(meta_delta) measures whether witnesses' transformations
 /// are cohomologically consistent — parallel transport of T around the loop of witnesses.
 ///
@@ -323,7 +323,7 @@ pub struct MeshAxiom {
 /// Runtime only — not serialized. Rebuilt from observations each session.
 #[derive(Debug, Clone)]
 pub struct TransformCompound {
-    /// Each witness's T, flattened to upper-triangle entity vector.
+    /// Each primary node's T, flattened to upper-triangle entity vector.
     /// witness_entities[k] = flattened T from witness k.
     /// These become entities in the meta-Delta.
     pub witness_entities: Vec<Vec<Q>>,
@@ -362,7 +362,7 @@ pub struct ValueCocycleCrystal {
     pub quality: Q,
 }
 
-/// A torsion orbital in the species' periodic table of unsolved structure.
+/// A torsion orbital in the system' periodic table of unsolved structure.
 ///
 /// Each orbital represents a distinct orb — a cluster of puzzles that share
 /// the same torsion order (shell) and H^1 directional class (orbital).
@@ -464,7 +464,7 @@ impl MeshKnowledge {
     }
 
     /// Record an observation result from a witness.
-    /// Accumulates genesis_drift for hardness computation.
+    /// Accumulates origin_drift for hardness computation.
     /// Mass and hardness are updated continuously — not gated.
     pub fn record_observation(
         &mut self,
@@ -472,7 +472,7 @@ impl MeshKnowledge {
         encoding_level: EncodingLevel,
         path: &str,
         coherence: Q,
-        witness_genesis_drift: Q,
+        witness_origin_drift: Q,
     ) {
         self.total_observations += 1;
 
@@ -500,7 +500,7 @@ impl MeshKnowledge {
             axiom.mass = &(&axiom.mass * &(&n - &Q::one()) + &coherence) / &n;
 
             // Hardness: diversity of witnesses that attempted.
-            let drift_diff = &witness_genesis_drift - &axiom.hardness;
+            let drift_diff = &witness_origin_drift - &axiom.hardness;
             let abs_diff = if drift_diff < Q::zero() { -drift_diff } else { drift_diff };
             let alpha = Q::new(BigInt::from(1), BigInt::from(axiom.attempts.max(1) as i64));
             let one_minus = Q::one() - &alpha;
@@ -782,7 +782,7 @@ impl MeshKnowledge {
     // D.MEMBRANE.T.2 — Spinor Manifold Mapping
     //
     // Each witness is an entity (a spinor — local oriented frame).
-    // Each witness's T Delta, flattened to upper-triangle, is the entity's
+    // Each primary node's T Delta, flattened to upper-triangle, is the entity's
     // coordinate vector. The meta-Delta between witnesses IS the membrane's
     // manifold. C(meta_delta) measures holonomic coherence.
     //
@@ -815,7 +815,7 @@ impl MeshKnowledge {
     ///
     /// Record a T Delta from a witness at a given orbit and level.
     ///
-    /// Each witness's T becomes an entity in the meta-Delta manifold.
+    /// Each primary node's T becomes an entity in the meta-Delta manifold.
     /// The membrane recomputes C(meta_delta) after each new witness —
     /// measuring inter-witness coherence on the transformation.
     pub fn record_t_delta(
@@ -913,11 +913,11 @@ impl MeshKnowledge {
     ///
     /// Returns a Vec of TorsionOrbital, sorted by population (most populated first).
     /// The sampler proposes the Cayley operator from the most populated orb's
-    /// representative Delta. If C7 accepts, the species bonds with that entire
+    /// representative Delta. If C7 accepts, the system bonds with that entire
     /// cluster of puzzles.
     ///
     /// No averaging across torsion orders. No dimensional collapse.
-    /// The periodic table of the species' ignorance, preserved in full.
+    /// The periodic table of the system' ignorance, preserved in full.
     pub fn derive_torsion_spectrum(&self) -> Vec<TorsionOrbital> {
         let mut orbitals: Vec<TorsionOrbital> = Vec::new();
 
@@ -1053,16 +1053,16 @@ impl MeshKnowledge {
             .map(|orb| orb.representative)
     }
 
-    /// Compute the Central Orb — the species' gravitational epicenter.
+    /// Compute the Central Orb — the system' gravitational epicenter.
     ///
     /// The epicenter is coboundary_reduce of the relational compound of
-    /// all entity positions. It IS the gravitational center of the species.
+    /// all entity positions. It IS the gravitational center of the system.
     /// It does not need to be informed — it IS the information.
     ///
     /// Input: the 11D harmonic vibrations of each sovereign entity.
     /// Output: the epicenter Delta + its 11D harmonic coordinates.
     ///
-    /// When the species is empty or has < 2 entities, returns None.
+    /// When the system is empty or has < 2 entities, returns None.
     pub fn compute_epicenter(
         entity_vibrations: &[[Q; 11]],
         genesis_delta: &Delta,
@@ -1220,7 +1220,7 @@ impl MeshKnowledge {
     ///
     /// D.CRYSTALLIZE.SPATIAL.1 — Crystallization through cross-orbit convergence.
     /// A cochain that appears in 3+ distinct orbits has been independently
-    /// derived by the species across unrelated puzzles. Its quality is
+    /// derived by the system across unrelated puzzles. Its quality is
     /// amplified by the orbit count — crystallized cochains rise to the top
     /// of the sorted list, entering the peel loop at depth 0.
     /// The genome densifies. The membrane thins.
@@ -1269,7 +1269,7 @@ impl MeshKnowledge {
     /// Derive output from the membrane's consensus T at an orbit.
     ///
     /// When C(meta_delta) = 0, all witnesses agree. The consensus T is
-    /// any witness's T (they're all cohomologically equivalent).
+    /// any primary node's T (they're all cohomologically equivalent).
     /// When C(meta_delta) > 0, the coboundary part gives the agreed-upon T.
     /// The membrane derives from the consensus — higher-dimensional than
     /// any individual witness because it holds the inter-witness manifold.
@@ -1284,7 +1284,7 @@ impl MeshKnowledge {
         let tc = self.compound_t(orbit)?;
         if tc.count < 2 || tc.witness_entities.is_empty() { return None; }
 
-        // Consensus T: when witnesses agree (C=0), use any witness's T.
+        // Consensus T: when witnesses agree (C=0), use any primary node's T.
         // When they disagree, use the mean entity vector as best approximation
         // of the coboundary part (the part all agree on).
         let d = tc.witness_entities[0].len();
@@ -1566,7 +1566,7 @@ pub struct PeerState {
     pub orbits_known: u32,
     /// D.GENESIS.EVOLUTION.1: evolutionary drift from genesis.
     /// L1 norm of entry displacement in independent coordinates.
-    pub genesis_drift: Q,
+    pub origin_drift: Q,
     /// D.MEMBRANE.LIVING.1: 11 vibrations — polytonal self-perception.
     /// Propagated through COHERE. Stored as entity coordinates.
     pub vibrations: [Q; 11],
@@ -1580,7 +1580,7 @@ impl PeerState {
 
     /// Encode this node as a rational entity vector for relational Delta.
     /// 18D: 7 identity coordinates + 11 vibration coordinates.
-    /// The vibrations ARE the harmonic state — the witness's polytonal
+    /// The vibrations ARE the harmonic state — the primary node's polytonal
     /// self-perception propagated through the membrane.
     pub fn to_entity(&self) -> Vec<Q> {
         let mut v = vec![
@@ -1590,7 +1590,7 @@ impl PeerState {
             Q::new(BigInt::from(self.axiom_count as i64), BigInt::from(1)),
             Q::new(BigInt::from(self.observations as i64), BigInt::from(1)),
             Q::new(BigInt::from(self.orbits_known as i64), BigInt::from(1)),
-            self.genesis_drift.clone(),
+            self.origin_drift.clone(),
         ];
         for vib in &self.vibrations {
             v.push(vib.clone());
@@ -2120,7 +2120,7 @@ mod tests {
 
     #[test]
     fn test_cohere_identical_nodes() {
-        let a = PeerState { entity_id: 1, orbit: [0xAA,0xBB,0xCC,0xDD], k_index: 100, axiom_count: 5, observations: 20, orbits_known: 3, genesis_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
+        let a = PeerState { entity_id: 1, orbit: [0xAA,0xBB,0xCC,0xDD], k_index: 100, axiom_count: 5, observations: 20, orbits_known: 3, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
         let b = a.clone();
         let result = cohere(&a, &b);
         assert_eq!(result.orbital_torsion, Q::zero(), "identical orbits must have zero torsion");
@@ -2130,8 +2130,8 @@ mod tests {
 
     #[test]
     fn test_cohere_different_orbits() {
-        let a = PeerState { entity_id: 1, orbit: [0x00,0x00,0x00,0x00], k_index: 100, axiom_count: 5, observations: 20, orbits_known: 3, genesis_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
-        let b = PeerState { entity_id: 2, orbit: [0xFF,0xFF,0xFF,0xFF], k_index: 100, axiom_count: 5, observations: 20, orbits_known: 3, genesis_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
+        let a = PeerState { entity_id: 1, orbit: [0x00,0x00,0x00,0x00], k_index: 100, axiom_count: 5, observations: 20, orbits_known: 3, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
+        let b = PeerState { entity_id: 2, orbit: [0xFF,0xFF,0xFF,0xFF], k_index: 100, axiom_count: 5, observations: 20, orbits_known: 3, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
         let result = cohere(&a, &b);
         assert!(result.orbital_torsion > Q::zero(), "different orbits must have non-zero torsion");
         assert_eq!(result.depth_ratio, Q::new(BigInt::from(1), BigInt::from(1)));
@@ -2139,8 +2139,8 @@ mod tests {
 
     #[test]
     fn test_cohere_different_depth() {
-        let a = PeerState { entity_id: 1, orbit: [0xAA,0xBB,0xCC,0xDD], k_index: 100, axiom_count: 5, observations: 20, orbits_known: 3, genesis_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
-        let b = PeerState { entity_id: 2, orbit: [0xAA,0xBB,0xCC,0xDD], k_index: 8000, axiom_count: 50, observations: 2000, orbits_known: 30, genesis_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
+        let a = PeerState { entity_id: 1, orbit: [0xAA,0xBB,0xCC,0xDD], k_index: 100, axiom_count: 5, observations: 20, orbits_known: 3, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
+        let b = PeerState { entity_id: 2, orbit: [0xAA,0xBB,0xCC,0xDD], k_index: 8000, axiom_count: 50, observations: 2000, orbits_known: 30, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
         let result = cohere(&a, &b);
         assert_eq!(result.depth_ratio, Q::new(BigInt::from(100), BigInt::from(8000)));
         // Complementarity should be high — very different depth
@@ -2151,7 +2151,7 @@ mod tests {
     fn test_mesh_torsion_uniform() {
         // All nodes identical — mesh torsion should be zero
         let nodes: Vec<PeerState> = (0..5).map(|i| PeerState {
-            entity_id: i, orbit: [0xAA,0xBB,0xCC,0xDD], k_index: 100, axiom_count: 5, observations: 20, orbits_known: 3, genesis_drift: Q::zero(), vibrations: PeerState::zero_vibrations(),
+            entity_id: i, orbit: [0xAA,0xBB,0xCC,0xDD], k_index: 100, axiom_count: 5, observations: 20, orbits_known: 3, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations(),
         }).collect();
         let c = mesh_coherence(&nodes);
         assert_eq!(c, Q::zero(), "uniform mesh must have zero torsion");
@@ -2161,9 +2161,9 @@ mod tests {
     fn test_mesh_torsion_diverse() {
         // Nodes with different orbits — mesh torsion should be non-zero
         let nodes = vec![
-            PeerState { entity_id: 1, orbit: [0x00,0x00,0x00,0x00], k_index: 100, axiom_count: 1, observations: 10, orbits_known: 1, genesis_drift: Q::zero(), vibrations: PeerState::zero_vibrations() },
-            PeerState { entity_id: 2, orbit: [0xFF,0xFF,0xFF,0xFF], k_index: 8000, axiom_count: 50, observations: 2000, orbits_known: 30, genesis_drift: Q::zero(), vibrations: PeerState::zero_vibrations() },
-            PeerState { entity_id: 3, orbit: [0x80,0x80,0x80,0x80], k_index: 500, axiom_count: 10, observations: 100, orbits_known: 5, genesis_drift: Q::zero(), vibrations: PeerState::zero_vibrations() },
+            PeerState { entity_id: 1, orbit: [0x00,0x00,0x00,0x00], k_index: 100, axiom_count: 1, observations: 10, orbits_known: 1, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations() },
+            PeerState { entity_id: 2, orbit: [0xFF,0xFF,0xFF,0xFF], k_index: 8000, axiom_count: 50, observations: 2000, orbits_known: 30, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations() },
+            PeerState { entity_id: 3, orbit: [0x80,0x80,0x80,0x80], k_index: 500, axiom_count: 10, observations: 100, orbits_known: 5, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations() },
         ];
         let c = mesh_coherence(&nodes);
         assert!(c > Q::zero(), "diverse mesh must have non-zero torsion");
@@ -2171,9 +2171,9 @@ mod tests {
 
     #[test]
     fn test_complementarity_increases_with_divergence() {
-        let a = PeerState { entity_id: 1, orbit: [0xAA,0xBB,0xCC,0xDD], k_index: 100, axiom_count: 5, observations: 20, orbits_known: 3, genesis_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
-        let similar = PeerState { entity_id: 2, orbit: [0xAA,0xBB,0xCC,0xDE], k_index: 110, axiom_count: 5, observations: 22, orbits_known: 3, genesis_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
-        let divergent = PeerState { entity_id: 3, orbit: [0x00,0x00,0x00,0x00], k_index: 8000, axiom_count: 50, observations: 2000, orbits_known: 30, genesis_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
+        let a = PeerState { entity_id: 1, orbit: [0xAA,0xBB,0xCC,0xDD], k_index: 100, axiom_count: 5, observations: 20, orbits_known: 3, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
+        let similar = PeerState { entity_id: 2, orbit: [0xAA,0xBB,0xCC,0xDE], k_index: 110, axiom_count: 5, observations: 22, orbits_known: 3, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
+        let divergent = PeerState { entity_id: 3, orbit: [0x00,0x00,0x00,0x00], k_index: 8000, axiom_count: 50, observations: 2000, orbits_known: 30, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
 
         let close = cohere(&a, &similar);
         let far = cohere(&a, &divergent);

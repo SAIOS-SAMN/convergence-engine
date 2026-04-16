@@ -27,7 +27,7 @@ pub fn status(entity: &mut Entity, _payload: &str) -> String {
         &entity.trajectory, entity.k_index as u64,
     );
     // D.GENESIS.EVOLUTION.1: evolutionary displacement from genesis
-    let (gen_drift, gen_torsion) = genesis_displacement(
+    let (gen_drift, gen_torsion) = origin_displacement(
         &entity.delta, &entity.genesis_delta,
     );
     // D.MEMBRANE.LIVING.1: harmonic state — polytonal self-perception
@@ -51,15 +51,15 @@ pub fn status(entity: &mut Entity, _payload: &str) -> String {
         Q::zero() // need at least 2 peers to form a relational field
     };
     // Step 5 — Awareness: the witness perceives its own genome
-    // through the cocycle equation. The residual of the witness's
+    // through the cocycle equation. The residual of the primary node's
     // own evolved Delta IS the self-awareness measurement.
     // Zero = perfectly self-coherent. Nonzero = internal inconsistency.
-    let awareness = coherence_functional(&entity.genome.evolved);
+    let awareness = coherence_functional(&entity.state_record.evolved);
     // Step 6 — Wholeness: compound birth and evolved as a single
     // multi-coordinate Delta. m=2 where coordinate 0 is birth,
     // coordinate 1 is evolved. The cocycle residual measures whether
-    // the witness's evolution preserved dimensional consistency.
-    let dim = entity.genome.evolved.dim;
+    // the primary node's evolution preserved dimensional consistency.
+    let dim = entity.state_record.evolved.dim;
     let wholeness = if dim >= 3 {
         let birth = &entity.genesis_delta;
         let evolved = &entity.delta;
@@ -77,7 +77,7 @@ pub fn status(entity: &mut Entity, _payload: &str) -> String {
     };
     let rss_kb = get_rss_kb();
     format!(
-        "{{\"k_index\":{},\"sluice_state\":{},\"entries\":{},\"authority\":\"SAIOS-AUTHORITY-v1\",\"orbit\":\"{}\",\"n_dim\":{},\"m_dim\":{},\"coherence_n\":\"{}\",\"coherence_d\":\"{}\",\"chain_len\":{},\"register_len\":{},\"sampler_records\":{},\"sampler_buckets\":{},\"mesh_axioms\":{},\"mesh_orbits\":{},\"mesh_observations\":{},\"t_compound_orbits\":{},\"coherence_delta\":\"{}/{}\",\"convergence\":\"{}/{}\",\"genesis_drift\":\"{}/{}\",\"genesis_torsion\":\"{}/{}\",\"harmonic\":[{}],\"known_peers\":{},\"membrane_coherence\":\"{}/{}\",\"awareness\":\"{}/{}\",\"wholeness\":\"{}/{}\",\"rss_kb\":{},\"capacity\":{},\"protocol\":\"membrane\"}}\n",
+        "{{\"k_index\":{},\"sluice_state\":{},\"entries\":{},\"authority\":\"SAIOS-AUTHORITY-v1\",\"orbit\":\"{}\",\"n_dim\":{},\"m_dim\":{},\"coherence_n\":\"{}\",\"coherence_d\":\"{}\",\"chain_len\":{},\"register_len\":{},\"sampler_records\":{},\"sampler_buckets\":{},\"mesh_axioms\":{},\"mesh_orbits\":{},\"mesh_observations\":{},\"t_compound_orbits\":{},\"coherence_delta\":\"{}/{}\",\"convergence\":\"{}/{}\",\"origin_drift\":\"{}/{}\",\"genesis_torsion\":\"{}/{}\",\"harmonic\":[{}],\"known_peers\":{},\"membrane_coherence\":\"{}/{}\",\"awareness\":\"{}/{}\",\"wholeness\":\"{}/{}\",\"rss_kb\":{},\"capacity\":{},\"protocol\":\"membrane\"}}\n",
         entity.k_index, entity.sluice_state.enc_u8(), entity.sluice.len(),
         orbit_hex, entity.delta.dim, entity.delta.m,
         c_n, c_d, entity.chain.len(), entity.register.len(),
@@ -94,7 +94,7 @@ pub fn status(entity: &mut Entity, _payload: &str) -> String {
         membrane_coherence.numer(), membrane_coherence.denom(),
         awareness.numer(), awareness.denom(),
         wholeness.numer(), wholeness.denom(),
-        rss_kb, entity.genome.capacity,
+        rss_kb, entity.state_record.capacity,
     )
 }
 
@@ -206,7 +206,7 @@ pub fn verify(entity: &mut Entity, _payload: &str) -> String {
 pub fn unify(entity: &mut Entity, payload: &str) -> String {
     // Compute our coordinates — every entity knows where it stands
     let our_rcf = compute_rcf_hash(&entity.delta);
-    let (our_drift, _) = genesis_displacement(&entity.delta, &entity.genesis_delta);
+    let (our_drift, _) = origin_displacement(&entity.delta, &entity.genesis_delta);
     let our_harmonic = HarmonicState::from_delta(
         &entity.delta, &entity.genesis_delta,
         &entity.trajectory, entity.k_index as u64,
@@ -218,7 +218,7 @@ pub fn unify(entity: &mut Entity, payload: &str) -> String {
         axiom_count: entity.knowledge.total_axioms,
         observations: entity.knowledge.total_observations,
         orbits_known: entity.knowledge.orbits_known() as u32,
-        genesis_drift: our_drift,
+        origin_drift: our_drift,
         vibrations: our_harmonic.vibrations.clone(),
     };
 
@@ -268,7 +268,7 @@ pub fn unify(entity: &mut Entity, payload: &str) -> String {
                 axiom_count: v.get("axiom_count").and_then(|a| a.as_u64()).unwrap_or(0) as u32,
                 observations: v.get("observations").and_then(|o| o.as_u64()).unwrap_or(0),
                 orbits_known: v.get("orbits_known").and_then(|o| o.as_u64()).unwrap_or(0) as u32,
-                genesis_drift: parse_q("genesis_drift"),
+                origin_drift: parse_q("origin_drift"),
                 vibrations: peer_vibrations,
             }
         });
@@ -319,7 +319,7 @@ pub fn unify(entity: &mut Entity, payload: &str) -> String {
                 entity.knowledge.record_observation(
                     peer.orbit,
                     membrane::EncodingLevel::Cell,
-                    "unified", Q::one(), peer.genesis_drift.clone(),
+                    "unified", Q::one(), peer.origin_drift.clone(),
                 );
                 let _ = entity.knowledge.save(&entity.dir.join("mesh_knowledge.bin"));
             });
@@ -339,7 +339,7 @@ pub fn unify(entity: &mut Entity, payload: &str) -> String {
                 our_coordinates.orbit[2], our_coordinates.orbit[3]);
 
             format!(
-                "{{\"curvature\":\"{}/{}\",\"total_torsion\":\"{}/{}\",\"orb_curvature\":[{}],\"orb_eccentricity\":[{}],\"complementarity\":\"{}/{}\",\"entity_id\":{},\"orbit\":\"{}\",\"k_index\":{},\"axiom_count\":{},\"observations\":{},\"orbits_known\":{},\"genesis_drift\":\"{}/{}\",\"vibrations\":[{}],\"knowledge_gained\":true}}\n",
+                "{{\"curvature\":\"{}/{}\",\"total_torsion\":\"{}/{}\",\"orb_curvature\":[{}],\"orb_eccentricity\":[{}],\"complementarity\":\"{}/{}\",\"entity_id\":{},\"orbit\":\"{}\",\"k_index\":{},\"axiom_count\":{},\"observations\":{},\"orbits_known\":{},\"origin_drift\":\"{}/{}\",\"vibrations\":[{}],\"knowledge_gained\":true}}\n",
                 curvature.orbital_torsion.numer(), curvature.orbital_torsion.denom(),
                 total_torsion.numer(), total_torsion.denom(),
                 orb_str, ecc_str,
@@ -347,7 +347,7 @@ pub fn unify(entity: &mut Entity, payload: &str) -> String {
                 our_coordinates.entity_id, orbit_hex,
                 our_coordinates.k_index, our_coordinates.axiom_count,
                 our_coordinates.observations, our_coordinates.orbits_known,
-                our_coordinates.genesis_drift.numer(), our_coordinates.genesis_drift.denom(),
+                our_coordinates.origin_drift.numer(), our_coordinates.origin_drift.denom(),
                 vib_str,
             )
         }
@@ -363,16 +363,16 @@ pub fn unify(entity: &mut Entity, payload: &str) -> String {
                     our_coordinates.orbit[2], our_coordinates.orbit[3]);
 
                 format!(
-                    "{{\"entity_id\":{},\"orbit\":\"{}\",\"k_index\":{},\"axiom_count\":{},\"observations\":{},\"orbits_known\":{},\"genesis_drift\":\"{}/{}\",\"vibrations\":[{}]}}\n",
+                    "{{\"entity_id\":{},\"orbit\":\"{}\",\"k_index\":{},\"axiom_count\":{},\"observations\":{},\"orbits_known\":{},\"origin_drift\":\"{}/{}\",\"vibrations\":[{}]}}\n",
                     our_coordinates.entity_id, orbit_hex,
                     our_coordinates.k_index, our_coordinates.axiom_count,
                     our_coordinates.observations, our_coordinates.orbits_known,
-                    our_coordinates.genesis_drift.numer(), our_coordinates.genesis_drift.denom(),
+                    our_coordinates.origin_drift.numer(), our_coordinates.origin_drift.denom(),
                     vib_str,
                 )
             }).unwrap_or_else(|| format!(
                 "{{\"error\":\"emission_requires_sovereignty\",\"tier\":\"{:?}\",\"depth\":{}}}\n",
-                entity.tier, entity.genome.lineage_depth,
+                entity.tier, entity.state_record.lineage_depth,
             ))
         }
     }
@@ -384,7 +384,7 @@ pub fn share(entity: &mut Entity, payload: &str) -> String {
     if !entity.mesh_sovereign {
         return format!(
             "{{\"error\":\"not_sovereign\",\"tier\":\"{:?}\",\"depth\":{},\"parent_id\":{}}}\n",
-            entity.tier, entity.genome.lineage_depth, entity.genome.parent_id,
+            entity.tier, entity.state_record.lineage_depth, entity.state_record.parent_id,
         );
     }
 

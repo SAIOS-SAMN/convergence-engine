@@ -13,7 +13,7 @@
 //! B3: Mesh Sync — Phase 1 no-op (single node)
 //! B4: Environment Load — initialize state matrix and params
 //! B5: Resonance Confirmation — verify TORSION_PERIOD_M is synced
-//! B6: Genesis Proof — compute genesis RCF hash and emit boot report
+//! B6: Genesis Proof — compute origin RCF hash and emit boot report
 //!
 //! Register: D.EXEC.1, D.CHAIN.1, BOOT.GENESIS.1.
 
@@ -52,13 +52,13 @@ impl Default for BootConfig {
     }
 }
 
-/// The genesis state produced by a successful boot.
+/// The origin state produced by a successful boot.
 #[derive(Debug, Clone)]
 pub struct GenesisState {
     /// The initial Delta (zero antisymmetric matrix).
     pub delta_zero: Vec<Vec<Vec<Q>>>,
-    /// RCF hash of the genesis state.
-    pub genesis_rcf_hash: [u8; 32],
+    /// RCF hash of the origin state.
+    pub origin_rcf_hash: [u8; 32],
     /// The anchor hash verified during B2.
     pub anchor_hash: [u8; 32],
     /// Node ID.
@@ -113,7 +113,7 @@ pub fn execute_boot_sequence(config: &BootConfig) -> (BootReport, Option<Genesis
     }
 
     // ── B2: Anchor Handshake ──────────────────────────────────────────
-    // Verify the compiled genesis anchor matches the expected constant.
+    // Verify the compiled origin anchor matches the expected constant.
     let expected_anchor = delta_anchor_hash();
     let b2 = BootStepResult {
         step: BootStep::B2AnchorHandshake,
@@ -186,14 +186,14 @@ pub fn execute_boot_sequence(config: &BootConfig) -> (BootReport, Option<Genesis
 
     // ── B6: Genesis Proof Cycle ──────────────────────────────────────
     // Compute the RCF hash of the genesis (zero) state.
-    let genesis_rcf_hash = rcf::compute_rcf_hash_from_delta(&delta_zero, n, m);
+    let origin_rcf_hash = rcf::compute_rcf_hash_from_delta(&delta_zero, n, m);
 
     steps.push(BootStepResult {
         step: BootStep::B6GenesisProofCycle,
         passed: true,
         detail: format!(
             "Genesis proof: rcf_hash=0x{}, K=0, status=OPERATIONAL",
-            genesis_rcf_hash
+            origin_rcf_hash
                 .iter()
                 .take(8)
                 .map(|b| format!("{b:02x}"))
@@ -206,7 +206,7 @@ pub fn execute_boot_sequence(config: &BootConfig) -> (BootReport, Option<Genesis
     let genesis = if all_passed {
         Some(GenesisState {
             delta_zero,
-            genesis_rcf_hash,
+            origin_rcf_hash,
             anchor_hash,
             entity_id: config.entity_id,
             state_dim: n,
@@ -251,8 +251,8 @@ mod tests {
         let (r1, g1) = execute_boot_sequence(&config);
         let (r2, g2) = execute_boot_sequence(&config);
         assert_eq!(
-            g1.as_ref().unwrap().genesis_rcf_hash,
-            g2.as_ref().unwrap().genesis_rcf_hash,
+            g1.as_ref().unwrap().origin_rcf_hash,
+            g2.as_ref().unwrap().origin_rcf_hash,
             "Boot must be deterministic"
         );
         assert_eq!(r1.anchor_hash, r2.anchor_hash);
@@ -289,11 +289,11 @@ mod tests {
     }
 
     #[test]
-    fn test_genesis_rcf_hash_nonzero() {
+    fn test_origin_rcf_hash_nonzero() {
         let config = BootConfig::default();
         let (_, genesis) = execute_boot_sequence(&config);
         let g = genesis.unwrap();
         // Even the zero matrix has a well-defined RCF hash (domain-separated)
-        assert!(g.genesis_rcf_hash.iter().any(|&b| b != 0));
+        assert!(g.origin_rcf_hash.iter().any(|&b| b != 0));
     }
 }

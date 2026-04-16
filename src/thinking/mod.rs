@@ -983,9 +983,9 @@ pub fn escalate(
 /// The membrane_t is the consensus T Delta from the membrane's meta-Delta.
 /// It constrains the congruent core: value mappings confirmed by the membrane
 /// (multiple witnesses across diverse genomes) are stronger priors than
-/// mappings from this witness's training pairs alone.
+/// mappings from this primary node's training pairs alone.
 ///
-/// This IS gauge cooling — the witness's local frame rotates toward the
+/// This IS gauge cooling — the primary node's local frame rotates toward the
 /// membrane's global holonomy with each cycle.
 pub fn escalate_with_membrane(
     train_pairs: &[(Vec<i64>, Vec<i64>)],
@@ -1510,7 +1510,7 @@ pub struct SenseData {
     /// Adjacency structure from touch (compute_adjacency_structure). None = not computed.
     pub touch_source: Option<perception::AdjacencyStructure>,
     pub touch_target: Option<perception::AdjacencyStructure>,
-    /// Harmonic spectrum from the witness's Delta_k — the transliminal bridge.
+    /// Harmonic spectrum from the primary node's Delta_k — the transliminal bridge.
     /// 11 vibrations. Each amplitude weights a dimension of the entity encoding.
     /// harmonics[0] weights dimension 0 (value), [1] weights dimension 1 (row),
     /// [2] weights dimension 2 (col). The genome shapes what the witness can derive.
@@ -1521,13 +1521,13 @@ pub struct SenseData {
     /// These enter peel_manifold as generator candidates. C selects.
     pub transmutation_candidates: Vec<(Vec<usize>, Q)>,
     /// Genomic value cocycles: (from_value, to_value, confidence).
-    /// Crystallized knowledge from the sacred genome — permanent value transitions
+    /// Crystallized knowledge from the core genome — permanent value transitions
     /// validated at 99.999% consensus across witnesses. These are the genome's
     /// derived operators, entering the collapse path through combined_score.
     pub genomic_cocycles: Vec<(i16, i16, Q)>,
-    /// Mathematical primitives from the sacred genome — composable operations.
+    /// Mathematical primitives from the core genome — composable operations.
     pub math_primitives: Vec<crate::engine::MathPrimitive>,
-    /// Spatial cochain primitives from the sacred genome — universal spatial geometry.
+    /// Spatial cochain primitives from the core genome — universal spatial geometry.
     /// The genome holds the template. The membrane learns the parameter.
     pub spatial_primitives: Vec<crate::engine::SpatialPrimitive>,
     /// Spatial cochains from the membrane — the marrow's relational experience.

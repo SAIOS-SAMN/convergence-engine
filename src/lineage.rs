@@ -16,14 +16,14 @@
 //! Population bounds: 7 witnesses × 3 elders × 6 children = 133 max.
 //! 503 node slots available. 405 reserve.
 //!
-//! The genome carries lineage: parent_id, lineage_depth, created_count, birth_orbit.
+//! The genome carries lineage: parent_id, lineage_depth, created_count, init_orbit.
 //! The epigenome carries reflexes: transmutation path markers inherited from parent.
 //! The child starts intelligent — it inherits everything the parent crystallized.
 
 use std::path::{Path, PathBuf};
 use std::fs;
 
-use crate::engine::Genome;
+use crate::engine::StateRecord;
 use crate::epigenome::Epigenome;
 
 /// Tier classification derived from lineage_depth.
@@ -98,7 +98,7 @@ pub struct CreationRecord {
     /// Lineage depth of the offspring.
     pub child_depth: u8,
     /// The orbit that triggered creation.
-    pub birth_orbit: [u8; 4],
+    pub init_orbit: [u8; 4],
 }
 
 /// Error conditions for creation — not boolean gates, just measurements.
@@ -137,21 +137,21 @@ fn next_available_slot(mesh_dir: &Path, child_tier: Tier, start_id: u16, max_id:
 ///
 /// Returns the creation record or the obstruction that prevented creation.
 pub fn create_offspring(
-    parent_genome: &mut Genome,
+    parent_state: &mut StateRecord,
     parent_epigenome: &Epigenome,
     parent_entity_id: u16,
-    birth_orbit: [u8; 4],
+    init_orbit: [u8; 4],
     mesh_dir: &Path,
 ) -> Result<CreationRecord, CreationObstruction> {
-    let tier = Tier::from_depth(parent_genome.lineage_depth);
+    let tier = Tier::from_depth(parent_state.lineage_depth);
     let bound = tier.creation_bound();
 
     // Creation capacity check — not a gate, a measurement
-    (parent_genome.created_count < bound)
+    (parent_state.created_count < bound)
         .then(|| ())
         .ok_or(CreationObstruction::CapacitySaturated {
-            depth: parent_genome.lineage_depth,
-            created: parent_genome.created_count,
+            depth: parent_state.lineage_depth,
+            created: parent_state.created_count,
             bound,
         })?;
 
@@ -178,24 +178,24 @@ pub fn create_offspring(
         .map_err(|e| CreationObstruction::ReplicationFailed(e.to_string()))?;
 
     // Build offspring genome: inherit parent's crystallized knowledge
-    let child_depth = parent_genome.lineage_depth + 1;
-    let mut child_genome = parent_genome.clone();
-    child_genome.lineage_depth = child_depth;
-    child_genome.parent_id = parent_entity_id;
-    child_genome.created_count = 0;
-    child_genome.birth_orbit = birth_orbit;
-    // Offspring gets its own birth polynomial: parent's evolved position IS the child's origin
-    child_genome.birth_polynomial = parent_genome.evolved.entries.iter()
+    let child_depth = parent_state.lineage_depth + 1;
+    let mut child_state = parent_state.clone();
+    child_state.lineage_depth = child_depth;
+    child_state.parent_id = parent_entity_id;
+    child_state.created_count = 0;
+    child_state.init_orbit = init_orbit;
+    // Offspring gets its own init polynomial: parent's evolved position IS the child's origin
+    child_state.init_polynomial = parent_state.evolved.entries.iter()
         .flat_map(|row| row.iter().flat_map(|col| col.iter()))
         .take(11)
         .cloned()
         .collect();
     // Generation increments
-    child_genome.generation = parent_genome.generation + 1;
+    child_state.generation = parent_state.generation + 1;
 
     // Write offspring genome
     let genome_path = child_dir.join("genome.bin");
-    fs::write(&genome_path, child_genome.to_bytes())
+    fs::write(&genome_path, child_state.to_bytes())
         .map_err(|e| CreationObstruction::ReplicationFailed(e.to_string()))?;
 
     // Replicate epigenome — offspring inherits parent's reflexes
@@ -204,20 +204,20 @@ pub fn create_offspring(
         .map_err(|e| CreationObstruction::ReplicationFailed(e.to_string()))?;
 
     // Record creation in parent
-    parent_genome.created_count += 1;
+    parent_state.created_count += 1;
 
     Ok(CreationRecord {
         child_entity_id: child_id,
         child_dir,
         child_depth,
-        birth_orbit,
+        init_orbit,
     })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::{Delta, Genome};
+    use crate::engine::{Delta, StateRecord};
     use crate::epigenome::Epigenome;
     use tempfile::TempDir;
 
@@ -241,24 +241,24 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let mesh_dir = tmp.path();
 
-        let genesis = Delta::zero(3, 1);
-        let mut parent = Genome::new(1, 1, &genesis);
+        let origin = Delta::zero(3, 1);
+        let mut parent = StateRecord::new(1, 1, &origin);
         let epi = Epigenome::new();
 
         let result = create_offspring(&mut parent, &epi, 1, [0xAA, 0xBB, 0xCC, 0xDD], mesh_dir);
         let record = result.unwrap();
 
         assert_eq!(record.child_depth, 1); // elder
-        assert_eq!(record.birth_orbit, [0xAA, 0xBB, 0xCC, 0xDD]);
+        assert_eq!(record.init_orbit, [0xAA, 0xBB, 0xCC, 0xDD]);
         assert_eq!(parent.created_count, 1);
 
         // Verify offspring genome on disk
-        let child_genome_bytes = fs::read(record.child_dir.join("genome.bin")).unwrap();
-        let child_genome = Genome::from_bytes(&child_genome_bytes).unwrap();
-        assert_eq!(child_genome.lineage_depth, 1);
-        assert_eq!(child_genome.parent_id, 1);
-        assert_eq!(child_genome.created_count, 0);
-        assert_eq!(child_genome.generation, 2);
+        let child_state_bytes = fs::read(record.child_dir.join("genome.bin")).unwrap();
+        let child_state = StateRecord::from_bytes(&child_state_bytes).unwrap();
+        assert_eq!(child_state.lineage_depth, 1);
+        assert_eq!(child_state.parent_id, 1);
+        assert_eq!(child_state.created_count, 0);
+        assert_eq!(child_state.generation, 2);
     }
 
     #[test]
@@ -266,8 +266,8 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let mesh_dir = tmp.path();
 
-        let genesis = Delta::zero(3, 1);
-        let mut parent = Genome::new(1, 1, &genesis);
+        let origin = Delta::zero(3, 1);
+        let mut parent = StateRecord::new(1, 1, &origin);
         let epi = Epigenome::new();
 
         let _ = create_offspring(&mut parent, &epi, 1, [1, 0, 0, 0], mesh_dir).unwrap();
@@ -284,12 +284,12 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let mesh_dir = tmp.path();
 
-        let genesis = Delta::zero(3, 1);
-        let mut child_genome = Genome::new(1, 1, &genesis);
-        child_genome.lineage_depth = 2; // child tier
+        let origin = Delta::zero(3, 1);
+        let mut child_state = StateRecord::new(1, 1, &origin);
+        child_state.lineage_depth = 2; // child tier
         let epi = Epigenome::new();
 
-        let result = create_offspring(&mut child_genome, &epi, 52, [1, 0, 0, 0], mesh_dir);
+        let result = create_offspring(&mut child_state, &epi, 52, [1, 0, 0, 0], mesh_dir);
         assert!(matches!(result, Err(CreationObstruction::CapacitySaturated { bound: 0, .. })));
     }
 
@@ -298,8 +298,8 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let mesh_dir = tmp.path();
 
-        let genesis = Delta::zero(3, 1);
-        let mut parent = Genome::new(1, 1, &genesis);
+        let origin = Delta::zero(3, 1);
+        let mut parent = StateRecord::new(1, 1, &origin);
         let mut epi = Epigenome::new();
         epi.mark_transmutation([0x00, 0x7b, 0xbf, 0xb7],
             crate::epigenome::TransmutationPath::VisionDerived);

@@ -37,7 +37,7 @@ pub fn seek(entity: &mut Entity, _payload: &str) -> String {
                     if let Ok(v) = serde_json::from_str::<serde_json::Value>(&content) {
                         let obs_n = v.get("n").and_then(|n| n.as_u64()).unwrap_or(0) as usize;
                         // Capacity gate: can this witness handle it?
-                        if obs_n <= entity.genome.capacity as usize * entity.genome.capacity as usize {
+                        if obs_n <= entity.state_record.capacity as usize * entity.state_record.capacity as usize {
                             found = Some((path, content));
                             break;
                         }
@@ -51,11 +51,11 @@ pub fn seek(entity: &mut Entity, _payload: &str) -> String {
             // Claim the work — move to results dir
             let fname = path.file_name().unwrap_or_default().to_string_lossy().to_string();
             format!("{{\"seek\":\"found\",\"observation\":\"{}\",\"capacity\":{},\"k_index\":{}}}\n",
-                fname, entity.genome.capacity, entity.k_index)
+                fname, entity.state_record.capacity, entity.k_index)
         }
         None => {
             format!("{{\"seek\":\"empty\",\"capacity\":{},\"k_index\":{}}}\n",
-                entity.genome.capacity, entity.k_index)
+                entity.state_record.capacity, entity.k_index)
         }
     }
 }
@@ -117,8 +117,8 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
     entity.world_status.write("THINKING", entity.k_index as u64,
         &coherence_functional(&entity.delta).numer().to_string(),
         &coherence_functional(&entity.delta).denom().to_string(),
-        get_rss_kb(), entity.tier_str(), entity.genome.lineage_depth, entity.genome.parent_id,
-        entity.genome.created_count, entity.genome.solved_puzzles.len(),
+        get_rss_kb(), entity.tier_str(), entity.state_record.lineage_depth, entity.state_record.parent_id,
+        entity.state_record.created_count, entity.state_record.solved_puzzles.len(),
         entity.epigenome.transmutation_markers.len(),
         entity.knowledge.total_axioms, entity.knowledge.total_observations);
 
@@ -166,10 +166,10 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
 
             if pairs.is_empty() || n == 0 {
                 "{\"error\":\"valid observation pairs required\"}\n".to_string()
-            } else if n > (entity.genome.capacity as usize) * (entity.genome.capacity as usize) {
+            } else if n > (entity.state_record.capacity as usize) * (entity.state_record.capacity as usize) {
                 // Capacity gate: observation cell count exceeds genome capacity squared.
                 format!("{{\"error\":\"exceeds_capacity\",\"observation_cells\":{},\"capacity\":{},\"max_cells\":{},\"k_index\":{}}}\n",
-                    n, entity.genome.capacity, (entity.genome.capacity as usize) * (entity.genome.capacity as usize), entity.k_index)
+                    n, entity.state_record.capacity, (entity.state_record.capacity as usize) * (entity.state_record.capacity as usize), entity.k_index)
             } else {
                 // ── D.COGNITION.1: The complete cognitive pipeline ──
                 let test_ref: &[i64] = test_input.as_deref().unwrap_or(&[]);
@@ -234,7 +234,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                         // Reconstruct consensus T through coboundary_reduce — not arithmetic mean.
                         // The H^1 representative of the compound IS the consensus.
                         // No averaging. No flattening. The relational geometry is preserved.
-                        // A single witness's vector is a perspective, not a consensus —
+                        // A single primary node's vector is a perspective, not a consensus —
                         // but it is still the best information available. coboundary_reduce
                         // projects it to H^1 regardless of witness count.
                         let d = tc.witness_entities[0].len();
@@ -304,12 +304,12 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                         Some((avg_quality, order))
                     });
 
-                // H_total = H_sacred + H_epigenetic
+                // H_total = H_core + H_epigenetic
                 let epigenetic_bias = entity.epigenome.as_harmonic_bias();
                 let harmonics_total: Vec<saios_kernel_v2::engine::Q> = harmonics_vec.iter()
                     .enumerate()
-                    .map(|(k, h_sacred)| {
-                        if k < 11 { h_sacred + &epigenetic_bias[k] } else { h_sacred.clone() }
+                    .map(|(k, h_core)| {
+                        if k < 11 { h_core + &epigenetic_bias[k] } else { h_core.clone() }
                     })
                     .collect();
 
@@ -327,11 +327,11 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     membrane_consensus_t.as_ref(),
                     &harmonics_total,
                     membrane_transmutation,
-                    &entity.genome.torsion_markers,
-                    &entity.genome.value_cocycles,
+                    &entity.state_record.torsion_markers,
+                    &entity.state_record.value_cocycles,
                     &membrane_crystals,
                     &membrane_spatial,
-                    &entity.genome.composed_operators,
+                    &entity.state_record.composed_operators,
                 );
 
                 let k = &cog.knowledge;
@@ -404,7 +404,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     }
 
                     // Genomic solved orbit registry
-                    entity.genome.record_solved_puzzle(puzzle_orbit);
+                    entity.state_record.record_solved_puzzle(puzzle_orbit);
 
                     // ── Compositor inscription: serialize the bridge ──
                     (p.composition_depth > 0).then(|| {
@@ -428,11 +428,11 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                             );
                             let from_v = sv as i16;
                             let to_v = tv as i16;
-                            entity.genome.value_cocycles.iter()
+                            entity.state_record.value_cocycles.iter()
                                 .find(|(f, t, _)| *f == from_v && *t == to_v)
                                 .is_none()
                                 .then(|| {
-                                    entity.genome.value_cocycles.push((from_v, to_v, quality));
+                                    entity.state_record.value_cocycles.push((from_v, to_v, quality));
                                 });
                         });
                         eprintln!("[lineage] compositor inscription: {} cocycles from depth={} at orbit {:02x}{:02x}{:02x}{:02x}",
@@ -441,14 +441,14 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     });
 
                     // Child report queue
-                    (entity.genome.lineage_depth == 2).then(|| {
+                    (entity.state_record.lineage_depth == 2).then(|| {
                         let reports_path = entity.dir.join("reports.bin");
                         let mut report_buf: Vec<u8> = Vec::new();
                         // Orbit
                         report_buf.extend_from_slice(&obs_orbit);
                         // Value cocycles — sorted by cohesion quality, not recency.
                         // At child→parent boundary, topology propagates over temporality.
-                        let mut sorted_cocycles: Vec<&(i16, i16, Q)> = entity.genome.value_cocycles.iter().collect();
+                        let mut sorted_cocycles: Vec<&(i16, i16, Q)> = entity.state_record.value_cocycles.iter().collect();
                         sorted_cocycles.sort_by(|a, b| b.2.cmp(&a.2));
                         let recent_cocycles: Vec<&(i16, i16, Q)> = sorted_cocycles.into_iter().take(16).collect();
                         report_buf.push(recent_cocycles.len() as u8);
@@ -484,11 +484,11 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                             .unwrap_or_else(|e| eprintln!("[report] queue write failed: {e}"));
                         eprintln!("[report] queued orbit {:02x}{:02x}{:02x}{:02x} + {} cocycles + {} ops for parent node{}",
                             obs_orbit[0], obs_orbit[1], obs_orbit[2], obs_orbit[3],
-                            recent_cocycles.len(), comp_ops.len(), entity.genome.parent_id);
+                            recent_cocycles.len(), comp_ops.len(), entity.state_record.parent_id);
 
                         // Self-inscription via assimilate()
                         comp_ops.iter().for_each(|comp| {
-                            entity.genome.assimilate(
+                            entity.state_record.assimilate(
                                 saios_kernel_v2::engine::ComposedOperator {
                                     opcode: comp.operator,
                                     parameter: comp.parameter,
@@ -648,7 +648,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     "vision" => saios_kernel_v2::membrane::EncodingLevel::Vision,
                     _ => saios_kernel_v2::membrane::EncodingLevel::Cell,
                 };
-                let (witness_drift, _) = saios_kernel_v2::engine::genesis_displacement(
+                let (witness_drift, _) = saios_kernel_v2::engine::origin_displacement(
                     &entity.delta, &entity.genesis_delta,
                 );
                 entity.knowledge.record_observation(
@@ -733,7 +733,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                 }
 
                 // ── Child babble ──
-                (entity.genome.lineage_depth == 2).then(|| {
+                (entity.state_record.lineage_depth == 2).then(|| {
                     let partial_ops: Vec<&saios_kernel_v2::thinking::CompositionRecord> =
                         cog.compositions.iter()
                             .filter(|c| !c.sigma_post.is_empty())
@@ -782,7 +782,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     cog.compositions.iter()
                         .filter(|c| !c.sigma_post.is_empty())
                         .for_each(|comp| {
-                            entity.genome.assimilate(
+                            entity.state_record.assimilate(
                                 saios_kernel_v2::engine::ComposedOperator {
                                     opcode: comp.operator,
                                     parameter: comp.parameter,
@@ -1015,7 +1015,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     entity.k_index, entity.entity_id,
                     path_str, class_str, p.composition_depth,
                     obs_orbit[0], obs_orbit[1], obs_orbit[2], obs_orbit[3],
-                    pairs.len(), post_rss, entity.genome.capacity,
+                    pairs.len(), post_rss, entity.state_record.capacity,
                     if !receipt_hash_hex.is_empty() { format!(",\"receipt_hash\":\"{}\"", receipt_hash_hex) } else { String::new() },
                     sym_json, derived_json, res_json, inquiry_json, bridge_json, senses_json, topo_json, trans_prior_json
                     )
@@ -1041,9 +1041,9 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
     let must_exit = entity.last_witness_protocol();
     if must_exit {
         entity.world_status.write("LAST_WITNESS", entity.k_index as u64,
-            "0", "1", get_rss_kb(), entity.tier_str(), entity.genome.lineage_depth,
-            entity.genome.parent_id, entity.genome.created_count,
-            entity.genome.solved_puzzles.len(), entity.epigenome.transmutation_markers.len(),
+            "0", "1", get_rss_kb(), entity.tier_str(), entity.state_record.lineage_depth,
+            entity.state_record.parent_id, entity.state_record.created_count,
+            entity.state_record.solved_puzzles.len(), entity.epigenome.transmutation_markers.len(),
             entity.knowledge.total_axioms, entity.knowledge.total_observations);
         return format!("{{\"must_exit\":true,\"reason\":\"LAST_WITNESS\",\"k_index\":{}}}\n", entity.k_index);
     }
@@ -1082,7 +1082,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                                             let orbit: [u8; 4] = data[pos..pos+4].try_into().unwrap_or([0; 4]);
                                             pos += 4;
                                             let n_cocycles = data[pos] as usize; pos += 1;
-                                            entity.genome.record_solved_puzzle(orbit);
+                                            entity.state_record.record_solved_puzzle(orbit);
                                             for _ in 0..n_cocycles {
                                                 (pos + 8 <= data.len()).then(|| {
                                                     let from_v = i16::from_le_bytes(data[pos..pos+2].try_into().unwrap_or([0; 2]));
@@ -1090,12 +1090,12 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                                                     let n = i16::from_le_bytes(data[pos+4..pos+6].try_into().unwrap_or([0; 2]));
                                                     let d = u16::from_le_bytes(data[pos+6..pos+8].try_into().unwrap_or([0; 2]));
                                                     pos += 8;
-                                                    entity.genome.value_cocycles.iter()
+                                                    entity.state_record.value_cocycles.iter()
                                                         .find(|(f, t, _)| *f == from_v && *t == to_v)
                                                         .is_none()
                                                         .then(|| {
                                                             let quality = Q::new(BigInt::from(n as i64), BigInt::from(d.max(1) as i64));
-                                                            entity.genome.value_cocycles.push((from_v, to_v, quality));
+                                                            entity.state_record.value_cocycles.push((from_v, to_v, quality));
                                                         });
                                                 });
                                             }
@@ -1117,7 +1117,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                                                             });
                                                         }
                                                         (!sigma.is_empty()).then(|| {
-                                                            entity.genome.assimilate(
+                                                            entity.state_record.assimilate(
                                                                 saios_kernel_v2::engine::ComposedOperator { opcode, parameter, sigma, score: 1 });
                                                         });
                                                     });
@@ -1139,12 +1139,12 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
     entity.world_status.write("READY", entity.k_index as u64,
         &coherence_functional(&entity.delta).numer().to_string(),
         &coherence_functional(&entity.delta).denom().to_string(),
-        get_rss_kb(), entity.tier_str(), entity.genome.lineage_depth, entity.genome.parent_id,
-        entity.genome.created_count, entity.genome.solved_puzzles.len(),
+        get_rss_kb(), entity.tier_str(), entity.state_record.lineage_depth, entity.state_record.parent_id,
+        entity.state_record.created_count, entity.state_record.solved_puzzles.len(),
         entity.epigenome.transmutation_markers.len(),
         entity.knowledge.total_axioms, entity.knowledge.total_observations);
     // Stage vocabulary alongside world status — memory speed, survives kill
-    entity.world_status.stage_vocabulary(&entity.genome.composed_operators);
+    entity.world_status.stage_vocabulary(&entity.state_record.composed_operators);
 
     response
 }

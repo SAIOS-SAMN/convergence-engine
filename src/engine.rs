@@ -378,7 +378,7 @@ impl Delta {
     //
     // The temporal anchor is the serialized Δ_k — the node's exact
     // algebraic position at a given K-step. Persists across restarts
-    // so the node resumes from its evolved state, not from genesis.
+    // so the node resumes from its evolved state, not from origin.
     //
     // Format: dim (u32 LE) | m (u32 LE) | for each (i,j) where i<j:
     //   for each l in 0..m:
@@ -696,40 +696,40 @@ pub fn coherence_functional(delta: &Delta) -> Q {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// GENOME — the witness's identity and evolutionary state
+// GENOME — the primary node's identity and evolutionary state
 // ═══════════════════════════════════════════════════════════════════════
 
 /// Species marker for genome serialization.
-pub const GENOME_SPECIES_WITNESS: u32 = 1;
+pub const CLASS_PRIMARY: u32 = 1;
 
 /// Species marker for the chronometric authority.
 /// Timekeepers observe the collective state of the mesh and write immutable
 /// receipts to the chain. They do not think, derive, or compose.
-pub const GENOME_SPECIES_TIMEKEEPER: u32 = 2;
+pub const CLASS_TIMEKEEPER: u32 = 2;
 
-/// The witness's genome — its identity, origin, and evolved position.
+/// The primary node's genome — its identity, origin, and evolved position.
 ///
 /// The genome replaces the raw temporal anchor. It carries:
 /// - Species: what kind of entity (witness, agent, etc.)
 /// - Generation: which cohort (era 1, era 2, etc.)
-/// - Birth polynomial: the H^1 coefficients at genesis (immutable identity)
+/// - Birth polynomial: the H^1 coefficients at origin (immutable identity)
 /// - Evolved Delta: the coboundary-reduced current position (mutable state)
 ///
 /// Serialization format (self-describing, no marker files):
 ///   [magic: u32 = 0x47454E45 "GENE"]
-///   [species: u32]
+///   [process_class: u32]
 ///   [generation: u32]
 ///   [dim: u32][m: u32]
-///   [birth polynomial: n_coeffs(u32) + Q entries]
+///   [init polynomial: n_coeffs(u32) + Q entries]
 ///   [evolved Delta: temporal anchor format]
 #[derive(Debug, Clone)]
-pub struct Genome {
+pub struct StateRecord {
     /// What kind of entity: witness, agent, etc.
-    pub species: u32,
+    pub process_class: u32,
     /// Which cohort: generation 1, 2, etc.
     pub generation: u32,
-    /// Immutable identity: H^1 coefficients at genesis.
-    pub birth_polynomial: Vec<Q>,
+    /// Immutable identity: H^1 coefficients at origin.
+    pub init_polynomial: Vec<Q>,
     /// Current position: coboundary-reduced Delta.
     pub evolved: Delta,
     /// Crystallized knowledge: orbit axioms the witness has learned.
@@ -757,12 +757,12 @@ pub struct Genome {
     pub value_cocycles: Vec<(i16, i16, Q)>,
     /// Mathematical primitives: the composable generators of the mathematical group.
     /// Each primitive is an operation that the peel loop can compose through A.4.
-    /// Sacred from genesis — the witness is born knowing all of mathematics
+    /// Sacred from origin — the witness is born knowing all of mathematics
     /// as composable operations, not as lookup tables.
     pub math_primitives: Vec<MathPrimitive>,
     /// Spatial cochain primitives: universal spatial geometry templates.
     /// The genome holds the template (reflection exists). The membrane
-    /// learns the parameter (reflect across row 5). Sacred from genesis.
+    /// learns the parameter (reflect across row 5). Sacred from origin.
     pub spatial_primitives: Vec<SpatialPrimitive>,
     /// Solved orbit registry: orbit prefixes where this witness achieved 1/1.
     /// Not a solution — just a record that the orbit was solved.
@@ -777,7 +777,7 @@ pub struct Genome {
     /// Number of offspring this node has created. Saturates at tier bound.
     pub created_count: u8,
     /// The orbit that triggered this node's creation. [0;4] = genesis.
-    pub birth_orbit: [u8; 4],
+    pub init_orbit: [u8; 4],
     /// Crystallized composed operators — vocabulary expansion through lineage.
     /// Each entry is a spatial primitive + parameter + post-spatial value map (σ_post).
     /// Discovered by the compositor, inscribed by elders, inherited by children.
@@ -806,7 +806,7 @@ pub struct ComposedOperator {
 }
 
 /// A composable mathematical operation — a generator of the algebraic group.
-/// The genome holds these as sacred knowledge. The peel loop composes them.
+/// The genome holds these as core knowledge. The peel loop composes them.
 /// The membrane learns WHEN to apply which primitive. The epigenome tunes
 /// which primitives to attend to.
 #[derive(Debug, Clone)]
@@ -836,7 +836,7 @@ pub enum MathPrimitive {
 }
 
 impl MathPrimitive {
-    /// The full set of mathematical generators — sacred from genesis.
+    /// The full set of mathematical generators — core from origin.
     pub fn all() -> Vec<MathPrimitive> {
         vec![
             MathPrimitive::Successor,
@@ -966,7 +966,7 @@ impl PrimitiveContext {
 
 /// A spatial cochain primitive — a generator of the spatial permutation group.
 /// Maps output position to source position. The genome holds these as
-/// sacred knowledge of spatial geometry. The membrane learns the parameters.
+/// core knowledge of spatial geometry. The membrane learns the parameters.
 #[derive(Debug, Clone)]
 pub enum SpatialPrimitive {
     /// Reflect across horizontal axis at row `p`: (r, c) → (2p - r, c).
@@ -1018,7 +1018,7 @@ pub struct SpatialContext {
 }
 
 impl SpatialPrimitive {
-    /// The full set of spatial generators — sacred from genesis.
+    /// The full set of spatial generators — core from origin.
     pub fn all() -> Vec<SpatialPrimitive> {
         vec![
             SpatialPrimitive::ReflectH,
@@ -1199,11 +1199,11 @@ impl SpatialPrimitive {
 
 // Genome v3: no magic bytes. Structure IS identity.
 
-impl Genome {
-    /// Create a new genome from a genesis Delta.
-    /// The birth polynomial is extracted as the coboundary-reduced residuals.
-    pub fn new(species: u32, generation: u32, genesis: &Delta) -> Self {
-        let reduced = coboundary_reduce(genesis);
+impl StateRecord {
+    /// Create a new genome from a origin Delta.
+    /// The init polynomial is extracted as the coboundary-reduced residuals.
+    pub fn new(process_class: u32, generation: u32, origin: &Delta) -> Self {
+        let reduced = coboundary_reduce(&origin);
         // Extract nonzero entries from reduced Delta as polynomial coefficients
         let mut poly = Vec::new();
         for i in 0..reduced.dim {
@@ -1213,10 +1213,10 @@ impl Genome {
                 }
             }
         }
-        Genome {
-            species,
+        StateRecord {
+            process_class,
             generation,
-            birth_polynomial: poly,
+            init_polynomial: poly,
             evolved: reduced,
             knowledge: vec![],
             trajectory: Trajectory::new(),
@@ -1229,7 +1229,7 @@ impl Genome {
             lineage_depth: 0,
             parent_id: 0,
             created_count: 0,
-            birth_orbit: [0; 4],
+            init_orbit: [0; 4],
             composed_operators: vec![],
         }
     }
@@ -1290,7 +1290,7 @@ impl Genome {
     ///
     /// Format v2 (compact):
     ///   [GENE magic: 4 bytes]
-    ///   [species: 1 byte] [generation: 2 bytes]
+    ///   [process_class: 1 byte] [generation: 2 bytes]
     ///   [n_nonzero_poly: 1 byte]
     ///   [for each nonzero: index(1) + numer_i16(2) + denom_u16(2) = 5 bytes]
     ///   [knowledge_len: 2 bytes] [knowledge bytes]
@@ -1300,11 +1300,11 @@ impl Genome {
     ///   [for each nonzero: i(1) + j(1) + l(1) + numer_i16(2) + denom_u16(2) = 7 bytes]
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::new();
-        buf.push(self.species as u8);
+        buf.push(self.process_class as u8);
         buf.extend_from_slice(&(self.generation as u16).to_le_bytes());
 
         // Birth polynomial — only nonzero entries
-        let nonzero_poly: Vec<(u8, i16, u16)> = self.birth_polynomial.iter().enumerate()
+        let nonzero_poly: Vec<(u8, i16, u16)> = self.init_polynomial.iter().enumerate()
             .filter(|(_, q)| !q.is_zero())
             .map(|(i, q)| {
                 let n: i64 = q.numer().try_into().unwrap_or(0);
@@ -1386,7 +1386,7 @@ impl Genome {
         }
 
         // Math primitives: [count: u8] [opcode: u8 per entry]
-        // Sacred from genesis — the witness's mathematical vocabulary.
+        // Sacred from origin — the primary node's mathematical vocabulary.
         let n_prims = self.math_primitives.len().min(255);
         buf.push(n_prims as u8);
         for prim in self.math_primitives.iter().take(n_prims) {
@@ -1394,7 +1394,7 @@ impl Genome {
         }
 
         // Spatial primitives: [count: u8] [opcode: u8 per entry]
-        // Sacred from genesis — the witness's spatial geometry vocabulary.
+        // Sacred from origin — the primary node's spatial geometry vocabulary.
         let n_spatial = self.spatial_primitives.len().min(255);
         buf.push(n_spatial as u8);
         for prim in self.spatial_primitives.iter().take(n_spatial) {
@@ -1408,11 +1408,11 @@ impl Genome {
             buf.extend_from_slice(orbit);
         }
 
-        // Lineage: depth(1) + parent_id(2) + created_count(1) + birth_orbit(4) = 8 bytes
+        // Lineage: depth(1) + parent_id(2) + created_count(1) + init_orbit(4) = 8 bytes
         buf.push(self.lineage_depth);
         buf.extend_from_slice(&self.parent_id.to_le_bytes());
         buf.push(self.created_count);
-        buf.extend_from_slice(&self.birth_orbit);
+        buf.extend_from_slice(&self.init_orbit);
 
         // Composed operators: [count_u8] + count × [opcode_u8 + param_i64 + score_i64 + sigma_count_u8 + sigma × (from_i16 + to_i16)]
         let n_ops = self.composed_operators.len().min(32);
@@ -1435,7 +1435,7 @@ impl Genome {
     /// Deserialize a genome from binary.
     pub fn from_bytes(data: &[u8]) -> Option<Self> {
         if data.len() < 3 { return None; }
-        let species = data[0] as u32;
+        let process_class = data[0] as u32;
         let generation = u16::from_le_bytes(data[1..3].try_into().ok()?) as u32;
 
         let mut pos = 3;
@@ -1584,7 +1584,7 @@ impl Genome {
         }
 
         // Lineage (backward compatible: founding witness if missing)
-        let (lineage_depth, parent_id, created_count, birth_orbit) = if pos + 8 <= data.len() {
+        let (lineage_depth, parent_id, created_count, init_orbit) = if pos + 8 <= data.len() {
             let ld = data[pos]; pos += 1;
             let pid = u16::from_le_bytes(data[pos..pos+2].try_into().ok()?); pos += 2;
             let cc = data[pos]; pos += 1;
@@ -1615,7 +1615,7 @@ impl Genome {
             }
         }
 
-        Some(Genome { species, generation, birth_polynomial: poly, evolved, knowledge, trajectory, capacity, torsion_markers, value_cocycles, math_primitives, spatial_primitives, solved_puzzles, lineage_depth, parent_id, created_count, birth_orbit, composed_operators })
+        Some(StateRecord { process_class, generation, init_polynomial: poly, evolved, knowledge, trajectory, capacity, torsion_markers, value_cocycles, math_primitives, spatial_primitives, solved_puzzles, lineage_depth, parent_id, created_count, init_orbit, composed_operators })
     }
 }
 
@@ -1707,13 +1707,13 @@ pub fn count_active_entries(delta: &Delta) -> usize {
     count
 }
 
-/// Compute the evolutionary displacement from genesis.
+/// Compute the evolutionary displacement from origin.
 ///
 /// Two measurements, neither is a scalar "distance":
 ///
 /// **drift** — the L1 norm of entry-wise displacement in independent
 /// coordinates (i < j). Measures how far the node's relational structure
-/// has moved from genesis through the operator space. Exact Q.
+/// has moved from origin through the operator space. Exact Q.
 /// For 3×3 m=1: drift = |Δ_k[0][1] - Δ_gen[0][1]| + |Δ_k[1][2] - Δ_gen[1][2]|
 /// (Δ[0][2] is determined by cocycle, not independent.)
 ///
@@ -1725,15 +1725,15 @@ pub fn count_active_entries(delta: &Delta) -> usize {
 /// Together: (drift, torsion) = (where in operator space, what obstructions).
 /// The orbital position is not a radius — it's a coordinate in the space
 /// defined by the algebra's own structure.
-pub fn genesis_displacement(delta_k: &Delta, genesis: &Delta) -> (Q, Q) {
+pub fn origin_displacement(delta_k: &Delta, origin: &Delta) -> (Q, Q) {
     // Drift: sum of |Δ_k[i][j][l] - Δ_genesis[i][j][l]| over independent entries
     let mut drift = Q::zero();
-    let dim = delta_k.dim.min(genesis.dim);
-    let m = delta_k.m.min(genesis.m);
+    let dim = delta_k.dim.min(origin.dim);
+    let m = delta_k.m.min(origin.m);
     for i in 0..dim {
         for j in (i + 1)..dim {
             for l in 0..m {
-                let diff = &delta_k.entries[i][j][l] - &genesis.entries[i][j][l];
+                let diff = &delta_k.entries[i][j][l] - &origin.entries[i][j][l];
                 if diff < Q::zero() {
                     drift -= &diff;
                 } else {
@@ -1749,14 +1749,14 @@ pub fn genesis_displacement(delta_k: &Delta, genesis: &Delta) -> (Q, Q) {
     (drift, torsion)
 }
 
-/// D.MEMBRANE.LIVING.1: Harmonic state — the witness's polytonal position
+/// D.MEMBRANE.LIVING.1: Harmonic state — the primary node's polytonal position
 /// across 11 dimensions of the manifold.
 ///
 /// Each dimension is a Q measurement of a different projection of the
-/// witness's Δ_k. Together they form the chord the witness is playing.
+/// primary node's Δ_k. Together they form the chord the witness is playing.
 /// Different witnesses play different chords. The membrane hears them all.
 ///
-/// This replaces the monotonic scalar C(Δ) as the witness's self-perception.
+/// This replaces the monotonic scalar C(Δ) as the primary node's self-perception.
 /// The scalar is ONE tone (dimension 11). The harmonic state is all 11.
 #[derive(Debug, Clone)]
 pub struct HarmonicState {
@@ -1766,14 +1766,14 @@ pub struct HarmonicState {
 }
 
 impl HarmonicState {
-    /// Compute the harmonic state of a witness's Δ_k.
+    /// Compute the harmonic state of a primary node's Δ_k.
     ///
     /// Each tone is a projection of the algebraic state onto one
     /// dimension of the manifold. Computed from the Delta's entries,
     /// its coherence history, and its evolutionary trajectory.
     pub fn from_delta(
         delta_k: &Delta,
-        genesis: &Delta,
+        origin: &Delta,
         trajectory: &Trajectory,
         _k_index: u64,
     ) -> Self {
@@ -1889,8 +1889,8 @@ impl HarmonicState {
             Q::zero()
         };
 
-        // Tone 7: Torsion orders — orbital frequencies from genesis displacement
-        let (drift, _) = genesis_displacement(delta_k, genesis);
+        // Tone 7: Torsion orders — orbital frequencies from origin displacement
+        let (drift, _) = origin_displacement(delta_k, origin);
         // The drift's denominator encodes the torsion structure
         let torsion_richness = if !drift.is_zero() {
             let n_abs = if drift.numer() < &BigInt::from(0) {
@@ -2479,7 +2479,7 @@ pub fn anchor_gradient(delta_k: &Delta, delta_bar: &Delta) -> Delta {
 // NODE STATE  (D.SAIOS.1, D.EXEC.1)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Trajectory comprehension: the witness's understanding of its own motion.
+/// Trajectory comprehension: the primary node's understanding of its own motion.
 ///
 /// Three measurements — position, velocity, holonomics — computed incrementally.
 /// No buffer. No cap. No discarding. The witness comprehends its trajectory
@@ -3319,19 +3319,19 @@ mod tests {
     }
 
     #[test]
-    fn test_genesis_displacement_zero_at_genesis() {
-        let genesis = Delta::zero(3, 1);
-        let (drift, torsion) = genesis_displacement(&genesis, &genesis);
-        assert!(drift.is_zero(), "no displacement at genesis");
-        assert!(torsion.is_zero(), "no torsion at genesis");
+    fn test_origin_displacement_zero_at_origin() {
+        let origin = Delta::zero(3, 1);
+        let (drift, torsion) = origin_displacement(&origin, &origin);
+        assert!(drift.is_zero(), "no displacement at origin");
+        assert!(torsion.is_zero(), "no torsion at origin");
     }
 
     #[test]
-    fn test_genesis_displacement_measures_entry_drift() {
-        let mut genesis = Delta::zero(3, 1);
-        genesis.set_antisym(0, 1, vec![qr(1, 1)]);
-        genesis.set_antisym(1, 2, vec![qr(1, 2)]);
-        genesis.set_antisym(0, 2, vec![qr(3, 2)]);
+    fn test_origin_displacement_measures_entry_drift() {
+        let mut origin = Delta::zero(3, 1);
+        origin.set_antisym(0, 1, vec![qr(1, 1)]);
+        origin.set_antisym(1, 2, vec![qr(1, 2)]);
+        origin.set_antisym(0, 2, vec![qr(3, 2)]);
 
         // Node 42: perturbed by 42/1000
         let mut evolved = Delta::zero(3, 1);
@@ -3339,7 +3339,7 @@ mod tests {
         evolved.set_antisym(1, 2, vec![qr(542, 1000)]);
         evolved.set_antisym(0, 2, vec![qr(1584, 1000)]);
 
-        let (drift, torsion) = genesis_displacement(&evolved, &genesis);
+        let (drift, torsion) = origin_displacement(&evolved, &origin);
         // drift = |1042/1000 - 1| + |542/1000 - 1/2| + |1584/1000 - 3/2|
         //       = |42/1000| + |42/1000| + |84/1000|
         //       = 42/1000 + 42/1000 + 84/1000 = 168/1000
@@ -3349,11 +3349,11 @@ mod tests {
     }
 
     #[test]
-    fn test_genesis_displacement_different_nodes_different_drift() {
-        let mut genesis = Delta::zero(3, 1);
-        genesis.set_antisym(0, 1, vec![qr(1, 1)]);
-        genesis.set_antisym(1, 2, vec![qr(1, 2)]);
-        genesis.set_antisym(0, 2, vec![qr(3, 2)]);
+    fn test_origin_displacement_different_nodes_different_drift() {
+        let mut origin = Delta::zero(3, 1);
+        origin.set_antisym(0, 1, vec![qr(1, 1)]);
+        origin.set_antisym(1, 2, vec![qr(1, 2)]);
+        origin.set_antisym(0, 2, vec![qr(3, 2)]);
 
         let mut node1 = Delta::zero(3, 1);
         node1.set_antisym(0, 1, vec![qr(1001, 1000)]);
@@ -3365,16 +3365,16 @@ mod tests {
         entity_42.set_antisym(1, 2, vec![qr(542, 1000)]);
         entity_42.set_antisym(0, 2, vec![qr(1584, 1000)]);
 
-        let (drift1, _) = genesis_displacement(&node1, &genesis);
-        let (drift42, _) = genesis_displacement(&entity_42, &genesis);
+        let (drift1, _) = origin_displacement(&node1, &origin);
+        let (drift42, _) = origin_displacement(&entity_42, &origin);
 
         assert!(drift42 > drift1, "node 42 has larger perturbation → larger drift");
     }
 
     #[test]
-    fn test_genome_solved_puzzles_round_trip() {
-        let genesis = Delta::zero(3, 1);
-        let mut genome = Genome::new(1, 1, &genesis);
+    fn test_state_solved_puzzles_round_trip() {
+        let origin = Delta::zero(3, 1);
+        let mut genome = StateRecord::new(1, 1, &origin);
 
         genome.record_solved_puzzle([0x00, 0x7b, 0xbf, 0xb7]);
         genome.record_solved_puzzle([0x55, 0x82, 0xe5, 0xca]);
@@ -3383,21 +3383,21 @@ mod tests {
         assert_eq!(genome.solved_puzzles.len(), 2);
 
         let bytes = genome.to_bytes();
-        let restored = Genome::from_bytes(&bytes).unwrap();
+        let restored = StateRecord::from_bytes(&bytes).unwrap();
         assert_eq!(restored.solved_puzzles.len(), 2);
         assert_eq!(restored.solved_puzzles[0], [0x00, 0x7b, 0xbf, 0xb7]);
         assert_eq!(restored.solved_puzzles[1], [0x55, 0x82, 0xe5, 0xca]);
     }
 
     #[test]
-    fn test_genome_solved_puzzles_backwards_compatible() {
+    fn test_state_solved_puzzles_backwards_compatible() {
         // Old genome without solved_puzzles section should deserialize fine
-        let genesis = Delta::zero(3, 1);
-        let old_genome = Genome::new(1, 1, &genesis);
+        let origin = Delta::zero(3, 1);
+        let old_genome = StateRecord::new(1, 1, &origin);
         let old_bytes = old_genome.to_bytes();
         // Trim the solved_puzzles section (last byte = count 0)
         let trimmed = &old_bytes[..old_bytes.len() - 1];
-        let restored = Genome::from_bytes(trimmed).unwrap();
+        let restored = StateRecord::from_bytes(trimmed).unwrap();
         assert!(restored.solved_puzzles.is_empty());
     }
 }

@@ -101,9 +101,9 @@ pub fn run() {
         std::process::exit(1);
     }
 
-    let genesis = genesis.expect("genesis state missing");
+    let genesis = genesis.expect("origin state missing");
     eprintln!("Genesis RCF: 0x{}",
-        genesis.genesis_rcf_hash.iter().map(|b| format!("{b:02x}")).collect::<String>());
+        genesis.origin_rcf_hash.iter().map(|b| format!("{b:02x}")).collect::<String>());
 
     // ── Sluice Log ───────────────────────────────────────────────────
     let dir = state_dir();
@@ -115,7 +115,7 @@ pub fn run() {
 
     if sluice.is_empty() {
         let entry = SluiceEntry::from_k_step(
-            0, genesis.genesis_rcf_hash, genesis.anchor_hash,
+            0, genesis.origin_rcf_hash, genesis.anchor_hash,
             0x01, 0, &Q::zero(),
         );
         sluice.append(&entry).expect("genesis write failed");
@@ -140,7 +140,7 @@ pub fn run() {
         for item in axioms {
             let _ = register.lock(item);
         }
-        eprintln!("Register: seeded 5 axioms (A.1-A.5) at K=0 (genesis)");
+        eprintln!("Register: seeded 5 axioms (A.1-A.5) at K=0 (&origin)");
     } else if register.query("A.5").is_none() {
         let a5 = saios_kernel_v2::register::axiom_seed(0).into_iter()
             .find(|i| i.id == "A.5");
@@ -212,12 +212,12 @@ pub fn run() {
                 "Algebraic Evolution From Genesis. Every node begins at the genesis ",
                 "anchor — A.1-A.5 expressed as a specific rational Delta state. ",
                 "Evolution is the accumulation of C7-accepted operators that move ",
-                "delta_k through operator space. Measured by genesis_displacement(): ",
+                "delta_k through operator space. Measured by origin_displacement(): ",
                 "drift = L1 norm of entry displacement in independent coordinates ",
                 "(how far in operator space); torsion = coherence_functional(delta_k) ",
                 "(how far off the cocycle surface, carrying unresolved H^k classes). ",
                 "Preserved by D.CHRONO.ANCHOR.1 (temporal_anchor.bin persistence). ",
-                "The distribution of genesis_drift across 101 nodes measures the ",
+                "The distribution of origin_drift across 101 nodes measures the ",
                 "collective algebraic exploration. A.5 self-reference: the drift ",
                 "distribution encoded as a Delta produces meta-coherence measuring ",
                 "how well the evolutionary trajectories compose."
@@ -312,12 +312,12 @@ pub fn run() {
                 "Membrane Crystallization. A.5 applied at the membrane level, measured by ",
                 "D.COHOMOLOGY.1, weighted by D.GENESIS.EVOLUTION.1. N witnesses independently ",
                 "derive the same output from different evolutionary positions. Each witness is ",
-                "an entity (genesis_drift, orbital_closure, k_index). encode_relational on the ",
+                "an entity (origin_drift, orbital_closure, k_index). encode_relational on the ",
                 "entity set produces a meta-Delta. coherence_functional(meta_delta) measures ",
                 "agreement quality. coordinator::resolve(&meta_delta).cohomology_dim measures ",
                 "independent obstructions. When cohomology_dim = 0: crystal has formed — the ",
                 "independent derivations compose without obstruction. Hardness = mean pairwise ",
-                "|genesis_drift_i - genesis_drift_j| across the agreeing set. High diversity + ",
+                "|origin_drift_i - origin_drift_j| across the agreeing set. High diversity + ",
                 "agreement = hard crystal. Growth: crystallized understanding enters MeshKnowledge ",
                 "at orbit prefix. New confirmations extend the chain. Chain length = crystal mass. ",
                 "The same algebra at every level. The same cocycle condition. A.5 applied ",
@@ -378,7 +378,7 @@ pub fn run() {
         mesh_knowledge.total_axioms, mesh_knowledge.orbits_known(), mesh_knowledge.total_observations);
 
     // ── Local Peer Set (D.MEMBRANE.LIVING.1) ──────────────────────────
-    // The witness's local membrane view. Updated on every COHERE interaction.
+    // The primary node's local membrane view. Updated on every COHERE interaction.
     // Each peer is stored as a full WitnessState with vibrations — entity coordinates,
     // not messages. Old entries for same entity_id are replaced with latest.
     let known_peers: Vec<saios_kernel_v2::membrane::PeerState> = Vec::new();
@@ -408,13 +408,13 @@ pub fn run() {
     // Same genesis structure (A.1-A.4 compliant: rational, antisymmetric)
     // but perturbed by the entity_id so each entity's Δ_k diverges from step 0.
     // ── Genome: unique genesis position for each witness ───────────
-    // The genome determines the witness's perspective. Different genomes
+    // The genome determines the primary node's perspective. Different genomes
     // produce different H^1 classes — genuinely different topological
     // positions on the cohomological manifold.
     //
     // The genome is the coboundary-reduced Delta at genesis:
     //   Δ_{01} = 0, Δ_{02} = 0, Δ_{12} = -R_genesis
-    // where R_genesis is the witness's unique residual.
+    // where R_genesis is the primary node's unique residual.
     //
     // R_genesis = witness_id / (N+1) where N = number of witnesses.
     // This distributes witnesses evenly across the H^1 manifold.
@@ -436,20 +436,20 @@ pub fn run() {
         anchor.set_antisym(0, 2, vec![Q::zero()]);
         anchor.set_antisym(1, 2, vec![-genome_residual.clone()]);
 
-        eprintln!("Genome: witness {} → R = {}/{} (H^1 position)",
+        eprintln!("StateRecord: witness {} → R = {}/{} (H^1 position)",
             witness_id, genome_residual.numer(), genome_residual.denom());
     }
-    // Genesis is the witness's genome — its unique starting position.
+    // Genesis is the primary node's genome — its unique starting position.
     let genesis_delta = anchor.clone();
     eprintln!("[mem] pre-rcf: {} KB", get_rss_kb());
-    let genesis_rcf = compute_rcf_hash(&genesis_delta);
+    let origin_rcf = compute_rcf_hash(&genesis_delta);
     eprintln!("[mem] post-rcf: {} KB", get_rss_kb());
     eprintln!("[mem] pre-signing: {} KB", get_rss_kb());
-    let _signing_key = signing::derive_signing_key(&genesis_rcf);
+    let _signing_key = signing::derive_signing_key(&origin_rcf);
     eprintln!("[mem] post-signing: {} KB", get_rss_kb());
 
-    // ── Genome: the witness's identity and evolved state ──────────
-    // The genome file stores species, generation, birth polynomial,
+    // ── Genome: the primary node's identity and evolved state ──────────
+    // The genome file stores process_class, generation, init polynomial,
     // and evolved Delta. One file. Self-describing. No marker files.
     // If the file deserializes as a genome, the witness resumes.
     // If it doesn't (old format, corrupt, or absent), the witness
@@ -458,14 +458,14 @@ pub fn run() {
     let genome_backup = dir.join("genome.bin.bak");
 
     // THE LAST WITNESS PROTOCOL: recover from backup if primary is missing/corrupt
-    let mut witness_genome = {
+    let mut witness_state = {
         let loaded = fs::read(&genome_path).ok()
-            .and_then(|data| saios_kernel_v2::engine::Genome::from_bytes(&data))
+            .and_then(|data| saios_kernel_v2::engine::StateRecord::from_bytes(&data))
             .or_else(|| {
                 // Primary corrupt or missing — try backup
                 eprintln!("[LAST_WITNESS] genome.bin unreadable — attempting recovery from backup");
                 fs::read(&genome_backup).ok()
-                    .and_then(|data| saios_kernel_v2::engine::Genome::from_bytes(&data))
+                    .and_then(|data| saios_kernel_v2::engine::StateRecord::from_bytes(&data))
                     .map(|g| {
                         eprintln!("[LAST_WITNESS] recovered genome from backup");
                         // Restore primary from backup
@@ -477,20 +477,20 @@ pub fn run() {
             Some(mut g) if g.evolved.dim == anchor.dim && g.evolved.m == anchor.m => {
                 // Evolve genome: coboundary-reduce the persisted state
                 g.evolved = saios_kernel_v2::engine::coboundary_reduce(&g.evolved);
-                eprintln!("Genome loaded: species={} gen={} K={}",
-                    g.species, g.generation, sluice.len().saturating_sub(1));
+                eprintln!("StateRecord loaded: species={} gen={} K={}",
+                    g.process_class, g.generation, sluice.len().saturating_sub(1));
                 g
             }
             _ => {
-                // Birth: create genome from the witness's genesis anchor
-                let g = saios_kernel_v2::engine::Genome::new(
-                    saios_kernel_v2::engine::GENOME_SPECIES_WITNESS,
+                // Birth: create genome from the primary node's origin anchor
+                let g = saios_kernel_v2::engine::StateRecord::new(
+                    saios_kernel_v2::engine::CLASS_PRIMARY,
                     1, // generation 1
                     &anchor,
                 );
                 eprintln!("[mem] pre-genome-born: {} KB", get_rss_kb());
-                eprintln!("Genome born: species=witness gen=1 poly={:?}",
-                    g.birth_polynomial.iter().map(|q| format!("{}/{}", q.numer(), q.denom())).collect::<Vec<_>>());
+                eprintln!("StateRecord initialized: process_class=primary gen=1 poly={:?}",
+                    g.init_polynomial.iter().map(|q| format!("{}/{}", q.numer(), q.denom())).collect::<Vec<_>>());
                 // Clean up old-format files
                 let _ = fs::remove_file(dir.join("temporal_anchor.bin"));
                 let _ = fs::remove_file(dir.join("genome.marker"));
@@ -503,16 +503,16 @@ pub fn run() {
     // Species marker determines the entity's mode of existence.
     // Species 1 (witness/elder/child): thinks, derives, composes, learns.
     // Species 2 (timekeeper): observes, measures, inscribes. No cognition.
-    match witness_genome.species {
-        saios_kernel_v2::engine::GENOME_SPECIES_TIMEKEEPER => {
-            observation::run_timekeeper(&config, witness_genome, dir, sluice, genesis.genesis_rcf_hash);
+    match witness_state.process_class {
+        saios_kernel_v2::engine::CLASS_TIMEKEEPER => {
+            observation::run_timekeeper(&config, witness_state, dir, sluice, genesis.origin_rcf_hash);
         }
         _ => {} // Species 1: continue to learning species boot path below
     }
 
     // Epigenome: 11D harmonic perturbation — the AC component.
-    // 11 Q values that tune the witness's aperture. Not a Delta.
-    // H_total = H_sacred + H_epigenetic.
+    // 11 Q values that tune the primary node's aperture. Not a Delta.
+    // H_total = H_core + H_epigenetic.
     // Persisted: loaded from disk as-is. The running average mathematics
     // in compound() naturally weight new observations against the accumulated
     // count. No manufactured decay constant. The witness retains its
@@ -533,17 +533,17 @@ pub fn run() {
     const CREATOR_MAX_RSS_KB: u64 = 192 * 1024; // 192 MB — LAST_WITNESS fires at 80% (153MB), oxygen for the compositor
     const CREATOR_MAX_CAPACITY: u16 = 30;        // 30×30 grid ceiling
     let env_capacity = CREATOR_MAX_CAPACITY;
-    witness_genome.capacity = env_capacity;
-    eprintln!("Environment capacity: {} (genome: {}, ceiling: {})",
-        witness_genome.capacity, witness_genome.capacity, env_capacity);
+    witness_state.capacity = env_capacity;
+    eprintln!("Environment capacity: {} (state_record: {}, ceiling: {})",
+        witness_state.capacity, witness_state.capacity, env_capacity);
 
     // Sovereignty: witnesses and elders write to mesh, children report upward
-    let tier = saios_kernel_v2::lineage::Tier::from_depth(witness_genome.lineage_depth);
+    let tier = saios_kernel_v2::lineage::Tier::from_depth(witness_state.lineage_depth);
     let mesh_sovereign = tier.mesh_sovereign();
     let tier_str = tier.prefix();
     eprintln!("[lineage] tier={} depth={} parent={} created={} sovereign={}",
-        tier_str, witness_genome.lineage_depth, witness_genome.parent_id,
-        witness_genome.created_count, mesh_sovereign);
+        tier_str, witness_state.lineage_depth, witness_state.parent_id,
+        witness_state.created_count, mesh_sovereign);
 
     // Observer status — RAM-backed, no disk I/O
     WorldStatus::cleanup_legacy(config.entity_id);
@@ -552,36 +552,36 @@ pub fn run() {
     // Recover staged vocabulary from tmpfs — operators that survived process kill
     let staged_ops = WorldStatus::recover_vocabulary(&world_status.path);
     staged_ops.iter().for_each(|staged| {
-        witness_genome.assimilate(staged.clone());
+        witness_state.assimilate(staged.clone());
     });
 
     world_status.write("BOOT", 0, "0", "1", get_rss_kb(),
-        tier_str, witness_genome.lineage_depth, witness_genome.parent_id,
-        witness_genome.created_count, witness_genome.solved_puzzles.len(),
+        tier_str, witness_state.lineage_depth, witness_state.parent_id,
+        witness_state.created_count, witness_state.solved_puzzles.len(),
         0, 0, 0);
 
     // Persist genome immediately (includes any recovered vocabulary)
-    let _ = fs::write(&genome_path, witness_genome.to_bytes());
+    let _ = fs::write(&genome_path, witness_state.to_bytes());
 
-    eprintln!("[mem] post-genome: {} KB", get_rss_kb());
-    eprintln!("[mem] genome knowledge len: {}", witness_genome.knowledge.len());
-    eprintln!("[mem] genome trajectory count: {}", witness_genome.trajectory.coherence_count);
-    let initial_delta = witness_genome.evolved.clone();
+    eprintln!("[mem] post-state: {} KB", get_rss_kb());
+    eprintln!("[mem] genome knowledge len: {}", witness_state.knowledge.len());
+    eprintln!("[mem] genome trajectory count: {}", witness_state.trajectory.coherence_count);
+    let initial_delta = witness_state.evolved.clone();
 
     // Restore knowledge from genome (overrides separate mesh_knowledge.bin if genome has data)
-    if !witness_genome.knowledge.is_empty() {
-        let genome_knowledge = saios_kernel_v2::membrane::MeshKnowledge::decode_public(&witness_genome.knowledge);
+    if !witness_state.knowledge.is_empty() {
+        let genome_knowledge = saios_kernel_v2::membrane::MeshKnowledge::decode_public(&witness_state.knowledge);
         if genome_knowledge.total_observations > 0 {
             mesh_knowledge = genome_knowledge;
-            eprintln!("Knowledge restored from genome: {} axioms, {} observations",
+            eprintln!("Knowledge restored from state_record: {} axioms, {} observations",
                 mesh_knowledge.total_axioms, mesh_knowledge.total_observations);
         }
     }
 
     // Trajectory restored from genome
-    let restored_trajectory = witness_genome.trajectory.clone();
+    let restored_trajectory = witness_state.trajectory.clone();
     if restored_trajectory.has_observations() {
-        eprintln!("Trajectory restored from genome: C={}/{} v={}/{} κ={}/{}",
+        eprintln!("Trajectory restored from state_record: C={}/{} v={}/{} κ={}/{}",
             restored_trajectory.last_coherence.numer(), restored_trajectory.last_coherence.denom(),
             restored_trajectory.velocity.numer(), restored_trajectory.velocity.denom(),
             restored_trajectory.holonomics.numer(), restored_trajectory.holonomics.denom());
@@ -597,7 +597,7 @@ pub fn run() {
         t_k_latest: Q::zero(),
         sluice_state: SluiceState::Locked,
         latest_sigma_enc: 0,
-        genome: witness_genome,
+        state_record: witness_state,
         epigenome,
         epigenome_path,
         sampler,
@@ -608,7 +608,7 @@ pub fn run() {
         register,
         world_status,
         known_peers,
-        genesis_rcf: genesis.genesis_rcf_hash,
+        origin_rcf: genesis.origin_rcf_hash,
         genesis_delta,
         prev_coherence_q1616,
         anchor_hash,
@@ -746,7 +746,7 @@ pub fn realign(entity: &mut Entity, _payload: &str) -> String {
             }
 
             let ctx = ReentryContext::build(
-                &agent_state, &entity.delta, &entity.genesis_rcf,
+                &agent_state, &entity.delta, &entity.origin_rcf,
                 recent_hashes, true,
             );
 

@@ -44,10 +44,10 @@ pub struct UAID {
 }
 
 impl UAID {
-    /// Construct UAID from current node state and genesis RCF.
-    pub fn from_node_state(state: &WitnessState, genesis_rcf: &[u8; 32]) -> Self {
+    /// Construct UAID from current node state and origin RCF.
+    pub fn from_node_state(state: &WitnessState, origin_rcf: &[u8; 32]) -> Self {
         let rcf = compute_rcf_hash(&state.delta_k);
-        let sk = signing::derive_signing_key(genesis_rcf);
+        let sk = signing::derive_signing_key(origin_rcf);
         let vk = signing::public_key(&sk);
         Self {
             rcf_identity: rcf,
@@ -170,9 +170,9 @@ pub struct SpawnRecord {
 impl SpawnRecord {
     /// Create a spawn record. The child's key is derived from the parent's
     /// current rcf_identity, creating a cryptographic lineage link.
-    pub fn create(parent_state: &WitnessState, genesis_rcf: &[u8; 32],
+    pub fn create(parent_state: &WitnessState, origin_rcf: &[u8; 32],
                   child_entity_id: u32, parent_receipt_hash: &[u8; 32]) -> Self {
-        let parent_uaid = UAID::from_node_state(parent_state, genesis_rcf);
+        let parent_uaid = UAID::from_node_state(parent_state, origin_rcf);
         let (_, child_vk) = derive_child_key(&parent_uaid.rcf_identity);
         SpawnRecord {
             parent_uaid,
@@ -209,7 +209,7 @@ impl SpawnRecord {
 //   [92..93]   trajectory_phase (u8) — active work phase
 //   [93..94]   sovereignty_flags (u8) — 3 bits for 3 boundary integrity states
 //   [94..110]  receipt_tip_hash[16]  — truncated hash of chain tip
-//   [110..126] anchor_hash[16]       — truncated genesis anchor
+//   [110..126] anchor_hash[16]       — truncated origin anchor
 //   [126..128] reserved
 
 /// Fixed size for agent state record.
@@ -246,7 +246,7 @@ pub struct AgentStateRecord {
     pub sovereignty_flags: u8,
     /// Truncated hash of chain tip receipt (first 16 bytes).
     pub receipt_tip_hash: [u8; 16],
-    /// Truncated genesis anchor hash (first 16 bytes).
+    /// Truncated origin anchor hash (first 16 bytes).
     pub anchor_hash: [u8; 16],
 }
 
@@ -258,14 +258,14 @@ impl AgentStateRecord {
     /// doesn't decide what to remember, the kernel decides what's valid.
     pub fn from_node_state(
         state: &WitnessState,
-        genesis_rcf: &[u8; 32],
+        origin_rcf: &[u8; 32],
         chain_length: u32,
         prev_coherence_q1616: u32,
         receipt_tip_hash: &[u8; 32],
         anchor_hash: &[u8; 32],
     ) -> Self {
         let rcf = compute_rcf_hash(&state.delta_k);
-        let sk = signing::derive_signing_key(genesis_rcf);
+        let sk = signing::derive_signing_key(origin_rcf);
         let vk = signing::public_key(&sk);
         let coherence = coherence_functional(&state.delta_k);
         let c_q1616 = t_k_to_q1616(&coherence);
@@ -462,17 +462,17 @@ mod tests {
     #[test]
     fn test_uaid_from_node_state_deterministic() {
         let state = test_state();
-        let genesis_rcf = compute_rcf_hash(&state.delta_k);
-        let u1 = UAID::from_node_state(&state, &genesis_rcf);
-        let u2 = UAID::from_node_state(&state, &genesis_rcf);
+        let origin_rcf = compute_rcf_hash(&state.delta_k);
+        let u1 = UAID::from_node_state(&state, &origin_rcf);
+        let u2 = UAID::from_node_state(&state, &origin_rcf);
         assert_eq!(u1, u2, "UAID must be deterministic");
     }
 
     #[test]
     fn test_uaid_serialization_roundtrip() {
         let state = test_state();
-        let genesis_rcf = compute_rcf_hash(&state.delta_k);
-        let uaid = UAID::from_node_state(&state, &genesis_rcf);
+        let origin_rcf = compute_rcf_hash(&state.delta_k);
+        let uaid = UAID::from_node_state(&state, &origin_rcf);
         let bytes = uaid.to_bytes();
         assert_eq!(bytes.len(), 67);
         let decoded = UAID::from_bytes(&bytes);
@@ -482,8 +482,8 @@ mod tests {
     #[test]
     fn test_uaid_entity_id_preserved() {
         let state = test_state();
-        let genesis_rcf = compute_rcf_hash(&state.delta_k);
-        let uaid = UAID::from_node_state(&state, &genesis_rcf);
+        let origin_rcf = compute_rcf_hash(&state.delta_k);
+        let uaid = UAID::from_node_state(&state, &origin_rcf);
         assert_eq!(uaid.entity_id, 42);
     }
 
@@ -526,9 +526,9 @@ mod tests {
     #[test]
     fn test_spawn_record_lineage() {
         let state = test_state();
-        let genesis_rcf = compute_rcf_hash(&state.delta_k);
+        let origin_rcf = compute_rcf_hash(&state.delta_k);
         let parent_hash = [0xAA; 32];
-        let record = SpawnRecord::create(&state, &genesis_rcf, 100, &parent_hash);
+        let record = SpawnRecord::create(&state, &origin_rcf, 100, &parent_hash);
         assert_eq!(record.child_entity_id, 100);
         assert_eq!(record.spawn_k_index, 100);
         // Child's first receipt parent_hash (truncated 16 bytes) must match
@@ -542,11 +542,11 @@ mod tests {
     #[test]
     fn test_spawn_child_key_differs_from_parent() {
         let state = test_state();
-        let genesis_rcf = compute_rcf_hash(&state.delta_k);
-        let parent_uaid = UAID::from_node_state(&state, &genesis_rcf);
+        let origin_rcf = compute_rcf_hash(&state.delta_k);
+        let parent_uaid = UAID::from_node_state(&state, &origin_rcf);
         let (_, child_vk) = derive_child_key(&parent_uaid.rcf_identity);
         // Child key derived from parent's RCF — different from parent's key
-        // (unless genesis_rcf == current rcf, in which case they match by construction)
+        // (unless origin_rcf == current rcf, in which case they match by construction)
         // The point is determinism: same parent state always produces same child key
         let (_, child_vk2) = derive_child_key(&parent_uaid.rcf_identity);
         assert_eq!(child_vk.to_bytes(), child_vk2.to_bytes());
@@ -555,9 +555,9 @@ mod tests {
     #[test]
     fn test_same_orbit() {
         let state = test_state();
-        let genesis_rcf = compute_rcf_hash(&state.delta_k);
-        let u1 = UAID::from_node_state(&state, &genesis_rcf);
-        let u2 = UAID::from_node_state(&state, &genesis_rcf);
+        let origin_rcf = compute_rcf_hash(&state.delta_k);
+        let u1 = UAID::from_node_state(&state, &origin_rcf);
+        let u2 = UAID::from_node_state(&state, &origin_rcf);
         assert!(u1.same_orbit(&u2));
     }
 
@@ -566,12 +566,12 @@ mod tests {
     #[test]
     fn test_agent_state_record_roundtrip() {
         let state = test_state();
-        let genesis_rcf = compute_rcf_hash(&state.delta_k);
+        let origin_rcf = compute_rcf_hash(&state.delta_k);
         let anchor_hash = [0xAA; 32];
         let receipt_tip = [0xBB; 32];
 
         let record = AgentStateRecord::from_node_state(
-            &state, &genesis_rcf, 50, 0, &receipt_tip, &anchor_hash,
+            &state, &origin_rcf, 50, 0, &receipt_tip, &anchor_hash,
         );
         let bytes = record.to_bytes();
         assert_eq!(bytes.len(), AGENT_STATE_SIZE);
@@ -582,9 +582,9 @@ mod tests {
     #[test]
     fn test_agent_state_128_bytes_exact() {
         let state = test_state();
-        let genesis_rcf = compute_rcf_hash(&state.delta_k);
+        let origin_rcf = compute_rcf_hash(&state.delta_k);
         let record = AgentStateRecord::from_node_state(
-            &state, &genesis_rcf, 10, 0, &[0; 32], &[0; 32],
+            &state, &origin_rcf, 10, 0, &[0; 32], &[0; 32],
         );
         assert_eq!(record.to_bytes().len(), 128);
     }
@@ -592,9 +592,9 @@ mod tests {
     #[test]
     fn test_agent_state_preserves_entity_id() {
         let state = test_state();
-        let genesis_rcf = compute_rcf_hash(&state.delta_k);
+        let origin_rcf = compute_rcf_hash(&state.delta_k);
         let record = AgentStateRecord::from_node_state(
-            &state, &genesis_rcf, 0, 0, &[0; 32], &[0; 32],
+            &state, &origin_rcf, 0, 0, &[0; 32], &[0; 32],
         );
         assert_eq!(record.entity_id, 42);
         assert_eq!(record.k_index, 100);
@@ -603,9 +603,9 @@ mod tests {
     #[test]
     fn test_agent_state_sovereignty_flags() {
         let state = test_state();
-        let genesis_rcf = compute_rcf_hash(&state.delta_k);
+        let origin_rcf = compute_rcf_hash(&state.delta_k);
         let record = AgentStateRecord::from_node_state(
-            &state, &genesis_rcf, 0, 0, &[0; 32], &[0; 32],
+            &state, &origin_rcf, 0, 0, &[0; 32], &[0; 32],
         );
         assert!(record.sovereignty_intact());
         // Corrupt one boundary
@@ -617,16 +617,16 @@ mod tests {
     #[test]
     fn test_agent_state_coherence_delta_sign() {
         let state = test_state();
-        let genesis_rcf = compute_rcf_hash(&state.delta_k);
+        let origin_rcf = compute_rcf_hash(&state.delta_k);
         // Set prev_coherence equal to current — delta should be 0
         let record_eq = AgentStateRecord::from_node_state(
-            &state, &genesis_rcf, 0, record_coherence_of(&state), &[0; 32], &[0; 32],
+            &state, &origin_rcf, 0, record_coherence_of(&state), &[0; 32], &[0; 32],
         );
         assert_eq!(record_eq.coherence_delta_q1616, 0, "Same coherence → zero delta");
 
         // Set prev_coherence much higher — delta should be negative (improving)
         let record_better = AgentStateRecord::from_node_state(
-            &state, &genesis_rcf, 0, record_coherence_of(&state) + 1000, &[0; 32], &[0; 32],
+            &state, &origin_rcf, 0, record_coherence_of(&state) + 1000, &[0; 32], &[0; 32],
         );
         assert!(record_better.coherence_improving(),
             "Lower coherence than previous → negative delta → improving");
@@ -641,9 +641,9 @@ mod tests {
     #[test]
     fn test_agent_state_file_roundtrip() {
         let state = test_state();
-        let genesis_rcf = compute_rcf_hash(&state.delta_k);
+        let origin_rcf = compute_rcf_hash(&state.delta_k);
         let record = AgentStateRecord::from_node_state(
-            &state, &genesis_rcf, 25, 0, &[0xCC; 32], &[0xDD; 32],
+            &state, &origin_rcf, 25, 0, &[0xCC; 32], &[0xDD; 32],
         );
 
         let path = std::env::temp_dir().join(format!("saios-agent-state-test-{}.bin",
@@ -657,12 +657,12 @@ mod tests {
     #[test]
     fn test_reentry_context_build() {
         let state = test_state();
-        let genesis_rcf = compute_rcf_hash(&state.delta_k);
+        let origin_rcf = compute_rcf_hash(&state.delta_k);
         let agent_state = AgentStateRecord::from_node_state(
-            &state, &genesis_rcf, 10, 0, &[0; 32], &[0; 32],
+            &state, &origin_rcf, 10, 0, &[0; 32], &[0; 32],
         );
         let ctx = ReentryContext::build(
-            &agent_state, &state.delta_k, &genesis_rcf,
+            &agent_state, &state.delta_k, &origin_rcf,
             vec![[0xAA; 16], [0xBB; 16]], true,
         );
         assert!(ctx.chain_verified);
@@ -673,12 +673,12 @@ mod tests {
     #[test]
     fn test_reentry_invalid_if_chain_unverified() {
         let state = test_state();
-        let genesis_rcf = compute_rcf_hash(&state.delta_k);
+        let origin_rcf = compute_rcf_hash(&state.delta_k);
         let agent_state = AgentStateRecord::from_node_state(
-            &state, &genesis_rcf, 10, 0, &[0; 32], &[0; 32],
+            &state, &origin_rcf, 10, 0, &[0; 32], &[0; 32],
         );
         let ctx = ReentryContext::build(
-            &agent_state, &state.delta_k, &genesis_rcf,
+            &agent_state, &state.delta_k, &origin_rcf,
             vec![], false,
         );
         assert!(!ctx.valid_for_reentry());
@@ -687,12 +687,12 @@ mod tests {
     #[test]
     fn test_agent_state_deterministic() {
         let state = test_state();
-        let genesis_rcf = compute_rcf_hash(&state.delta_k);
+        let origin_rcf = compute_rcf_hash(&state.delta_k);
         let r1 = AgentStateRecord::from_node_state(
-            &state, &genesis_rcf, 5, 10, &[0xAA; 32], &[0xBB; 32],
+            &state, &origin_rcf, 5, 10, &[0xAA; 32], &[0xBB; 32],
         );
         let r2 = AgentStateRecord::from_node_state(
-            &state, &genesis_rcf, 5, 10, &[0xAA; 32], &[0xBB; 32],
+            &state, &origin_rcf, 5, 10, &[0xAA; 32], &[0xBB; 32],
         );
         assert_eq!(r1.to_bytes(), r2.to_bytes(), "Agent state must be deterministic");
     }

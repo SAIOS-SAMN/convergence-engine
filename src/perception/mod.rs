@@ -487,7 +487,7 @@ pub struct Cognition {
     /// D.VISION.TRANSMUTATION — The perceived symmetry operator.
     /// Carries the transmutation quality (Q) and torsion order (usize).
     /// This is a Symmetry Pointer — which operator the grid transmuted through,
-    /// as perceived through this witness's genomic aperture.
+    /// as perceived through this primary node's genomic aperture.
     /// The membrane compounds these pointers: convergence = focus.
     pub transmutation: Option<(crate::engine::Q, usize)>,
     /// Successful recursive compositions from the peel loop.
@@ -738,7 +738,7 @@ pub fn cognize_with_knowledge(
 /// D.MEMBRANE.V.1 — Cognize with membrane gauge connection.
 ///
 /// The membrane's consensus T (from the meta-Delta's coboundary) constrains
-/// the witness's escalation. The witness rotates its local frame into alignment
+/// the primary node's escalation. The witness rotates its local frame into alignment
 /// with the membrane's global holonomy. Each cycle is gauge cooling —
 /// reducing C(meta_delta) toward zero.
 ///
@@ -1191,7 +1191,7 @@ pub fn cognize_with_membrane_and_transmutation(
                             } else { i }
                         }).collect();
                         // Use the MEMBRANE's quality as the residual, not this
-                        // witness's local measurement. The consensus carries the
+                        // primary node's local measurement. The consensus carries the
                         // mesh's collective confidence. Lower residual = stronger candidate.
                         // Invert quality to residual: high quality → low residual.
                         let consensus_residual = &Q::one() - membrane_quality;
@@ -1204,7 +1204,7 @@ pub fn cognize_with_membrane_and_transmutation(
     }
 
     // ── L3 Holonomic: Genomic torsion markers as permanent candidates ──
-    // The genome carries crystallized symmetry alleles. These are the witness's
+    // The genome carries crystallized symmetry alleles. These are the primary node's
     // hard-coded perception — it is structurally tuned to these symmetry classes.
     // For each genomic marker, inject the matching symmetry element with the
     // genome's crystallized quality. This is O(1) recall, not search.
@@ -1749,7 +1749,7 @@ pub fn cognize_with_membrane_and_transmutation(
             harmonics: harmonics.to_vec(),
             transmutation_candidates: transmutation_candidates.clone(),
             genomic_cocycles: {
-                // Merge sacred genome cocycles and volatile membrane cocycles.
+                // Merge core genome cocycles and volatile membrane cocycles.
                 // Both enter the collapse path through combined_score.
                 // The genome provides permanent truth. The membrane provides experience.
                 let mut all: Vec<(i16, i16, crate::engine::Q)> = genomic_value_cocycles.to_vec();
@@ -1763,7 +1763,7 @@ pub fn cognize_with_membrane_and_transmutation(
                 }
                 all
             },
-            // Math primitives: sacred from genesis. Every witness is born
+            // Math primitives: core from genesis. Every primary node is initialized
             // knowing all of mathematics. Not passed through parameters —
             // loaded once from the genome's canonical set.
             math_primitives: crate::engine::MathPrimitive::all(),

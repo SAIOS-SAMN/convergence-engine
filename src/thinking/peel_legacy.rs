@@ -737,7 +737,7 @@ pub fn peel_manifold_with_senses(
             evaluate_candidate(GeneratorCandidate { pairs: new_p, test: new_t, source: GeneratorSource::Evolved }, &mut best_candidate, &mut best_score);
         }
 
-        // ── Math primitive operators: sacred genomic knowledge ──
+        // ── Math primitive operators: core genomic knowledge ──
         // For each primitive, derive the operand from training consensus,
         // apply to the grid with full topological context, generate candidate.
         // Every primitive generates a candidate. C(T) selects. No gates.
