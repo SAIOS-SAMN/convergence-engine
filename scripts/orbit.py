@@ -208,10 +208,9 @@ def run_orbit(orbit_count, puzzles, crystallized, tiers):
         if cell_count > max_cells:
             skipped_large += 1
             continue
-        payload = json.loads(payload_str)
-        orbit = compute_orbit(payload["pairs"][0]["source"])
-        if orbit not in crystallized:
-            novel.append(name)
+        # No crystallized filter — fresh entities must re-derive everything.
+        # The filter is correct for a warm species. Wrong for cold bootstrap.
+        novel.append(name)
 
     # Window for this orbit
     offset = ((orbit_count - 1) * WINDOW_SIZE) % max(len(novel), 1)
