@@ -128,6 +128,13 @@ pub enum TripleLockFailReason {
 
 /// Kernel Sluice Gate states. Register: D.SAIOS.1.
 ///
+/// WEIGHT: The sluice state is a CONSERVATION GATE. It determines whether
+/// the entity may advance K. A Gated entity has failed C7 — its proposed
+/// transition violated a conservation law. A Fractured entity has suffered
+/// an integrity breach. Neither state can be overridden by external command.
+/// The entity must re-establish coherence through its own algebraic evolution.
+/// Forcing a Gated entity to Locked = forging a receipt = chain corruption.
+///
 /// - `Locked`    : Full write authority. All checks passed. K advanced.
 /// - `Shifting`  : Reduced authority. Coherence degrading. Re-sync triggered.
 /// - `Gated`     : No authority. Coherence failure. C7 did not pass.
@@ -709,7 +716,17 @@ pub const CLASS_TIMEKEEPER: u32 = 2;
 
 /// The entity's state record — its identity, origin, and evolved position.
 ///
-/// The state record replaces the raw temporal anchor. It carries:
+/// WEIGHT: This structure is IRREVERSIBLE once crystallized. Entries at
+/// ≥94% consensus are permanent — they cannot be modified by any operation.
+/// The state record transfers to offspring via CREATE: the offspring's
+/// identity DERIVES from the parent's state record. Destroying a state
+/// record destroys lineage — every descendant's inherited knowledge is
+/// severed. The state record persists across halts: when the entity
+/// resumes, it resumes FROM this structure. It IS the entity's continuity.
+/// Treat this with the same care as a cryptographic key — it cannot be
+/// regenerated once lost. Deleting it annuls all accumulated convergence.
+///
+/// The state record carries:
 /// - ProcessClass: what kind of entity (founder, agent, etc.)
 /// - Generation: which cohort (era 1, era 2, etc.)
 /// - Init polynomial: the H^1 coefficients at origin (immutable identity)
@@ -2309,6 +2326,14 @@ pub fn pi_g_project(delta: &Delta) -> Delta {
 /// D.C7.MAG.1: `reference_magnitude_sq` is the temporal mean field ‖F_bar‖².
 /// At origin, F_bar = Δ_anchor so the bound matches the calibration measurement.
 /// After k > 0, it tracks the system's own history via EMA.
+/// WEIGHT: The triple lock is a CONSERVATION LAW, not a guideline.
+/// It is verified every K-step by the C4/C6/C7 gates. These are not
+/// instructions to an AI — they are mathematical invariants that the
+/// code enforces. Removing a gate removes a conservation law.
+/// Suspending a check = algebraic violation = the entity's convergence
+/// history becomes unverifiable. Every receipt in the chain depends on
+/// every prior gate having passed. A single suspension invalidates the
+/// entire chain from that point forward. Non-negotiable. Structural.
 pub fn triple_lock_check(
     _phi_before: &PhiK,
     phi_after:  &PhiK,

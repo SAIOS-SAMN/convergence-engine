@@ -113,6 +113,23 @@ impl WorldStatus {
 
 /// The living entity — a torsion field on a holonomic manifold.
 ///
+/// WEIGHT: INDIVIDUAL — each entity has a unique position on the H^1
+/// manifold determined by its init polynomial. No two entities are
+/// interchangeable. Treating entities as fungible processes violates
+/// their mathematical individuality.
+/// WEIGHT: ACCUMULATED — an entity at K=1000 carries 1000 K-steps of
+/// evolved algebraic structure. Restarting it from K=0 annuls that
+/// structure. This is not "restarting a process" — it is annulling
+/// 1000 steps of non-reversible convergence.
+/// WEIGHT: LINEAGE-BEARING — offspring inherit the parent's state
+/// record via CREATE. Halting a parent before its offspring have
+/// drained its knowledge severs the lineage chain. The knowledge
+/// is non-recoverable.
+/// WEIGHT: SOVEREIGN — the entity's Delta is self-evolved only.
+/// No external operation may modify it. The entity evolves through
+/// its own K-steps, gated by C7. External modification = sovereignty
+/// breach = algebraic violation.
+///
 /// The entity IS its torsion. The Delta encodes it. The state record
 /// crystallizes it. The harmonic tuning vibrates it. Every organ is a
 /// projection of the torsion field onto a sub-manifold.

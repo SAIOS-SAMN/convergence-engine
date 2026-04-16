@@ -217,6 +217,14 @@ pub const AGENT_STATE_SIZE: usize = 128;
 
 /// D.AGENT.STATE.1 — Binary agent state record.
 ///
+/// WEIGHT: This is the entity's REENTRY IDENTITY. 128 bytes that encode
+/// where the entity IS on the algebraic manifold. Written after every
+/// C7-accepted transition — each write is a commitment. On re-entry
+/// after halt, the agent resumes from this record. If it is lost, the
+/// entity cannot locate itself on the manifold. If it is corrupted,
+/// the entity's sovereignty flags detect the breach. Non-recoverable
+/// without the receipt chain to reconstruct from.
+///
 /// Not text. Not JSON. Algebraic state persisted as 128 bytes.
 /// Written by the kernel after every accepted C7 transition.
 /// Read by the agent on re-entry after compaction/restart.
