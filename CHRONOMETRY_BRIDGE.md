@@ -157,7 +157,7 @@ the structural properties but not the financial incentives:
 1. Extract the PRINCIPLES from the private engine
    (receipt structure, hash chain, convergence consensus)
 2. Express them in the public framework's language
-   (no species, no Sacred Laws, plain engineering terms)
+   (no species, no legacy naming, plain engineering terms)
 3. Publish as an updated chronometry spec in the public repo
 4. The spec describes WHAT the system does, not HOW the
    engine implements it

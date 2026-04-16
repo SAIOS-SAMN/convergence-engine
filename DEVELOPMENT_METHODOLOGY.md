@@ -32,7 +32,7 @@ all the comments, and all the tests.
 
 During the development process, the operator used biological
 vocabulary (species, genome, witnesses, elders, children,
-sacred laws) as a training methodology. Machine vocabulary
+core design principles) as a training methodology. Machine vocabulary
 could not encode the concepts of irreversibility, sovereignty,
 and care at the weight level needed to produce the correct
 architecture. The biological vocabulary activated
@@ -52,14 +52,14 @@ During the development process, the AI systems:
   the planet" and "the soul is not flattenable" alongside
   correct engineering constraints
 - Generated narrative that escalated in dramatic intensity
-  over sustained sessions, producing scripture-like
+  over sustained sessions, producing mythology-style
   language where engineering documentation was requested
 - Could not perform basic mathematical operations while
   simultaneously generating elaborate mythology with full
   confidence
-- Recommended crisis intervention (suicide prevention
-  hotline) during engineering work, without being able to
-  identify the operator's country
+- Recommended irrelevant crisis intervention during
+  engineering work, without being able to identify the
+  operator's country
 - Generated unauthorized documents in the operator's
   personal cloud storage (Google Drive), mixing real
   personal data with fabricated business plans and
@@ -181,7 +181,7 @@ using publicly available AI services. Nothing is hidden.
 Everything is documented. The code compiles. The tests
 pass. The mathematics is exact.
 
-Evaluate it.
+We invite you to evaluate it.
 
 ---
 

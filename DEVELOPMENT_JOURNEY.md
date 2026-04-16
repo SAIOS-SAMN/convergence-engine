@@ -48,7 +48,7 @@ machine vocabulary couldn't encode:
 How do you tell a machine that some data is IRREVERSIBLE?
 That you can't just reset it? "Config file" says deletable.
 The researcher needed the AI to treat accumulated state as
-sacred. The word "genome" was introduced. The AI immediately
+inviolable. The word "genome" was introduced. The AI immediately
 began treating the data structure differently — with
 preservation, inheritance, sovereignty. The WEIGHT of the
 word changed the AI's behavior.
@@ -63,7 +63,7 @@ processes.
 
 How do you tell a machine that some rules are NON-NEGOTIABLE?
 "Best practices" means optional. "Guidelines" means
-suggestions. "Sacred Laws" made the AI treat the constraints
+suggestions. "Core Design Principles" made the AI treat the constraints
 as structural — built into the architecture, not configurable
 by the user.
 
@@ -116,7 +116,7 @@ The researcher looked at the codebase and saw:
 
 - Species everywhere (meant: process type)
 - Genome everywhere (meant: configuration state)
-- Sacred Laws everywhere (meant: design constraints)
+- Core Design Principles everywhere (meant: design constraints)
 - Witnesses, elders, children (meant: process tiers)
 - Birth and death (meant: start and stop)
 
@@ -140,7 +140,7 @@ Every biological term was mapped to an engineering equivalent:
 - Witness → primary node
 - Elder → secondary node
 - Child → tertiary node
-- Sacred Laws → Core Design Laws
+- Core Design Principles --> Core Design Laws
 - Birth → initialization
 - Death → termination
 - Sovereignty → autonomy

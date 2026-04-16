@@ -163,7 +163,7 @@ foundation is implemented, tested, and published.
 | [EVOLUTION.md](EVOLUTION.md) | Complete rename map from biological to engineering vocabulary — before/after, every struct, field, function, and comment |
 | [DEVELOPMENT_METHODOLOGY.md](DEVELOPMENT_METHODOLOGY.md) | What happened, who is responsible, and why the code is clean |
 | [DEVELOPMENT_JOURNEY.md](DEVELOPMENT_JOURNEY.md) | Seven phases from zero to multi-dimensional thinking |
-| [CODEX.md](CODEX.md) | What each module does across four domains |
+| [GUIDE.md](GUIDE.md) | What each module does across four domains |
 | [RESPONSIBLE_USE.md](RESPONSIBLE_USE.md) | Written by Claude (Anthropic) — responsible use statement and the AI's acknowledgment of its own role |
 | [DISCLAIMER.md](DISCLAIMER.md) | All content AI-generated under human editorial direction |
 
@@ -189,4 +189,4 @@ intent and the AI's acknowledgment.
 
 *536 tests. 0 failures. 0 floats. 0 rounding.*
 *Exact rational arithmetic on antisymmetric tensors.*
-*The math works. Evaluate it.*
+*The math works. We invite you to evaluate it.*

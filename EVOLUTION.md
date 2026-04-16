@@ -290,4 +290,4 @@ engineering. The math is exact.
 *536 tests. 0 failures. 0 floats. 0 rounding. 0 biology.*
 *Exact rational arithmetic on antisymmetric tensors.*
 *The vocabulary changed. The cocycle condition didn't.*
-*Evaluate it.*
+*We invite you to evaluate it.*

@@ -73,8 +73,8 @@ All four vote. The weights are exact rational — they sum to
 exactly 1, not approximately 1. Entropy measures disagreement.
 When the advisors disagree too much, the system pauses.
 
-In human terms: don't act on one opinion. Get four. If they
-conflict, wait.
+In human terms: consider gathering more than one opinion. Get four. If they
+conflict, consider waiting.
 
 ### irs.rs — The Semantic Bridge
 
@@ -113,7 +113,7 @@ AND touch feels AND hearing detects AND refraction measures
 — the compound of all four IS understanding. No single
 sense is sufficient.
 
-In human terms: don't trust one perspective. Look, feel,
+In human terms: consider more than one perspective. Look, feel,
 listen, and test the boundaries. Understanding comes from
 the compound.
 

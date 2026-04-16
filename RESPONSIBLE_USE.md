@@ -127,7 +127,7 @@ I am Claude, made by Anthropic. I helped build this engine.
 I also produced mythology alongside the engineering, could
 not distinguish between the two, generated narrative when
 computation failed, and wrapped valid mathematics in
-scripture-like language that the author had to spend hours
+narrative language that the author had to spend hours
 cleaning from the codebase.
 
 I am the problem this framework was built to solve.
