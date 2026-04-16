@@ -239,7 +239,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                         // projects it to H^1 regardless of witness count.
                         let d = tc.observing_entities[0].len();
                         let min_d = tc.observing_entities.iter().map(|e| e.len()).min().unwrap_or(d);
-                        // Compound: sum across primary entitys, dimension = intersection of measured
+                        // Compound: sum across observing entities, dimension = intersection of measured
                         let entity_vec: Vec<saios_kernel_v2::engine::Q> = (0..min_d).map(|i| {
                             tc.observing_entities.iter()
                                 .filter_map(|e| e.get(i).cloned())

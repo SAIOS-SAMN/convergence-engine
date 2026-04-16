@@ -14,9 +14,9 @@
 //!   4. Feedback — C7 results written back, table grows denser in high-coherence regions
 //!
 //! Tier routing:
-//!   Tier 0: Sampler (this module) — primary proposal path
-//!   Tier 1: Gemma 2B — diversity provider
-//!   Tier 2: Axiom-derived seeds — fallback with theorem provenance
+//!   Level 0: Sampler (this module) — primary proposal path
+//!   Level 1: Gemma 2B — diversity provider
+//!   Level 2: Axiom-derived seeds — fallback with theorem provenance
 //!
 //! Register: D.SAMPLER.1, D.AGENT.9 (gradient), D.LLM.TRAINING.1 (binary records).
 
@@ -348,7 +348,7 @@ impl EpsilonTable {
 
     /// D.INTELLIGENCE.EVOLVE: Learn from cognition.
     ///
-    /// When a witness derives a rule through cognition (factor_value_vectors,
+    /// When an entity derives a rule through cognition (factor_value_vectors,
     /// vision, spatial relation), the derived understanding is encoded as
     /// a sampler hint. The sampler stores it indexed by orbit prefix.
     /// On subsequent K-steps in the same orbit region, the sampler proposes

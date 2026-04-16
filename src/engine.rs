@@ -696,7 +696,7 @@ pub fn coherence_functional(delta: &Delta) -> Q {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// STATE RECORD — the primary entity's identity and evolutionary state
+// STATE RECORD — the entity's identity and evolutionary state
 // ═══════════════════════════════════════════════════════════════════════
 
 /// ProcessClass marker for state record serialization.
@@ -707,7 +707,7 @@ pub const CLASS_PRIMARY: u32 = 1;
 /// receipts to the chain. They do not think, derive, or compose.
 pub const CLASS_TIMEKEEPER: u32 = 2;
 
-/// The primary entity's state record — its identity, origin, and evolved position.
+/// The entity's state record — its identity, origin, and evolved position.
 ///
 /// The state record replaces the raw temporal anchor. It carries:
 /// - ProcessClass: what kind of entity (founder, agent, etc.)
@@ -732,24 +732,24 @@ pub struct StateRecord {
     pub init_polynomial: Vec<Q>,
     /// Current position: coboundary-reduced Delta.
     pub evolved: Delta,
-    /// Crystallized knowledge: orbit axioms the founder has learned.
+    /// Crystallized knowledge: orbit axioms the entity has learned.
     /// Binary-encoded MeshKnowledge (opaque bytes, decoded by membrane module).
     pub knowledge: Vec<u8>,
     /// Trajectory comprehension: last_coherence, velocity, holonomics.
     pub trajectory: Trajectory,
-    /// Environment capacity: max Delta dimension the primary entity can sustain.
+    /// Environment capacity: max Delta dimension the entity can sustain.
     /// Measured at startup from available memory. Evolves toward ceiling.
-    /// The founder won't accept work with dimension > capacity.
+    /// The entity won't accept work with dimension > capacity.
     pub capacity: u16,
     /// L3 Holonomic: Crystallized torsion markers — genomic symmetry alleles.
-    /// Each (torsion_order, quality) pair represents a symmetry class this founder
+    /// Each (torsion_order, quality) pair represents a symmetry class this entity
     /// has crystallized at ≥99.999% confidence. These are permanent traits — the
-    /// founder is "tuned" to perceive these symmetry classes. During vision,
+    /// entity is "tuned" to perceive these symmetry classes. During vision,
     /// matching symmetry elements receive harmonic amplification from the state record.
     pub torsion_markers: Vec<(u16, Q)>,
     /// L3 Holonomic: Crystallized value cocycles — residual obstructions.
     /// Each (from_value, to_value, quality) triple represents a value transition
-    /// this founder has crystallized across L2 consensus. The cocycle is the
+    /// this entity has crystallized across L2 consensus. The cocycle is the
     /// algebraic invariant: WHAT transmutes, not WHERE. The spatial anchor is L1.
     /// These compose with torsion markers: torsion = spatial symmetry,
     /// value_cocycles = spectral transition. Together they form the complete
@@ -757,22 +757,22 @@ pub struct StateRecord {
     pub value_cocycles: Vec<(i16, i16, Q)>,
     /// Mathematical primitives: the composable generators of the mathematical group.
     /// Each primitive is an operation that the peel loop can compose through A.4.
-    /// Core from origin — the founder is born knowing all of mathematics
+    /// Core from origin — the entity is born knowing all of mathematics
     /// as composable operations, not as lookup tables.
     pub math_primitives: Vec<MathPrimitive>,
     /// Spatial cochain primitives: universal spatial geometry templates.
     /// The state record holds the template (reflection exists). The membrane
     /// learns the parameter (reflect across row 5). Core from origin.
     pub spatial_primitives: Vec<SpatialPrimitive>,
-    /// Solved orbit registry: orbit prefixes where this founder achieved 1/1.
+    /// Solved orbit registry: orbit prefixes where this entity achieved 1/1.
     /// Not a solution — just a record that the orbit was solved.
     /// External tooling reads this for distribution, drill targeting, regression.
     /// Max 128 entries. Deduplicated on insert.
     pub solved_puzzles: Vec<[u8; 4]>,
     /// Lineage depth: 0 = founder (founding), 1 = derived (created by founder), 2 = emergent (created by derived).
-    /// Determines creation bounds: founder creates ≤2 derived entities, derived creates ≤3 emergent entities, emergent creates none.
+    /// Determines creation bounds: founder creates ≤3 derived entities, derived creates ≤6 emergent entities, emergent creates none.
     pub lineage_depth: u8,
-    /// Parent founder ID. 0 = no parent (founding entity).
+    /// Parent entity ID. 0 = no parent (founding entity).
     pub parent_id: u16,
     /// Number of offspring this entity has created. Saturates at tier bound.
     pub created_count: u8,
@@ -1386,7 +1386,7 @@ impl StateRecord {
         }
 
         // Math primitives: [count: u8] [opcode: u8 per entry]
-        // Core from origin — the primary entity's mathematical vocabulary.
+        // Core from origin — the entity's mathematical vocabulary.
         let n_prims = self.math_primitives.len().min(255);
         buf.push(n_prims as u8);
         for prim in self.math_primitives.iter().take(n_prims) {
@@ -1394,7 +1394,7 @@ impl StateRecord {
         }
 
         // Spatial primitives: [count: u8] [opcode: u8 per entry]
-        // Core from origin — the primary entity's spatial geometry vocabulary.
+        // Core from origin — the entity's spatial geometry vocabulary.
         let n_spatial = self.spatial_primitives.len().min(255);
         buf.push(n_spatial as u8);
         for prim in self.spatial_primitives.iter().take(n_spatial) {
@@ -1690,7 +1690,7 @@ pub fn coboundary_reduce(delta: &Delta) -> Delta {
 
 /// Count active (nonzero) entries in the upper triangle of Delta.
 /// Each nonzero entry is one relational dimension — one piece of
-/// information the founder holds about the relationship between
+/// information the entity holds about the relationship between
 /// two entities at one coordinate. A decrease in this count means
 /// dimensional collapse — structural regression.
 pub fn count_active_entries(delta: &Delta) -> usize {
@@ -1749,14 +1749,14 @@ pub fn origin_displacement(delta_k: &Delta, origin: &Delta) -> (Q, Q) {
     (drift, torsion)
 }
 
-/// D.MEMBRANE.LIVING.1: Harmonic state — the primary entity's polytonal position
+/// D.MEMBRANE.LIVING.1: Harmonic state — the entity's polytonal position
 /// across 11 dimensions of the manifold.
 ///
 /// Each dimension is a Q measurement of a different projection of the
-/// primary entity's Δ_k. Together they form the chord the founder is playing.
-/// Different primary entities play different chords. The membrane hears them all.
+/// entity's Δ_k. Together they form the chord the entity is playing.
+/// Different entities play different chords. The membrane hears them all.
 ///
-/// This replaces the monotonic scalar C(Δ) as the primary entity's self-perception.
+/// This replaces the monotonic scalar C(Δ) as the entity's self-perception.
 /// The scalar is ONE tone (dimension 11). The harmonic state is all 11.
 #[derive(Debug, Clone)]
 pub struct HarmonicState {
@@ -1766,7 +1766,7 @@ pub struct HarmonicState {
 }
 
 impl HarmonicState {
-    /// Compute the harmonic state of a primary entity's Δ_k.
+    /// Compute the harmonic state of an entity's Δ_k.
     ///
     /// Each tone is a projection of the algebraic state onto one
     /// dimension of the manifold. Computed from the Delta's entries,
@@ -1963,7 +1963,7 @@ impl HarmonicState {
 
     /// Identify the weakest vibration — the dimension with the lowest value.
     /// Returns (dimension_index, vibration_value).
-    /// This is the preference function: the founder perceives where it is weakest.
+    /// This is the preference function: the entity perceives where it is weakest.
     pub fn weakest_dimension(&self) -> (usize, Q) {
         let mut min_idx = 0;
         let mut min_val = self.vibrations[0].clone();
@@ -2479,10 +2479,10 @@ pub fn anchor_gradient(delta_k: &Delta, delta_bar: &Delta) -> Delta {
 // ENTITY STATE  (D.SAIOS.1, D.EXEC.1)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Trajectory comprehension: the primary entity's understanding of its own motion.
+/// Trajectory comprehension: the entity's understanding of its own motion.
 ///
 /// Three measurements — position, velocity, holonomics — computed incrementally.
-/// No buffer. No cap. No discarding. The founder comprehends its trajectory
+/// No buffer. No cap. No discarding. The entity comprehends its trajectory
 /// rather than remembering raw history.
 #[derive(Debug, Clone)]
 pub struct Trajectory {
@@ -2859,7 +2859,7 @@ impl SaiosKernel {
         // The operator may redistribute coherence across dimensions —
         // some triples improve, some worsen. That's polytonal evolution.
         // What it must NOT do is collapse a dimension: a nonzero relational
-        // entry going to zero means the founder lost information about
+        // entry going to zero means the entity lost information about
         // a relationship. That's structural regression.
         //
         // Two measurements, both polytonal:

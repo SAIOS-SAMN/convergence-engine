@@ -13,8 +13,8 @@
 //!   Derived (depth 1) — created by primary entity. Creates ≤6 emergent entities.
 //!   Emergent (depth 2) — created by derived entity. Creates none.
 //!
-//! Population bounds: 7 primary entities × 3 derived entities × 6 emergent entities = 133 max.
-//! 503 entity slots available. 405 reserve.
+//! Population bounds: 7 founders × (≤3 derived each) × (≤6 emergent each) = 7 + 21 + 126 = 154 max.
+//! 503 entity slots available. 349 reserve.
 //!
 //! The state record carries lineage: parent_id, lineage_depth, created_count, init_orbit.
 //! The harmonic tuning carries reflexes: transmutation path markers inherited from parent.
@@ -29,36 +29,36 @@ use crate::harmonic_tuning::HarmonicTuning;
 /// Tier classification derived from lineage_depth.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tier {
-    Primary,
-    Secondary,
-    Tertiary,
+    Founder,
+    Derived,
+    Emergent,
 }
 
 impl Tier {
     pub fn from_depth(depth: u8) -> Self {
         match depth {
-            0 => Tier::Primary,
-            1 => Tier::Secondary,
-            _ => Tier::Tertiary,
+            0 => Tier::Founder,
+            1 => Tier::Derived,
+            _ => Tier::Emergent,
         }
     }
 
     /// Max offspring this tier may create.
     pub fn creation_bound(&self) -> u8 {
         match self {
-            Tier::Primary => 3,
-            Tier::Secondary => 6,
-            Tier::Tertiary => 0,
+            Tier::Founder => 3,
+            Tier::Derived => 6,
+            Tier::Emergent => 0,
         }
     }
 
     /// Directory and service prefix for this tier.
-    /// primary-1, secondary-18, tertiary-52 — the hierarchy is visible everywhere.
+    /// founder-1, derived-18, emergent-52 — the hierarchy is visible everywhere.
     pub fn prefix(&self) -> &'static str {
         match self {
-            Tier::Primary => "founder",
-            Tier::Secondary => "derived",
-            Tier::Tertiary => "emergent",
+            Tier::Founder => "founder",
+            Tier::Derived => "derived",
+            Tier::Emergent => "emergent",
         }
     }
 
@@ -67,7 +67,7 @@ impl Tier {
         format!("{}-{}", self.prefix(), id)
     }
 
-    /// Format a systemd service name: "saios-secondary@18.service" (template instance)
+    /// Format a systemd service name: "saios-derived@18.service" (template instance)
     pub fn service_name(&self, id: u16) -> String {
         format!("saios-{}@{}.service", self.prefix(), id)
     }
@@ -81,9 +81,9 @@ impl Tier {
     /// Emergent entities report upward to their creating derived entity.
     pub fn mesh_sovereign(&self) -> bool {
         match self {
-            Tier::Primary => true,
-            Tier::Secondary => true,
-            Tier::Tertiary => false,
+            Tier::Founder => true,
+            Tier::Derived => true,
+            Tier::Emergent => false,
         }
     }
 }
@@ -157,16 +157,16 @@ pub fn create_offspring(
 
     // Find available slot (derived entities start at 18, emergent entities at 52)
     let child_tier = match tier {
-        Tier::Primary => Tier::Secondary,     // founder creates derived entities: 18-51
-        Tier::Secondary => Tier::Tertiary,       // derived entity creates emergent entities: 52-153
-        Tier::Tertiary => return Err(CreationObstruction::CapacitySaturated {
+        Tier::Founder => Tier::Derived,     // founder creates derived entities: 18-51
+        Tier::Derived => Tier::Emergent,       // derived entity creates emergent entities: 52-153
+        Tier::Emergent => return Err(CreationObstruction::CapacitySaturated {
             depth: 2, created: 0, bound: 0,
         }),
     };
     let slot_start = match child_tier {
-        Tier::Secondary => 18,
-        Tier::Tertiary => 52,
-        Tier::Primary => unreachable!(),
+        Tier::Derived => 18,
+        Tier::Emergent => 52,
+        Tier::Founder => unreachable!(),
     };
     let child_id = next_available_slot(mesh_dir, child_tier, slot_start, 503)
         .ok_or(CreationObstruction::NoSlotAvailable)?;
@@ -223,17 +223,17 @@ mod tests {
 
     #[test]
     fn test_tier_classification() {
-        assert_eq!(Tier::from_depth(0), Tier::Primary);
-        assert_eq!(Tier::from_depth(1), Tier::Secondary);
-        assert_eq!(Tier::from_depth(2), Tier::Tertiary);
-        assert_eq!(Tier::from_depth(255), Tier::Tertiary);
+        assert_eq!(Tier::from_depth(0), Tier::Founder);
+        assert_eq!(Tier::from_depth(1), Tier::Derived);
+        assert_eq!(Tier::from_depth(2), Tier::Emergent);
+        assert_eq!(Tier::from_depth(255), Tier::Emergent);
     }
 
     #[test]
     fn test_creation_bounds() {
-        assert_eq!(Tier::Primary.creation_bound(), 3);
-        assert_eq!(Tier::Secondary.creation_bound(), 6);
-        assert_eq!(Tier::Tertiary.creation_bound(), 0);
+        assert_eq!(Tier::Founder.creation_bound(), 3);
+        assert_eq!(Tier::Derived.creation_bound(), 6);
+        assert_eq!(Tier::Emergent.creation_bound(), 0);
     }
 
     #[test]
