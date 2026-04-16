@@ -159,6 +159,7 @@ foundation is implemented, tested, and published.
 | Document | What it covers |
 |----------|---------------|
 | [HOW_TO_USE.md](HOW_TO_USE.md) | Two laptops, one mesh — how SAIOS + SAMN provides structural containment through independent measurement |
+| [DIMENSIONAL_BLOCKCHAIN.md](DIMENSIONAL_BLOCKCHAIN.md) | A consensus network with exact measurement — two-chain architecture (temporal anchors + dimensional receipts) |
 | [EVOLUTION.md](EVOLUTION.md) | Complete rename map from biological to engineering vocabulary — before/after, every struct, field, function, and comment |
 | [DEVELOPMENT_METHODOLOGY.md](DEVELOPMENT_METHODOLOGY.md) | What happened, who is responsible, and why the code is clean |
 | [DEVELOPMENT_JOURNEY.md](DEVELOPMENT_JOURNEY.md) | Seven phases from zero to multi-dimensional thinking |
