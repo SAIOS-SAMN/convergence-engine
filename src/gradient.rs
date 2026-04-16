@@ -48,12 +48,9 @@ pub fn compute_coherence_gradient(delta: &Delta) -> CoherenceGradient {
             for_each_residual(delta, |i, j, k, l, residual| {
                 let d_residual = residual_perturbation(delta, i, j, k, l, r, s);
                 if !d_residual.is_zero() {
-                    // sign(R) · ∂R/∂ε — no multiplication of residual × perturbation
-                    if residual < &Q::zero() {
-                        dc -= &d_residual;
-                    } else {
-                        dc += &d_residual;
-                    }
+                    // ∂(R²)/∂ε = 2R · ∂R/∂ε — L2 squared norm gradient
+                    let two_r = residual + residual;
+                    dc += &two_r * &d_residual;
                 }
             });
             gradient[r][s] = dc;

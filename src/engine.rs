@@ -477,22 +477,28 @@ impl Delta {
     }
 
     /// Verify antisymmetry and zero diagonal. Register: conservation invariant.
-    pub fn verify_conservation(&self) -> bool {
+    /// Conservation measurement: Σ(Δ_ij + Δ_ji)² + Σ(Δ_ii)².
+    /// Zero = perfect conservation. The magnitude IS the distance to the boundary.
+    pub fn conservation_measurement(&self) -> Q {
+        let mut violation = Q::zero();
         for i in 0..self.dim {
-            // Zero diagonal
-            if !self.entries[i][i].iter().all(|x| x.is_zero()) {
-                return false;
+            for l in 0..self.m {
+                let d = &self.entries[i][i][l];
+                violation += d * d;
             }
             for j in (i + 1)..self.dim {
-                // Δ_ij + Δ_ji = 0
                 for l in 0..self.m {
-                    if &self.entries[i][j][l] + &self.entries[j][i][l] != Q::zero() {
-                        return false;
-                    }
+                    let sum = &self.entries[i][j][l] + &self.entries[j][i][l];
+                    violation += &sum * &sum;
                 }
             }
         }
-        true
+        violation
+    }
+
+    /// Boolean convenience — for callers below the sovereignty boundary (telemetry).
+    pub fn verify_conservation(&self) -> bool {
+        self.conservation_measurement().is_zero()
     }
 }
 
@@ -511,8 +517,11 @@ impl Delta {
 pub struct PhiK {
     /// I^(1): magnitude ‖Δ‖²_Q. Checked at C7 with bounded tolerance.
     pub magnitude_sq: Q,
-    /// I^(2): conservation — bool confirming antisymmetry + zero diagonal.
-    pub conservation_ok: bool,
+    /// I^(2): conservation violation — Σ(Δ_ij + Δ_ji)² + Σ(Δ_ii)².
+    /// Zero = perfect conservation. Positive = violation magnitude.
+    /// Continuous measurement replaces boolean — the DISTANCE to conservation
+    /// is the information, not just whether it's violated.
+    pub conservation_violation: Q,
     /// I^(3): rank — dimensionality of relational structure.
     pub rank: usize,
     /// I^(4): symmetry class — RCF canonical form hash (bytes).
@@ -529,10 +538,10 @@ pub struct PhiK {
 /// Register: D.SYSTEM.2.
 pub fn compute_phi_k(delta: &Delta, t_k: Q) -> PhiK {
     let magnitude_sq = phi_norm_sq_delta(delta);
-    let conservation_ok = delta.verify_conservation();
+    let conservation_violation = delta.conservation_measurement();
     let rank = compute_rank(delta);
     let symmetry_class_rcf_hash = compute_rcf_hash(delta);
-    PhiK { magnitude_sq, conservation_ok, rank, symmetry_class_rcf_hash, t_k }
+    PhiK { magnitude_sq, conservation_violation, rank, symmetry_class_rcf_hash, t_k }
 }
 
 /// φ-norm squared: ‖Δ‖²_Q = Σ_{i,j,l} Δ_ij^l². Register: D.1.
@@ -542,7 +551,7 @@ pub fn phi_norm_sq_delta(delta: &Delta) -> Q {
         for j in 0..delta.dim {
             for l in 0..delta.m {
                 let v = &delta.entries[i][j][l];
-                if v < &Q::zero() { acc -= v; } else { acc += v; }
+                acc += v * v;
             }
         }
     }
@@ -697,7 +706,7 @@ pub fn residual_perturbation(delta: &Delta, i: usize, j: usize, k: usize, l: usi
 pub fn coherence_functional(delta: &Delta) -> Q {
     let mut c = Q::zero();
     for_each_residual(delta, |_i, _j, _k, _l, r| {
-        if r < &Q::zero() { c -= r; } else { c += r; }
+        c += r * r;
     });
     c
 }
@@ -1819,13 +1828,13 @@ impl HarmonicState {
         let dim = delta_k.dim;
         let m = delta_k.m;
 
-        // Tone 1: Entry magnitudes — total relational energy
+        // Tone 1: Entry magnitudes — total relational energy (L2 squared norm)
         let mut magnitude = Q::zero();
         for i in 0..dim {
             for j in (i + 1)..dim {
                 for l in 0..m {
                     let e = &delta_k.entries[i][j][l];
-                    if e < &Q::zero() { magnitude -= e; } else { magnitude += e; }
+                    magnitude += e * e;
                 }
             }
         }
@@ -2272,11 +2281,11 @@ pub fn compute_t_k(delta_k: &Delta, delta_updated: &Delta) -> Q {
             for l in 0..delta_k.m {
                 let diff = &delta_updated.entries[i][j][l]
                     - &delta_k.entries[i][j][l];
-                if diff < Q::zero() { t_k -= &diff; } else { t_k += &diff; }
+                t_k += &diff * &diff;
             }
         }
     }
-    // T_k ≥ 0 by construction (sum of absolute values).
+    // T_k ≥ 0 by construction (sum of squares).
     t_k
 }
 
@@ -2368,11 +2377,11 @@ pub fn triple_lock_check(
         return Err(TripleLockFailReason::TkZeroAtC7 { t_k: t_k.clone() });
     }
 
-    // Condition 1a: Conservation — antisymmetry + zero diagonal (exact)
-    // Compute violation magnitude so the system knows HOW FAR from conservation
-    if !phi_after.conservation_ok {
+    // Condition 1a: Conservation — antisymmetry + zero diagonal.
+    // The violation magnitude IS the distance to the boundary.
+    if !phi_after.conservation_violation.is_zero() {
         return Err(TripleLockFailReason::ConservationViolated {
-            violation_magnitude: phi_after.magnitude_sq.clone(), // proxy — exact violation not in PhiK
+            violation_magnitude: phi_after.conservation_violation.clone(),
         });
     }
 
@@ -2573,10 +2582,10 @@ impl Trajectory {
         self.prev_coherence = self.last_coherence.clone();
         self.prev_velocity = self.velocity.clone();
 
-        // Velocity: |C_k - C_{k-1}| (algebra — relationship between two values)
+        // Velocity: C_k - C_{k-1} (signed — direction IS the information).
+        // Negative = improving (coherence decreasing). Positive = degrading.
         if self.coherence_count > 0 {
-            let diff = &coherence - &self.prev_coherence;
-            self.velocity = if diff < Q::zero() { -diff } else { diff };
+            self.velocity = &coherence - &self.prev_coherence;
         }
 
         // Holonomics: v_k / v_{k-1} (geometry — proportion, not derivative)
