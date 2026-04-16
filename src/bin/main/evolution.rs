@@ -249,6 +249,20 @@ pub fn derive(entity: &mut Entity, payload: &str) -> String {
 
                     match triple_lock_check(&phi_before, &phi_after, &t_k, &entity.kernel.params.epsilon_mag_relative, &ref_mag) {
                         Ok(()) => {
+                            // Dimensional collapse check: the operator must not zero
+                            // relational entries. A decrease in active entry count means
+                            // the entity lost a dimension — structural regression.
+                            // Measured on the raw conjugated delta, not after
+                            // coboundary_reduce (which can legitimately project entries).
+                            let entries_before = count_active_entries(&entity.delta);
+                            let entries_after = count_active_entries(&projected);
+                            if entries_after < entries_before {
+                                return format!(
+                                    "{{\"c7_passed\":false,\"source\":\"sampler\",\"mode\":\"{:?}\",\"failure_reason\":\"DimensionalCollapse({}->{})\",\"k_index\":{}}}\n",
+                                    entity.sampler.stats.current_mode, entries_before, entries_after, entity.k_index
+                                );
+                            }
+
                             // Accept
                             entity.delta = coboundary_reduce(&projected);
                             entity.k_index = entity.k_index.saturating_add(1);

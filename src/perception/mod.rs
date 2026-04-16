@@ -756,6 +756,7 @@ pub fn cognize_with_membrane(
     cognize_with_membrane_and_transmutation(
         training_pairs, test_input, rcf_identity, prior_knowledge,
         lens_delta, membrane_t, harmonics, None, &[], &[], &[], &[] as &[crate::membrane::SpatialCochain], &[],
+        30, // default capacity for non-tiered callers
     )
 }
 
@@ -783,6 +784,7 @@ pub fn cognize_with_membrane_and_transmutation(
     membrane_cocycles: &[(i64, i64, crate::engine::Q)],
     membrane_spatial_cochains: &[crate::membrane::SpatialCochain],
     composed_operators: &[crate::engine::ComposedOperator],
+    entity_capacity: u16,
 ) -> Cognition {
     let n = if !training_pairs.is_empty() { training_pairs[0].0.len() } else { test_input.len() };
 
@@ -921,13 +923,13 @@ pub fn cognize_with_membrane_and_transmutation(
     let (delta, obs_n, obs_m) = match natural_level {
         NaturalLevel::Cell => {
             // Cell-level encoding. Measure the scope, not the magnitude.
-            // d = n(n-1)/2 × m. d_max = 1500 (metabolic horizon of a 192MB primary entity).
-            // The entity selects the richest spectral dimension it can afford.
-            // No boolean gates — the horizon IS the selection.
-            const D_MAX: usize = 1500;
+            // d = n(n-1)/2 × m. d_max = capacity*(capacity-1)/2.
+            // The entity's perceptual horizon matches its tier.
+            // Emergent (cap=30): d_max=435. Derived (cap=60): d_max=1770. Founder (cap=90): d_max=4005.
+            let d_max = (entity_capacity as usize) * (entity_capacity as usize).saturating_sub(1) / 2;
             let half_n = n * n.saturating_sub(1) / 2;
             [4usize, 1].iter()
-                .find(|&&m| half_n * m <= D_MAX)
+                .find(|&&m| half_n * m <= d_max)
                 .map(|&m| match m {
                     4 => (encode_grid_objects(&values, rows, cols), n, 4),
                     _ => {

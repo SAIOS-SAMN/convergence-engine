@@ -332,6 +332,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     &membrane_crystals,
                     &membrane_spatial,
                     &entity.state_record.composed_operators,
+                    entity.state_record.capacity,
                 );
 
                 let k = &cog.knowledge;
