@@ -30,6 +30,30 @@ the translation layer that lets the code speak without contradicting what it des
 
 ---
 
+## Origin
+
+The CCL was identified as a requirement during a prior session when the
+operator observed that the Phase 2 engineering vocabulary had solved the
+reviewability problem but created a new one: engineering terms like "kill,"
+"dead," "master," and "node" misrepresented the architecture. The question
+was posed: what language bridges biological and engineering vocabulary
+without the alarm of one or the flatness of the other?
+
+The answer was already in the engine's own measurement vocabulary:
+
+- **Crystallized** for irreversibility (state that cannot be undone)
+- **Convergent** for verification (arrived at independently)
+- **Cohesive** for relational integrity (structure that holds together)
+- **Sovereign** for autonomy (self-governing, no external dependency)
+
+The bridge language was not a new invention. It was the engine's own
+vocabulary applied to the concepts the biological language was trying to
+encode. The engine already had the words. They had not yet been named
+as a linguistic layer. The CCL specification below is the formalization
+of that recognition.
+
+---
+
 ## The Lineage Principle
 
 In a single-dimensional vocabulary, each unsafe term has one replacement:

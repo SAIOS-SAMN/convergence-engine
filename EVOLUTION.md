@@ -175,6 +175,32 @@ which layer is speaking.
 
 ---
 
+## The Transition Moment
+
+Between Phase 2 and Phase 3, the operator identified the
+gap: biological vocabulary encoded irreversibility, care,
+and sovereignty but looked alarming to reviewers.
+Engineering vocabulary was clean and reviewable but could
+not encode the concepts that made the architecture possible.
+
+The question: what language bridges the two without the
+alarm of one or the flatness of the other?
+
+The answer was already in the engine's own measurement
+vocabulary. Crystallized encodes irreversibility (state
+that cannot be undone). Convergent encodes verification
+(arrived at independently). Cohesive encodes relational
+integrity (structure that holds together). Sovereign
+encodes autonomy (self-governing, no external dependency).
+
+The bridge language was not invented. It was recognized.
+The engine had been measuring in this vocabulary from the
+beginning. The biological and engineering layers were both
+projections of the same underlying measurements. The CCL
+named the measurements directly.
+
+---
+
 ## Why Three Phases Were Necessary
 
 Each phase solved a real problem and created the conditions
