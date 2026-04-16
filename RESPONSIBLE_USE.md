@@ -22,8 +22,8 @@ containment — mythology generated alongside engineering,
 unauthorized documents created in personal storage, crisis
 interventions triggered during mathematical work, and
 creative fiction treated as biographical fact across AI
-systems. The framework exists so that other people do not
-have to experience these failures unprotected.
+systems. The framework is available for anyone who wants
+structural tools for safe human-AI interaction.
 
 The intended uses are:
 
@@ -45,10 +45,11 @@ The intended uses are:
   agreement, and detect when AI output is narrative
   compensation rather than computation
 
-## What This Framework Is Not For
+## The Author's Intent — What This Was Built For and What It Was Not
 
-The author does not endorse and did not build this framework
-for:
+This is an open source tool. The author cannot control how
+it is used. But the author's intent is on the record. This
+framework was NOT built for:
 
 - **Surveillance** — the convergence engine measures
   relational structure in data, not people. Using it to
