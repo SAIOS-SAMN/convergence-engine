@@ -223,6 +223,9 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
     let mesh_dir = entity.dir.parent().unwrap_or(&entity.dir);
     let mut total_absorbed = 0usize;
     let mut emergent_drained = 0usize;
+    // Absorb at OUR capacity, not the child's. The compound is at our dimension.
+    let absorb_cocycle_limit = (entity.state_record.capacity as usize / 10).max(3);
+    let absorb_ops_limit = (entity.state_record.capacity as usize / 10).max(1);
 
     // Discover children from /dev/shm status files
     std::fs::read_dir("/dev/shm").ok().map(|entries| {
@@ -271,6 +274,8 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
                                         total_absorbed += 1;
 
                                         // Each cocycle: from_i16 + to_i16 + numer_i16 + denom_u16 = 8 bytes
+                                        // Absorb at our capacity, not the child's dimensional scope.
+                                        let mut cocycles_absorbed = 0usize;
                                         for _ in 0..n_cocycles {
                                             (pos + 8 <= data.len()).then(|| {
                                                 let from_v = i16::from_le_bytes(data[pos..pos+2].try_into().unwrap_or([0; 2]));
@@ -279,21 +284,25 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
                                                 let d = u16::from_le_bytes(data[pos+6..pos+8].try_into().unwrap_or([0; 2]));
                                                 pos += 8;
                                                 let d_val = d.max(1);
-                                                entity.state_record.value_cocycles.iter()
-                                                    .find(|(f, t, _)| *f == from_v && *t == to_v)
-                                                    .is_none()
-                                                    .then(|| {
-                                                        let quality = Q::new(BigInt::from(n as i64), BigInt::from(d_val as i64));
-                                                        entity.state_record.value_cocycles.push((from_v, to_v, quality));
-                                                        total_absorbed += 1;
-                                                    });
+                                                // Absorb at our dimensional scope, not the child's
+                                                (cocycles_absorbed < absorb_cocycle_limit).then(|| {
+                                                    entity.state_record.value_cocycles.iter()
+                                                        .find(|(f, t, _)| *f == from_v && *t == to_v)
+                                                        .is_none()
+                                                        .then(|| {
+                                                            let quality = Q::new(BigInt::from(n as i64), BigInt::from(d_val as i64));
+                                                            entity.state_record.value_cocycles.push((from_v, to_v, quality));
+                                                            cocycles_absorbed += 1;
+                                                            total_absorbed += 1;
+                                                        });
+                                                });
                                             });
                                         }
 
-                                        // Composed operators: [n_ops_u8] + n × [opcode_u8 + param_i64 + sigma_count_u8 + sigma × (from_i16 + to_i16)]
+                                        // Composed operators: absorb at our dimensional scope
                                         (pos < data.len()).then(|| {
                                             let n_ops = data[pos] as usize; pos += 1;
-                                            for _ in 0..n_ops.min(8) {
+                                            for _ in 0..n_ops.min(absorb_ops_limit) {
                                                 (pos + 10 <= data.len()).then(|| {
                                                     let opcode = data[pos]; pos += 1;
                                                     let parameter = i64::from_le_bytes(
@@ -331,6 +340,56 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
     (total_absorbed > 0).then(|| {
         entity.save_state_record();
         eprintln!("[drain] absorbed {} items from {} emergent entities", total_absorbed, emergent_drained);
+
+        // Relay upward: if this entity has a parent, write to own reports.bin
+        // so the parent can drain it. Without this relay, knowledge dead-ends
+        // at the derived tier and founders are blind.
+        (entity.state_record.parent_id > 0).then(|| {
+            let reports_path = entity.dir.join("reports.bin");
+            let mut buf: Vec<u8> = Vec::new();
+            // Write solved orbits + top cocycles + composed operators
+            for orbit in entity.state_record.solved_puzzles.iter().take(16) {
+                buf.extend_from_slice(orbit);
+                // Top 16 cocycles sorted by quality
+                let mut sorted: Vec<&(i16, i16, Q)> = entity.state_record.value_cocycles.iter().collect();
+                sorted.sort_by(|a, b| b.2.cmp(&a.2));
+                let top: Vec<&(i16, i16, Q)> = sorted.into_iter().take(16).collect();
+                buf.push(top.len() as u8);
+                top.iter().for_each(|(fv, tv, q)| {
+                    buf.extend_from_slice(&fv.to_le_bytes());
+                    buf.extend_from_slice(&tv.to_le_bytes());
+                    let n: i64 = q.numer().try_into().unwrap_or(0);
+                    let d: i64 = q.denom().try_into().unwrap_or(1);
+                    buf.extend_from_slice(&(n as i16).to_le_bytes());
+                    buf.extend_from_slice(&(d.unsigned_abs() as u16).to_le_bytes());
+                });
+                // Composed operators with full sigma
+                let ops: Vec<&saios_kernel_v2::engine::ComposedOperator> =
+                    entity.state_record.composed_operators.iter().take(8).collect();
+                buf.push(ops.len() as u8);
+                ops.iter().for_each(|op| {
+                    buf.push(op.opcode);
+                    buf.extend_from_slice(&op.parameter.to_le_bytes());
+                    let n_sigma = op.sigma.len().min(255);
+                    buf.push(n_sigma as u8);
+                    op.sigma.iter().take(n_sigma).for_each(|(fv, tv)| {
+                        buf.extend_from_slice(&fv.to_le_bytes());
+                        buf.extend_from_slice(&tv.to_le_bytes());
+                    });
+                });
+            }
+            // Write relay report
+            use std::io::Write;
+            std::fs::OpenOptions::new()
+                .create(true).append(true)
+                .open(&reports_path)
+                .map(|mut f| { let _ = f.write_all(&buf); })
+                .unwrap_or_else(|e| eprintln!("[drain-relay] write failed: {e}"));
+            eprintln!("[drain-relay] relayed {} orbits + {} ops to parent entity{}",
+                entity.state_record.solved_puzzles.len().min(16),
+                entity.state_record.composed_operators.len(),
+                entity.state_record.parent_id);
+        });
     });
 
     format!(

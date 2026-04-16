@@ -407,7 +407,11 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     entity.state_record.record_solved_puzzle(puzzle_orbit);
 
                     // ── Compositor inscription: serialize the bridge ──
-                    (p.composition_depth > 0).then(|| {
+                    // Every solve path inscribes the method — not just compositions.
+                    // A single-generator solve (depth=0) records the value map it found.
+                    // Without inscription, solved puzzles produce no vocabulary and the
+                    // entity never builds words from letters.
+                    {
                         let mut net_map: Vec<(i64, i64, usize)> = Vec::new();
                         pairs.iter().for_each(|(src, tgt)| {
                             src.iter().zip(tgt.iter()).for_each(|(&sv, &tv)| {
@@ -435,22 +439,40 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                                     entity.state_record.value_cocycles.push((from_v, to_v, quality));
                                 });
                         });
-                        eprintln!("[lineage] compositor inscription: {} cocycles from depth={} at orbit {:02x}{:02x}{:02x}{:02x}",
-                            net_map.len(), p.composition_depth,
+                        // Inscribe as composed operator: the value map IS a depth-1 operator.
+                        // opcode=0 (value-level, no spatial remap). sigma = the transition map.
+                        // This is what the entity learned. Without it, vocabulary never grows.
+                        (!net_map.is_empty()).then(|| {
+                            let sigma: Vec<(i16, i16)> = net_map.iter()
+                                .map(|&(sv, tv, _)| (sv as i16, tv as i16))
+                                .collect();
+                            entity.state_record.assimilate(
+                                saios_kernel_v2::engine::ComposedOperator {
+                                    opcode: 0,
+                                    parameter: 0,
+                                    sigma,
+                                    score: 1,
+                                });
+                        });
+                        eprintln!("[lineage] compositor inscription: {} cocycles + {} ops from depth={} at orbit {:02x}{:02x}{:02x}{:02x}",
+                            net_map.len(), if net_map.is_empty() { 0 } else { 1 }, p.composition_depth,
                             obs_orbit[0], obs_orbit[1], obs_orbit[2], obs_orbit[3]);
-                    });
+                    }
 
-                    // Emergent entity report queue
-                    (entity.state_record.lineage_depth == 2).then(|| {
+                    // Report queue: every entity with a parent relays knowledge upward.
+                    // Emergent→derived and derived→founder. Without this relay,
+                    // knowledge dead-ends at the derived tier and founders are blind.
+                    (entity.state_record.parent_id > 0).then(|| {
                         let reports_path = entity.dir.join("reports.bin");
                         let mut report_buf: Vec<u8> = Vec::new();
                         // Orbit
                         report_buf.extend_from_slice(&obs_orbit);
                         // Value cocycles — sorted by cohesion quality, not recency.
-                        // At emergent→parent boundary, topology propagates over temporality.
+                        // Report size bounded by capacity: smaller entities report less.
+                        let report_cocycle_limit = (entity.state_record.capacity as usize / 10).max(3);
                         let mut sorted_cocycles: Vec<&(i16, i16, Q)> = entity.state_record.value_cocycles.iter().collect();
                         sorted_cocycles.sort_by(|a, b| b.2.cmp(&a.2));
-                        let recent_cocycles: Vec<&(i16, i16, Q)> = sorted_cocycles.into_iter().take(16).collect();
+                        let recent_cocycles: Vec<&(i16, i16, Q)> = sorted_cocycles.into_iter().take(report_cocycle_limit).collect();
                         report_buf.push(recent_cocycles.len() as u8);
                         recent_cocycles.iter().for_each(|(from_v, to_v, q)| {
                             report_buf.extend_from_slice(&from_v.to_le_bytes());
@@ -460,17 +482,18 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                             report_buf.extend_from_slice(&(n as i16).to_le_bytes());
                             report_buf.extend_from_slice(&(d.unsigned_abs() as u16).to_le_bytes());
                         });
-                        // Composed operators from compositor
-                        let comp_ops: Vec<&saios_kernel_v2::thinking::CompositionRecord> = cog.compositions.iter()
-                            .filter(|c| !c.sigma_post.is_empty())
-                            .take(8).collect();
-                        report_buf.push(comp_ops.len() as u8);
-                        comp_ops.iter().for_each(|comp| {
-                            report_buf.push(comp.operator);
-                            report_buf.extend_from_slice(&comp.parameter.to_le_bytes());
-                            let n_sigma = comp.sigma_post.len().min(255);
+                        // Composed operators from the entity's state record — the inscribed vocabulary.
+                        // Report size bounded by capacity: smaller entities report less.
+                        let report_ops_limit = (entity.state_record.capacity as usize / 10).max(1);
+                        let state_ops: Vec<&saios_kernel_v2::engine::ComposedOperator> =
+                            entity.state_record.composed_operators.iter().take(report_ops_limit).collect();
+                        report_buf.push(state_ops.len() as u8);
+                        state_ops.iter().for_each(|op| {
+                            report_buf.push(op.opcode);
+                            report_buf.extend_from_slice(&op.parameter.to_le_bytes());
+                            let n_sigma = op.sigma.len().min(255);
                             report_buf.push(n_sigma as u8);
-                            comp.sigma_post.iter().take(n_sigma).for_each(|(from_v, to_v)| {
+                            op.sigma.iter().take(n_sigma).for_each(|(from_v, to_v)| {
                                 report_buf.extend_from_slice(&from_v.to_le_bytes());
                                 report_buf.extend_from_slice(&to_v.to_le_bytes());
                             });
@@ -484,19 +507,13 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                             .unwrap_or_else(|e| eprintln!("[report] queue write failed: {e}"));
                         eprintln!("[report] queued orbit {:02x}{:02x}{:02x}{:02x} + {} cocycles + {} ops for parent entity{}",
                             obs_orbit[0], obs_orbit[1], obs_orbit[2], obs_orbit[3],
-                            recent_cocycles.len(), comp_ops.len(), entity.state_record.parent_id);
-
-                        // Self-inscription via assimilate()
-                        comp_ops.iter().for_each(|comp| {
-                            entity.state_record.assimilate(
-                                saios_kernel_v2::engine::ComposedOperator {
-                                    opcode: comp.operator,
-                                    parameter: comp.parameter,
-                                    sigma: comp.sigma_post.clone(),
-                                    score: 1,
-                                });
-                        });
+                            recent_cocycles.len(), state_ops.len(), entity.state_record.parent_id);
                     });
+
+                    // Flush state record after every successful solve.
+                    // Compositor inscription and value cocycles are in memory —
+                    // without this save, they're lost if the entity halts.
+                    entity.save_state_record();
 
                     // Encode the cognitive path as an epsilon direction.
                     // Unknown paths dissolve to None — the sampler skips learning.
@@ -732,8 +749,8 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     );
                 }
 
-                // ── Emergent entity babble ──
-                (entity.state_record.lineage_depth == 2).then(|| {
+                // ── Entity babble: partial compositions relayed upward ──
+                (entity.state_record.parent_id > 0).then(|| {
                     let partial_ops: Vec<&saios_kernel_v2::thinking::CompositionRecord> =
                         cog.compositions.iter()
                             .filter(|c| !c.sigma_post.is_empty())

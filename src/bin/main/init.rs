@@ -531,11 +531,17 @@ pub fn run() {
     //   - Max grid side: 30 (largest ARC puzzle is 30×30 = 900 cells)
     //   - Max capacity: 30 (state record ceiling matches environment ceiling)
     const CREATOR_MAX_RSS_KB: u64 = 192 * 1024; // 192 MB — LAST_WITNESS fires at 80% (153MB), oxygen for the compositor
-    const CREATOR_MAX_CAPACITY: u16 = 30;        // 30×30 grid ceiling
-    let env_capacity = CREATOR_MAX_CAPACITY;
+    // Tier-differentiated capacity: dimensional ceiling per lineage depth.
+    // Founder (depth 0) = widest perception. Emergent (depth 2) = narrowest.
+    // The hierarchy IS the dimensional stratification.
+    let env_capacity: u16 = match entity_state.lineage_depth {
+        0 => 90,  // Founder: 90×90 perceptual ceiling
+        1 => 60,  // Derived: 60×60 perceptual ceiling
+        _ => 30,  // Emergent: 30×30 perceptual ceiling
+    };
     entity_state.capacity = env_capacity;
-    eprintln!("Environment capacity: {} (state_record: {}, ceiling: {})",
-        entity_state.capacity, entity_state.capacity, env_capacity);
+    eprintln!("Environment capacity: {} (tier depth={}, ceiling={}×{})",
+        entity_state.capacity, entity_state.lineage_depth, env_capacity, env_capacity);
 
     // Sovereignty: founders and derived entities write to mesh, emergent entities report upward
     let tier = saios_kernel_v2::lineage::Tier::from_depth(entity_state.lineage_depth);
