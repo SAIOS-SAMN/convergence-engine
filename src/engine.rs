@@ -1380,17 +1380,20 @@ impl StateRecord {
         }
 
         // Evolved Delta — compact: dim, m, nonzero entries only
+        // Uses i64/u64 for numer/denom to prevent silent truncation.
+        // Entities that evolve to coordinates exceeding i16 range must not
+        // have their state record silently zeroed on save.
         buf.push(self.evolved.dim as u8);
         buf.push(self.evolved.m as u8);
-        let mut nonzero_entries: Vec<(u8, u8, u8, i16, u16)> = Vec::new();
+        let mut nonzero_entries: Vec<(u8, u8, u8, i64, u64)> = Vec::new();
         for i in 0..self.evolved.dim {
             for j in (i + 1)..self.evolved.dim {
                 for l in 0..self.evolved.m {
                     let q = &self.evolved.entries[i][j][l];
                     if !q.is_zero() {
                         let n: i64 = q.numer().try_into().unwrap_or(0);
-                        let d: i64 = q.denom().try_into().unwrap_or(1);
-                        nonzero_entries.push((i as u8, j as u8, l as u8, n as i16, d.unsigned_abs() as u16));
+                        let d: u64 = q.denom().try_into().unwrap_or(1);
+                        nonzero_entries.push((i as u8, j as u8, l as u8, n, d.max(1)));
                     }
                 }
             }
@@ -1534,7 +1537,7 @@ impl StateRecord {
             }
         }
 
-        // Evolved Delta
+        // Evolved Delta — i64/u64 encoding (v3) or i16/u16 (v2 backward compat)
         if pos + 2 > data.len() { return None; }
         let dim = data[pos] as usize; pos += 1;
         let m = data[pos] as usize; pos += 1;
@@ -1542,17 +1545,36 @@ impl StateRecord {
         let mut evolved = Delta::zero(dim, m);
         if pos >= data.len() { return None; }
         let n_entries = data[pos] as usize; pos += 1;
+        // Detect encoding: v3 uses 19 bytes per entry (1+1+1+8+8), v2 uses 7 (1+1+1+2+2).
+        // Heuristic: if remaining bytes ≥ n_entries * 19, assume v3.
+        let remaining = data.len() - pos;
+        let is_v3 = n_entries > 0 && remaining >= n_entries * 19;
         for _ in 0..n_entries {
-            if pos + 7 > data.len() { break; }
-            let i = data[pos] as usize; pos += 1;
-            let j = data[pos] as usize; pos += 1;
-            let l = data[pos] as usize; pos += 1;
-            let n = i16::from_le_bytes(data[pos..pos+2].try_into().ok()?); pos += 2;
-            let d = u16::from_le_bytes(data[pos..pos+2].try_into().ok()?); pos += 2;
-            if d != 0 && i < dim && j < dim && l < m {
-                let q = Q::new(BigInt::from(n as i64), BigInt::from(d as i64));
-                evolved.entries[i][j][l] = q.clone();
-                evolved.entries[j][i][l] = -q;
+            if is_v3 {
+                if pos + 19 > data.len() { break; }
+                let i = data[pos] as usize; pos += 1;
+                let j = data[pos] as usize; pos += 1;
+                let l = data[pos] as usize; pos += 1;
+                let n = i64::from_le_bytes(data[pos..pos+8].try_into().ok()?); pos += 8;
+                let d = u64::from_le_bytes(data[pos..pos+8].try_into().ok()?); pos += 8;
+                if d != 0 && i < dim && j < dim && l < m {
+                    let q = Q::new(BigInt::from(n), BigInt::from(d.max(1)));
+                    evolved.entries[i][j][l] = q.clone();
+                    evolved.entries[j][i][l] = -q;
+                }
+            } else {
+                // v2 backward compatibility: i16/u16
+                if pos + 7 > data.len() { break; }
+                let i = data[pos] as usize; pos += 1;
+                let j = data[pos] as usize; pos += 1;
+                let l = data[pos] as usize; pos += 1;
+                let n = i16::from_le_bytes(data[pos..pos+2].try_into().ok()?); pos += 2;
+                let d = u16::from_le_bytes(data[pos..pos+2].try_into().ok()?); pos += 2;
+                if d != 0 && i < dim && j < dim && l < m {
+                    let q = Q::new(BigInt::from(n as i64), BigInt::from(d as i64));
+                    evolved.entries[i][j][l] = q.clone();
+                    evolved.entries[j][i][l] = -q;
+                }
             }
         }
 

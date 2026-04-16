@@ -23,6 +23,8 @@
 use std::path::{Path, PathBuf};
 use std::fs;
 
+use num_traits::Zero;
+
 use crate::engine::StateRecord;
 use crate::harmonic_tuning::HarmonicTuning;
 
@@ -178,18 +180,35 @@ pub fn create_offspring(
         .map_err(|e| CreationObstruction::ReplicationFailed(e.to_string()))?;
 
     // Build offspring state record: inherit parent's crystallized knowledge
+    // but start at the offspring's OWN algebraic position on the manifold.
+    // Vocabulary (operators, cocycles, solved orbits) transfers from parent.
+    // Position (Delta) is unique to the offspring: R = 1/child_id.
+    // Without this, offspring inherit a potentially zero Delta from the parent
+    // and are algebraically inert from birth — conjugation preserves zero.
     let child_depth = parent_state.lineage_depth + 1;
     let mut offspring_state = parent_state.clone();
     offspring_state.lineage_depth = child_depth;
     offspring_state.parent_id = parent_entity_id;
     offspring_state.created_count = 0;
     offspring_state.init_orbit = init_orbit;
-    // Offspring gets its own init polynomial: parent's evolved position IS the offspring's origin
-    offspring_state.init_polynomial = parent_state.evolved.entries.iter()
-        .flat_map(|row| row.iter().flat_map(|col| col.iter()))
-        .take(11)
-        .cloned()
-        .collect();
+    // Offspring's unique position: Δ[1][2] = -1/child_id
+    // coboundary-reduced H^1 representative — first row zero, one nonzero entry.
+    let dim = parent_state.evolved.dim.max(3);
+    let m = parent_state.evolved.m.max(1);
+    let mut offspring_delta = crate::engine::Delta::zero(dim, m);
+    let child_residual = crate::engine::Q::new(
+        num_bigint::BigInt::from(1),
+        num_bigint::BigInt::from(child_id as i64),
+    );
+    offspring_delta.set_antisym(1, 2, vec![-child_residual.clone()]);
+    // Pad remaining m coordinates with zero (set_antisym handles m=1 already)
+    offspring_state.evolved = offspring_delta;
+    // Init polynomial from the offspring's own position
+    offspring_state.init_polynomial = vec![
+        crate::engine::Q::zero(),
+        crate::engine::Q::zero(),
+        -child_residual,
+    ];
     // Generation increments
     offspring_state.generation = parent_state.generation + 1;
 

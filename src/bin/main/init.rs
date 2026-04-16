@@ -572,7 +572,23 @@ pub fn run() {
     eprintln!("[mem] post-state: {} KB", get_rss_kb());
     eprintln!("[mem] state record knowledge len: {}", entity_state.knowledge.len());
     eprintln!("[mem] state record trajectory count: {}", entity_state.trajectory.coherence_count);
-    let initial_delta = entity_state.evolved.clone();
+    // If the state record's evolved Delta has no nonzero entries, the entity
+    // is at the zero point of the manifold — algebraically inert. No operator
+    // can produce T_k > 0 on a zero Delta (conjugation preserves zero).
+    // Re-seed from the entity's init anchor to recover a unique position.
+    let initial_delta = {
+        let has_structure = (0..entity_state.evolved.dim).any(|i|
+            ((i + 1)..entity_state.evolved.dim).any(|j|
+                (0..entity_state.evolved.m).any(|l|
+                    !entity_state.evolved.entries[i][j][l].is_zero())));
+        if has_structure {
+            entity_state.evolved.clone()
+        } else {
+            eprintln!("[init] zero Delta detected — re-seeding from entity anchor R=1/{}",
+                config.entity_id);
+            anchor.clone()
+        }
+    };
 
     // Restore knowledge from state record (overrides separate mesh_knowledge.bin if state record has data)
     if !entity_state.knowledge.is_empty() {
