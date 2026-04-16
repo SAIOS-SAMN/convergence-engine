@@ -59,9 +59,9 @@ pub fn run_timekeeper(
 
     // Epistate record — chronometric harmonics (K velocity, population, vocab rate, denom health)
     let epistate_record_path = dir.join("epistate_record.bin");
-    let mut epigenome = std::fs::read(&epistate_record_path).ok()
-        .and_then(|data| saios_kernel_v2::epigenome::HarmonicTuning::from_bytes(&data))
-        .unwrap_or_else(|| saios_kernel_v2::epigenome::HarmonicTuning::new());
+    let mut harmonic_tuning = std::fs::read(&epistate_record_path).ok()
+        .and_then(|data| saios_kernel_v2::harmonic_tuning::HarmonicTuning::from_bytes(&data))
+        .unwrap_or_else(|| saios_kernel_v2::harmonic_tuning::HarmonicTuning::new());
 
     // World status — the timekeeper is visible to the observer
     let shm_path = PathBuf::from(format!("/dev/shm/saios-timekeeper-{}", config.entity_id));
@@ -168,17 +168,17 @@ pub fn run_timekeeper(
 
                         let alive = population_w + population_e + population_c;
 
-                        // ── Chronometric harmonics (epigenome) ──
+                        // ── Chronometric harmonics (harmonic tuning) ──
                         // h[0]: K velocity (dK since last observation)
                         let k_velocity = total_k.saturating_sub(prev_total_k);
                         prev_total_k = total_k;
 
-                        // Update epigenome with chronometric harmonics
-                        epigenome.perturbation[0] = Q::new(BigInt::from(k_velocity), BigInt::from(1u32));
-                        epigenome.perturbation[1] = Q::new(BigInt::from(alive), BigInt::from(1u32));
-                        epigenome.perturbation[2] = Q::new(BigInt::from(total_vocab), BigInt::from(1u32));
-                        epigenome.perturbation[3] = Q::new(BigInt::from(max_denom_digits), BigInt::from(1u32));
-                        let _ = fs::write(&epistate_record_path, epigenome.to_bytes());
+                        // Update harmonic tuning with chronometric harmonics
+                        harmonic_tuning.perturbation[0] = Q::new(BigInt::from(k_velocity), BigInt::from(1u32));
+                        harmonic_tuning.perturbation[1] = Q::new(BigInt::from(alive), BigInt::from(1u32));
+                        harmonic_tuning.perturbation[2] = Q::new(BigInt::from(total_vocab), BigInt::from(1u32));
+                        harmonic_tuning.perturbation[3] = Q::new(BigInt::from(max_denom_digits), BigInt::from(1u32));
+                        let _ = fs::write(&epistate_record_path, harmonic_tuning.to_bytes());
 
                         // ── Adaptive cadence — the system' metabolic rate ──
                         // The heartbeat adjusts to BOTH the system' vitals AND the world's.

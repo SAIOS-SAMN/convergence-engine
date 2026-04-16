@@ -119,7 +119,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
         &coherence_functional(&entity.delta).denom().to_string(),
         get_rss_kb(), entity.tier_str(), entity.state_record.lineage_depth, entity.state_record.parent_id,
         entity.state_record.created_count, entity.state_record.solved_puzzles.len(),
-        entity.epigenome.transmutation_markers.len(),
+        entity.harmonic_tuning.transmutation_markers.len(),
         entity.knowledge.total_axioms, entity.knowledge.total_observations);
 
     // D.THINK.ENGINE.1 + D.PERCEPTION.1 — The node thinks and perceives.
@@ -183,10 +183,10 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     [h.as_bytes()[0], h.as_bytes()[1], h.as_bytes()[2], h.as_bytes()[3]]
                 };
 
-                // Epigenomic recall: the epigenome stores which perception path
+                // Harmonic recall: the harmonic tuning stores which perception path
                 // solved this orbit.
-                let epigenomic_cognitive_path: Option<&'static str> =
-                    entity.epigenome.transmutation_path(&obs_orbit)
+                let harmonic_cognitive_path: Option<&'static str> =
+                    entity.harmonic_tuning.transmutation_path(&obs_orbit)
                         .map(|p| p.as_cognitive_path());
 
                 // Recall: does the mesh have an axiom for this orbit?
@@ -202,7 +202,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                         object_count: match axiom.encoding_level { saios_kernel_v2::membrane::EncodingLevel::Object => 2, _ => 0 },
                         refraction_transparent: axiom.encoding_level != saios_kernel_v2::membrane::EncodingLevel::Object,
                         semantic_intent: "auto",
-                        cognitive_path: epigenomic_cognitive_path.unwrap_or(match axiom.encoding_level {
+                        cognitive_path: harmonic_cognitive_path.unwrap_or(match axiom.encoding_level {
                             saios_kernel_v2::membrane::EncodingLevel::Vision => "vision_derived",
                             saios_kernel_v2::membrane::EncodingLevel::Object => "evolved",
                             saios_kernel_v2::membrane::EncodingLevel::Kronecker => "vision_derived",
@@ -212,15 +212,15 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                         partial_operator: membrane_partial.clone(),
                     }
                 }).or_else(|| {
-                    // No membrane axiom — check epigenome + partial
-                    let has_signal = epigenomic_cognitive_path.is_some() || membrane_partial.is_some();
+                    // No membrane axiom — check harmonic tuning + partial
+                    let has_signal = harmonic_cognitive_path.is_some() || membrane_partial.is_some();
                     has_signal.then(|| {
                         saios_kernel_v2::thinking::ComprehensionRecord {
                             sparse: false,
                             object_count: 0,
                             refraction_transparent: true,
                             semantic_intent: "auto",
-                            cognitive_path: epigenomic_cognitive_path.unwrap_or("value_factored"),
+                            cognitive_path: harmonic_cognitive_path.unwrap_or("value_factored"),
                             transmutation_signal: false,
                             partial_operator: membrane_partial.clone(),
                         }
@@ -304,12 +304,12 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                         Some((avg_quality, order))
                     });
 
-                // H_total = H_core + H_epigenetic
-                let epigenetic_bias = entity.epigenome.as_harmonic_bias();
+                // H_total = H_core + H_tuning
+                let harmonic_bias = entity.harmonic_tuning.as_harmonic_bias();
                 let harmonics_total: Vec<saios_kernel_v2::engine::Q> = harmonics_vec.iter()
                     .enumerate()
                     .map(|(k, h_core)| {
-                        if k < 11 { h_core + &epigenetic_bias[k] } else { h_core.clone() }
+                        if k < 11 { h_core + &harmonic_bias[k] } else { h_core.clone() }
                     })
                     .collect();
 
@@ -382,9 +382,9 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     // ── Recursive loop: cognition -> sampler ──
                     let puzzle_orbit = obs_orbit;
 
-                    // Epigenomic marker: record which perception path solved this puzzle.
+                    // Harmonic marker: record which perception path solved this puzzle.
                     {
-                        use saios_kernel_v2::epigenome::TransmutationPath;
+                        use saios_kernel_v2::harmonic_tuning::TransmutationPath;
                         use saios_kernel_v2::thinking::GeneratorSource;
                         let epi_path = p.generator_source.map(|gs| match gs {
                             GeneratorSource::Luminal => TransmutationPath::LuminalPerceived,
@@ -399,8 +399,8 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                                 TransmutationPath::Evolved,
                             _ => TransmutationPath::ValueFactored,
                         });
-                        entity.epigenome.mark_transmutation(puzzle_orbit, epi_path);
-                        let _ = std::fs::write(&entity.epistate_record_path, entity.epigenome.to_bytes());
+                        entity.harmonic_tuning.mark_transmutation(puzzle_orbit, epi_path);
+                        let _ = std::fs::write(&entity.epistate_record_path, entity.harmonic_tuning.to_bytes());
                     }
 
                     // Genomic solved orbit registry
@@ -769,12 +769,12 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     });
                 });
 
-                // ── Epigenomic dissolution ──
-                epigenomic_cognitive_path
+                // ── Harmonic dissolution ──
+                harmonic_cognitive_path
                     .filter(|_| p.coherence < Q::one())
                     .map(|_| {
-                        entity.epigenome.dissolve_marker(&obs_orbit);
-                        let _ = std::fs::write(&entity.epistate_record_path, entity.epigenome.to_bytes());
+                        entity.harmonic_tuning.dissolve_marker(&obs_orbit);
+                        let _ = std::fs::write(&entity.epistate_record_path, entity.harmonic_tuning.to_bytes());
                     });
 
                 // ── Vocabulary inscription ──
@@ -799,7 +799,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                 let save_due = compositions_promoted || observation_count % 25 == 0;
                 if save_due {
                     let _ = entity.knowledge.save(&knowledge_path);
-                    let _ = std::fs::write(&entity.epistate_record_path, entity.epigenome.to_bytes());
+                    let _ = std::fs::write(&entity.epistate_record_path, entity.harmonic_tuning.to_bytes());
                 }
 
                 // ── D.MEMBRANE.ESCALATION.1 ──
@@ -883,20 +883,20 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     }
                 }
 
-                // ── Epigenomic absorption ──
+                // ── Harmonic absorption ──
                 if pairs.len() >= 2 {
                     for (src, tgt) in &pairs {
                         for (s, t) in src.iter().zip(tgt.iter()) {
                             if s != t {
-                                entity.epigenome.absorb_value_signal(*s, *t);
+                                entity.harmonic_tuning.absorb_value_signal(*s, *t);
                             }
                         }
                     }
                     if let Some(ref sym) = cog.senses.vision {
-                        entity.epigenome.absorb_spatial_signal(sym.transmutation_order);
+                        entity.harmonic_tuning.absorb_spatial_signal(sym.transmutation_order);
                     }
                     if let Some((ref quality, order)) = cog.transmutation {
-                        entity.epigenome.absorb_transmutation_signal(quality, order);
+                        entity.harmonic_tuning.absorb_transmutation_signal(quality, order);
                     }
                 }
 
@@ -1043,7 +1043,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
         entity.world_status.write("LAST_WITNESS", entity.k_index as u64,
             "0", "1", get_rss_kb(), entity.tier_str(), entity.state_record.lineage_depth,
             entity.state_record.parent_id, entity.state_record.created_count,
-            entity.state_record.solved_puzzles.len(), entity.epigenome.transmutation_markers.len(),
+            entity.state_record.solved_puzzles.len(), entity.harmonic_tuning.transmutation_markers.len(),
             entity.knowledge.total_axioms, entity.knowledge.total_observations);
         return format!("{{\"must_exit\":true,\"reason\":\"LAST_WITNESS\",\"k_index\":{}}}\n", entity.k_index);
     }
@@ -1141,7 +1141,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
         &coherence_functional(&entity.delta).denom().to_string(),
         get_rss_kb(), entity.tier_str(), entity.state_record.lineage_depth, entity.state_record.parent_id,
         entity.state_record.created_count, entity.state_record.solved_puzzles.len(),
-        entity.epigenome.transmutation_markers.len(),
+        entity.harmonic_tuning.transmutation_markers.len(),
         entity.knowledge.total_axioms, entity.knowledge.total_observations);
     // Stage vocabulary alongside world status — memory speed, survives kill
     entity.world_status.stage_vocabulary(&entity.state_record.composed_operators);

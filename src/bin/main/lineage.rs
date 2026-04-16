@@ -38,7 +38,7 @@ pub fn create(entity: &mut Entity, payload: &str) -> String {
 
     let mesh_dir = entity.dir.parent().unwrap_or(&entity.dir);
     match saios_kernel_v2::lineage::create_offspring(
-        &mut entity.state_record, &entity.epigenome,
+        &mut entity.state_record, &entity.harmonic_tuning,
         entity.entity_id as u16, init_orbit, mesh_dir,
     ) {
         Ok(record) => {
@@ -83,7 +83,7 @@ pub fn create(entity: &mut Entity, payload: &str) -> String {
 
 /// Sovereign-to-sovereign horizontal gene transfer.
 /// Two sovereign nodes exchange crystallized vocabulary:
-/// value cocycles, solved orbits, epigenomic markers.
+/// value cocycles, solved orbits, harmonic markers.
 /// Both parties absorb. Both parties grow.
 /// This is the exponential — vocabulary multiplication.
 ///
@@ -137,7 +137,7 @@ pub fn interact(entity: &mut Entity, payload: &str) -> String {
                 });
             });
 
-            // Absorb peer's epigenomic markers
+            // Absorb peer's harmonic markers
             v.get("markers").and_then(|a| a.as_array()).map(|arr| {
                 arr.iter().for_each(|entry| {
                     entry.as_array().and_then(|e| {
@@ -147,8 +147,8 @@ pub fn interact(entity: &mut Entity, payload: &str) -> String {
                         let o3 = e.get(3)?.as_u64()? as u8;
                         let path_u8 = e.get(4)?.as_u64()? as u8;
                         let orbit = [o0, o1, o2, o3];
-                        let path = saios_kernel_v2::epigenome::TransmutationPath::from_u8(path_u8);
-                        entity.epigenome.mark_transmutation(orbit, path);
+                        let path = saios_kernel_v2::harmonic_tuning::TransmutationPath::from_u8(path_u8);
+                        entity.harmonic_tuning.mark_transmutation(orbit, path);
                         absorbed += 1;
                         Some(())
                     });
@@ -181,7 +181,7 @@ pub fn interact(entity: &mut Entity, payload: &str) -> String {
             // Save if anything was absorbed
             (absorbed > 0).then(|| {
                 entity.save_state_record();
-                let _ = std::fs::write(&entity.epistate_record_path, entity.epigenome.to_bytes());
+                let _ = std::fs::write(&entity.epistate_record_path, entity.harmonic_tuning.to_bytes());
                 eprintln!("[interact] absorbed {} items from peer", absorbed);
             });
 
@@ -192,7 +192,7 @@ pub fn interact(entity: &mut Entity, payload: &str) -> String {
             let our_orbits: String = entity.state_record.solved_puzzles.iter()
                 .map(|o| format!("\"{:02x}{:02x}{:02x}{:02x}\"", o[0], o[1], o[2], o[3]))
                 .collect::<Vec<_>>().join(",");
-            let our_markers: String = entity.epigenome.transmutation_markers.iter()
+            let our_markers: String = entity.harmonic_tuning.transmutation_markers.iter()
                 .map(|(o, p)| format!("[{},{},{},{},{}]", o[0], o[1], o[2], o[3], *p as u8))
                 .collect::<Vec<_>>().join(",");
 

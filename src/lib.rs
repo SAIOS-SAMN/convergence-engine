@@ -30,7 +30,7 @@ pub mod matrix;
 pub mod perception;
 pub mod thinking;
 pub mod membrane;
-pub mod epigenome;
+pub mod harmonic_tuning;
 pub mod register;
 pub mod lineage;
 pub mod trinity;

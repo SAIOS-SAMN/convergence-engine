@@ -807,7 +807,7 @@ pub struct ComposedOperator {
 
 /// A composable mathematical operation — a generator of the algebraic group.
 /// The state record holds these as core knowledge. The peel loop composes them.
-/// The membrane learns WHEN to apply which primitive. The epigenome tunes
+/// The membrane learns WHEN to apply which primitive. The harmonic tuning tunes
 /// which primitives to attend to.
 #[derive(Debug, Clone)]
 pub enum MathPrimitive {

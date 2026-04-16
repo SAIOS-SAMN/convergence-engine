@@ -5,7 +5,7 @@
 //! Lineage — sovereign creation engine.
 //!
 //! Creation is not cognition. The lineage engine reads the state record to determine
-//! creation capacity, replicates genome + epigenome to a new node directory,
+//! creation capacity, replicates state record + harmonic tuning to a new node directory,
 //! and records the parent-child relationship. It does not think. It creates.
 //!
 //! Hierarchy (fixed depth):
@@ -17,14 +17,14 @@
 //! 503 node slots available. 405 reserve.
 //!
 //! The state record carries lineage: parent_id, lineage_depth, created_count, init_orbit.
-//! The epigenome carries reflexes: transmutation path markers inherited from parent.
+//! The harmonic tuning carries reflexes: transmutation path markers inherited from parent.
 //! The child starts intelligent — it inherits everything the parent crystallized.
 
 use std::path::{Path, PathBuf};
 use std::fs;
 
 use crate::engine::StateRecord;
-use crate::epigenome::HarmonicTuning;
+use crate::harmonic_tuning::HarmonicTuning;
 
 /// Tier classification derived from lineage_depth.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -129,7 +129,7 @@ fn next_available_slot(mesh_dir: &Path, child_tier: Tier, start_id: u16, max_id:
 /// Attempt to create an offspring from a parent state record.
 ///
 /// Reads the parent's creation capacity from its state record. If capacity remains,
-/// replicates genome + epigenome to a new node directory. Records lineage
+/// replicates state record + harmonic tuning to a new node directory. Records lineage
 /// in the offspring's state record. Increments the parent's created_count.
 ///
 /// Does NOT start the offspring's service — that is external (systemd).
@@ -138,7 +138,7 @@ fn next_available_slot(mesh_dir: &Path, child_tier: Tier, start_id: u16, max_id:
 /// Returns the creation record or the obstruction that prevented creation.
 pub fn create_offspring(
     parent_state: &mut StateRecord,
-    parent_epigenome: &HarmonicTuning,
+    parent_tuning: &HarmonicTuning,
     parent_entity_id: u16,
     init_orbit: [u8; 4],
     mesh_dir: &Path,
@@ -200,7 +200,7 @@ pub fn create_offspring(
 
     // Replicate epistate record — offspring inherits parent's reflexes
     let epistate_record_path = child_dir.join("epistate_record.bin");
-    fs::write(&epistate_record_path, parent_epigenome.to_bytes())
+    fs::write(&epistate_record_path, parent_tuning.to_bytes())
         .map_err(|e| CreationObstruction::ReplicationFailed(e.to_string()))?;
 
     // Record creation in parent
@@ -218,7 +218,7 @@ pub fn create_offspring(
 mod tests {
     use super::*;
     use crate::engine::{Delta, StateRecord};
-    use crate::epigenome::HarmonicTuning;
+    use crate::harmonic_tuning::HarmonicTuning;
     use tempfile::TempDir;
 
     #[test]
@@ -294,7 +294,7 @@ mod tests {
     }
 
     #[test]
-    fn test_epigenome_inherited() {
+    fn test_harmonic_tuning_inherited() {
         let tmp = TempDir::new().unwrap();
         let mesh_dir = tmp.path();
 
@@ -302,13 +302,13 @@ mod tests {
         let mut parent = StateRecord::new(1, 1, &origin);
         let mut epi = HarmonicTuning::new();
         epi.mark_transmutation([0x00, 0x7b, 0xbf, 0xb7],
-            crate::epigenome::TransmutationPath::VisionDerived);
+            crate::harmonic_tuning::TransmutationPath::VisionDerived);
 
         let record = create_offspring(&mut parent, &epi, 1, [1, 0, 0, 0], mesh_dir).unwrap();
 
         let child_epi_bytes = fs::read(record.child_dir.join("epistate_record.bin")).unwrap();
         let child_epi = HarmonicTuning::from_bytes(&child_epi_bytes).unwrap();
         assert_eq!(child_epi.transmutation_path(&[0x00, 0x7b, 0xbf, 0xb7]),
-            Some(crate::epigenome::TransmutationPath::VisionDerived));
+            Some(crate::harmonic_tuning::TransmutationPath::VisionDerived));
     }
 }

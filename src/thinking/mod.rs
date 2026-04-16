@@ -1474,7 +1474,7 @@ pub fn navigate_joint(
 /// Trace-back tag: which generator produced a winning candidate.
 /// Accompanies the data without altering control flow. The peel loop
 /// tags each candidate at discovery. evaluate_candidate preserves the tag.
-/// The tag flows through Perception to the epigenomic inscription site.
+/// The tag flows through Perception to the harmonic inscription site.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum GeneratorSource {
@@ -1498,7 +1498,7 @@ struct GeneratorCandidate {
     pairs: Vec<(Vec<i64>, Vec<i64>)>,
     /// Test input with this generator applied. None = no test provided.
     test: Option<Vec<i64>>,
-    /// Which generator produced this candidate. Trace-back tag for epigenome.
+    /// Which generator produced this candidate. Trace-back tag for harmonic tuning.
     source: GeneratorSource,
 }
 

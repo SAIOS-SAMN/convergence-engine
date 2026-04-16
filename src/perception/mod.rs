@@ -2521,7 +2521,7 @@ pub struct Perception {
     /// torsion spectrum — all computed from the group, not named.
     pub symmetry: Option<SymmetryGroup>,
     /// Trace-back tag: which generator produced the winning derivation.
-    /// Flows to the epigenomic inscription site. None = no generator won.
+    /// Flows to the harmonic inscription site. None = no generator won.
     pub generator_source: Option<crate::thinking::GeneratorSource>,
 }
 

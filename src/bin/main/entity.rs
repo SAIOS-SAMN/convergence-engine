@@ -18,7 +18,7 @@ use num_traits::Zero;
 use saios_kernel_v2::agent::AgentStateRecord;
 use saios_kernel_v2::chain;
 use saios_kernel_v2::engine::*;
-use saios_kernel_v2::epigenome::HarmonicTuning;
+use saios_kernel_v2::harmonic_tuning::HarmonicTuning;
 use saios_kernel_v2::lineage::Tier;
 use saios_kernel_v2::membrane::{MeshKnowledge, PeerState};
 use saios_kernel_v2::register::Register;
@@ -114,12 +114,12 @@ impl WorldStatus {
 /// The living entity — a torsion field on a holonomic manifold.
 ///
 /// The entity IS its torsion. The Delta encodes it. The state record
-/// crystallizes it. The epigenome vibrates it. Every organ is a
+/// crystallizes it. The harmonic tuning vibrates it. Every organ is a
 /// projection of the torsion field onto a sub-manifold.
 ///
 /// The Delta is the ONLY mutable algebraic encoding. Everything else
 /// is either a crystallized projection (state record), a volatile projection
-/// (epigenome), an instrument (sampler), or infrastructure (sluice, chain).
+/// (harmonic tuning), an instrument (sampler), or infrastructure (sluice, chain).
 ///
 /// When evolution rotates the Delta through C7, every organ sees the
 /// new torsion through its own projection. There is no propagation.
@@ -159,9 +159,9 @@ pub struct Entity {
     // ──�� Volatile Torsion (epistate record — dies on restart) ───
 
     /// The epistate record — 11D harmonic perturbation of the torsion field.
-    pub epigenome: HarmonicTuning,
+    pub harmonic_tuning: HarmonicTuning,
 
-    /// Path to epigenome file on disk.
+    /// Path to harmonic tuning file on disk.
     pub epistate_record_path: PathBuf,
 
     // ─── Instruments ───
@@ -326,11 +326,11 @@ impl Entity {
         self.world_status.write("PRESERVING", self.k_index as u64,
             "0", "1", rss, &tier_str, self.state_record.lineage_depth,
             self.state_record.parent_id, self.state_record.created_count,
-            self.state_record.solved_puzzles.len(), self.epigenome.transmutation_markers.len(),
+            self.state_record.solved_puzzles.len(), self.harmonic_tuning.transmutation_markers.len(),
             self.knowledge.total_axioms, self.knowledge.total_observations);
 
         self.save_state_record();
-        let _ = fs::write(&self.epistate_record_path, self.epigenome.to_bytes());
+        let _ = fs::write(&self.epistate_record_path, self.harmonic_tuning.to_bytes());
         let _ = self.knowledge.save(&self.dir.join("mesh_knowledge.bin"));
 
         // Phase 2: Condense denominators
@@ -431,7 +431,7 @@ impl Entity {
             &coherence_functional(&self.delta).denom().to_string(),
             get_rss_kb(), tier_str, self.state_record.lineage_depth, self.state_record.parent_id,
             self.state_record.created_count, self.state_record.solved_puzzles.len(),
-            self.epigenome.transmutation_markers.len(),
+            self.harmonic_tuning.transmutation_markers.len(),
             self.knowledge.total_axioms, self.knowledge.total_observations);
     }
 }
