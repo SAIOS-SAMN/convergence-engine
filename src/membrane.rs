@@ -366,7 +366,7 @@ pub struct ValueCocycleCrystal {
 ///
 /// Each orbital represents a distinct orb — a cluster of puzzles that share
 /// the same torsion order (shell) and H^1 directional class (orbital).
-/// The species can enter this orb by conjugating its Delta with the
+/// The system can enter this orb by conjugating its Delta with the
 /// representative's Cayley operator.
 ///
 /// Population counts how many unsolved puzzles live in this orb.
@@ -656,7 +656,7 @@ impl MeshKnowledge {
     /// with its current vocabulary, the curvature vector is stored as a
     /// spatial cochain. The membrane uses δ to compare across primary nodes.
     /// If δ = 0 (all primary nodes see the same curvature): promote to axiom.
-    /// The species discovers new structure from the manifold's geometry.
+    /// The system discovers new structure from the manifold's geometry.
     pub fn record_holonomy(
         &mut self,
         orbit: [u8; 4],
@@ -1038,7 +1038,7 @@ impl MeshKnowledge {
         }
 
         // Sort by population — most populated orb first.
-        // The species shifts into the orb where the most puzzles live.
+        // The system shifts into the orb where the most puzzles live.
         orbitals.sort_by(|a, b| b.population.cmp(&a.population));
         orbitals
     }
@@ -1564,7 +1564,7 @@ pub struct PeerState {
     pub observations: u64,
     /// How many orbits this node has knowledge about.
     pub orbits_known: u32,
-    /// D.GENESIS.EVOLUTION.1: evolutionary drift from origin.
+    /// D.ORIGIN.EVOLUTION.1: evolutionary drift from origin.
     /// L1 norm of entry displacement in independent coordinates.
     pub origin_drift: Q,
     /// D.MEMBRANE.LIVING.1: 11 vibrations — polytonal self-perception.

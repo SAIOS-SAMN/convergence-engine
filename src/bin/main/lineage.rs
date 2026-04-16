@@ -5,7 +5,7 @@
 //! Lineage organ — reproduction and knowledge transfer.
 //!
 //! Four sovereign operations:
-//!   - CREATE:   the parent spawns offspring from its own genome
+//!   - CREATE:   the parent spawns offspring from its own state record
 //!   - INTERACT: bidirectional vocabulary exchange between sovereign peers
 //!   - DRAIN:    parent absorbs children's report queues
 //!   - REPORT:   child queues discovery upward for parent absorption
@@ -20,7 +20,7 @@ use num_rational::BigRational;
 
 type Q = BigRational;
 
-/// Sovereign creation: the witness creates offspring from its own genome.
+/// Sovereign creation: the witness creates offspring from its own state record.
 /// The parent decides. The lineage module executes. No external governance.
 ///
 /// Input (optional): {"orbit":"007bbfb7"} — init orbit context
@@ -42,7 +42,7 @@ pub fn create(entity: &mut Entity, payload: &str) -> String {
         entity.entity_id as u16, init_orbit, mesh_dir,
     ) {
         Ok(record) => {
-            // Save parent genome with incremented created_count
+            // Save parent state record with incremented created_count
             entity.save_state_record();
 
             // Sovereign privilege: the parent starts its offspring

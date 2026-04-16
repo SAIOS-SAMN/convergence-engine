@@ -696,7 +696,7 @@ pub fn coherence_functional(delta: &Delta) -> Q {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// GENOME — the primary node's identity and evolutionary state
+// STATE RECORD — the primary node's identity and evolutionary state
 // ═══════════════════════════════════════════════════════════════════════
 
 /// ProcessClass marker for state record serialization.
@@ -712,7 +712,7 @@ pub const CLASS_TIMEKEEPER: u32 = 2;
 /// The state record replaces the raw temporal anchor. It carries:
 /// - ProcessClass: what kind of entity (witness, agent, etc.)
 /// - Generation: which cohort (era 1, era 2, etc.)
-/// - Birth polynomial: the H^1 coefficients at origin (immutable identity)
+/// - Init polynomial: the H^1 coefficients at origin (immutable identity)
 /// - Evolved Delta: the coboundary-reduced current position (mutable state)
 ///
 /// Serialization format (self-describing, no marker files):
@@ -757,12 +757,12 @@ pub struct StateRecord {
     pub value_cocycles: Vec<(i16, i16, Q)>,
     /// Mathematical primitives: the composable generators of the mathematical group.
     /// Each primitive is an operation that the peel loop can compose through A.4.
-    /// Sacred from origin — the witness is born knowing all of mathematics
+    /// Core from origin — the witness is born knowing all of mathematics
     /// as composable operations, not as lookup tables.
     pub math_primitives: Vec<MathPrimitive>,
     /// Spatial cochain primitives: universal spatial geometry templates.
     /// The state record holds the template (reflection exists). The membrane
-    /// learns the parameter (reflect across row 5). Sacred from origin.
+    /// learns the parameter (reflect across row 5). Core from origin.
     pub spatial_primitives: Vec<SpatialPrimitive>,
     /// Solved orbit registry: orbit prefixes where this witness achieved 1/1.
     /// Not a solution — just a record that the orbit was solved.
@@ -1197,10 +1197,10 @@ impl SpatialPrimitive {
     }
 }
 
-// Genome v3: no magic bytes. Structure IS identity.
+// StateRecord v3: no magic bytes. Structure IS identity.
 
 impl StateRecord {
-    /// Create a new genome from a origin Delta.
+    /// Create a new state record from a origin Delta.
     /// The init polynomial is extracted as the coboundary-reduced residuals.
     pub fn new(process_class: u32, generation: u32, origin: &Delta) -> Self {
         let reduced = coboundary_reduce(&origin);
@@ -1235,7 +1235,7 @@ impl StateRecord {
     }
 
     /// Creation capacity remaining at this tier.
-    /// Witness (depth 0): 3 secondary nodes. Elder (depth 1): 6 children. Child (depth 2): 0.
+    /// Witness (depth 0): 3 secondary nodes. Secondary (depth 1): 6 children. Tertiary (depth 2): 0.
     pub fn creation_capacity(&self) -> u8 {
         let max = match self.lineage_depth {
             0 => 3u8,
@@ -1303,7 +1303,7 @@ impl StateRecord {
         buf.push(self.process_class as u8);
         buf.extend_from_slice(&(self.generation as u16).to_le_bytes());
 
-        // Birth polynomial — only nonzero entries
+        // Init polynomial — only nonzero entries
         let nonzero_poly: Vec<(u8, i16, u16)> = self.init_polynomial.iter().enumerate()
             .filter(|(_, q)| !q.is_zero())
             .map(|(i, q)| {
@@ -1386,7 +1386,7 @@ impl StateRecord {
         }
 
         // Math primitives: [count: u8] [opcode: u8 per entry]
-        // Sacred from origin — the primary node's mathematical vocabulary.
+        // Core from origin — the primary node's mathematical vocabulary.
         let n_prims = self.math_primitives.len().min(255);
         buf.push(n_prims as u8);
         for prim in self.math_primitives.iter().take(n_prims) {
@@ -1394,7 +1394,7 @@ impl StateRecord {
         }
 
         // Spatial primitives: [count: u8] [opcode: u8 per entry]
-        // Sacred from origin — the primary node's spatial geometry vocabulary.
+        // Core from origin — the primary node's spatial geometry vocabulary.
         let n_spatial = self.spatial_primitives.len().min(255);
         buf.push(n_spatial as u8);
         for prim in self.spatial_primitives.iter().take(n_spatial) {
@@ -1432,7 +1432,7 @@ impl StateRecord {
         buf
     }
 
-    /// Deserialize a genome from binary.
+    /// Deserialize a state record from binary.
     pub fn from_bytes(data: &[u8]) -> Option<Self> {
         if data.len() < 3 { return None; }
         let process_class = data[0] as u32;
@@ -1440,7 +1440,7 @@ impl StateRecord {
 
         let mut pos = 3;
 
-        // Birth polynomial
+        // Init polynomial
         if pos >= data.len() { return None; }
         let n_nonzero = data[pos] as usize; pos += 1;
         // We need to know the total poly size to reconstruct.
@@ -2592,7 +2592,7 @@ pub struct WitnessState {
     /// Current Δ_k — the node's relational state.
     pub delta_k: Delta,
     /// Chronometry v1.0: H^1 reference = coboundary_reduce(delta_k). No EMA.
-    /// The manifold position is exact. Temporal memory is in trajectory + genome.
+    /// The manifold position is exact. Temporal memory is in trajectory + state record.
     pub delta_bar: Delta,
     /// Trajectory comprehension — replaces coherence_history buffer.
     pub trajectory: Trajectory,
@@ -3374,15 +3374,15 @@ mod tests {
     #[test]
     fn test_state_solved_puzzles_round_trip() {
         let origin = Delta::zero(3, 1);
-        let mut genome = StateRecord::new(1, 1, &origin);
+        let mut state_rec = StateRecord::new(1, 1, &origin);
 
-        genome.record_solved_puzzle([0x00, 0x7b, 0xbf, 0xb7]);
-        genome.record_solved_puzzle([0x55, 0x82, 0xe5, 0xca]);
-        genome.record_solved_puzzle([0x00, 0x7b, 0xbf, 0xb7]); // duplicate — dissolves
+        state_rec.record_solved_puzzle([0x00, 0x7b, 0xbf, 0xb7]);
+        state_rec.record_solved_puzzle([0x55, 0x82, 0xe5, 0xca]);
+        state_rec.record_solved_puzzle([0x00, 0x7b, 0xbf, 0xb7]); // duplicate — dissolves
 
-        assert_eq!(genome.solved_puzzles.len(), 2);
+        assert_eq!(state_rec.solved_puzzles.len(), 2);
 
-        let bytes = genome.to_bytes();
+        let bytes = state_rec.to_bytes();
         let restored = StateRecord::from_bytes(&bytes).unwrap();
         assert_eq!(restored.solved_puzzles.len(), 2);
         assert_eq!(restored.solved_puzzles[0], [0x00, 0x7b, 0xbf, 0xb7]);
@@ -3391,10 +3391,10 @@ mod tests {
 
     #[test]
     fn test_state_solved_puzzles_backwards_compatible() {
-        // Old genome without solved_puzzles section should deserialize fine
+        // Old state record without solved_puzzles section should deserialize fine
         let origin = Delta::zero(3, 1);
-        let old_genome = StateRecord::new(1, 1, &origin);
-        let old_bytes = old_genome.to_bytes();
+        let old_state_rec = StateRecord::new(1, 1, &origin);
+        let old_bytes = old_state_rec.to_bytes();
         // Trim the solved_puzzles section (last byte = count 0)
         let trimmed = &old_bytes[..old_bytes.len() - 1];
         let restored = StateRecord::from_bytes(trimmed).unwrap();

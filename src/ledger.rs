@@ -409,7 +409,7 @@ pub struct ReceiptChain {
 }
 
 impl ReceiptChain {
-    /// Create a new empty chain. Genesis parent is all-zeros.
+    /// Create a new empty chain. Origin parent is all-zeros.
     pub fn new() -> Self {
         Self {
             receipts: Vec::new(),

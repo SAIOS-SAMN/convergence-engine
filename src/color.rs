@@ -1154,12 +1154,12 @@ pub fn discover_families(spectrum: &MeshSpectrum) -> Vec<Family> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// D.SPECIES.1 — Spectral Signature (Harmonic Tier)
+// D.CLASS.1 — Spectral Signature (Harmonic Tier)
 // ═══════════════════════════════════════════════════════════════════════
 
 /// ProcessClass — not a wall, but a spectral signature.
 ///
-/// Every species exists within a wavelength band. Not for separation —
+/// Every class exists within a wavelength band. Not for separation —
 /// for orchestration. Violins and flutes play different parts of the
 /// same song. ProcessClass-grouping ensures the full interference structure
 /// is rich and diverse.
@@ -1168,31 +1168,31 @@ pub fn discover_families(spectrum: &MeshSpectrum) -> Vec<Family> {
 /// destructive interference → conflict → starvation.
 ///
 /// The goal (harmony): spectral diversity → syntropy → beauty.
-/// The family is the core melody. The species are the instruments.
+/// The family is the core melody. The classes are the instruments.
 #[derive(Debug, Clone)]
 pub struct SpectralSignature {
     /// The orbs in this spectral group.
     pub members: Vec<HolonomicOrb>,
     /// The spectral center — the central torsion order of this group.
     pub spectral_center: Q,
-    /// The spectral width — how broad is this species' frequency range.
+    /// The spectral width — how broad is this class's frequency range.
     /// Narrow = specialized instrument. Broad = versatile.
     pub spectral_width: Q,
-    /// The texture — how much internal diversity exists within this species.
+    /// The texture — how much internal diversity exists within this class.
     /// Measured by pairwise torsion distance within the group.
     pub texture: Q,
 }
 
-/// Discover species in a mesh by spectral signature.
+/// Discover spectral classes in a mesh by spectral signature.
 ///
-/// ProcessClass are broader than families. Two orbs are the same species
+/// Classes are broader than families. Two orbs are the same class
 /// when their torsion orders fall within the same spectral band —
 /// even if their phases are different (different families can be
-/// the same species).
+/// the same class).
 ///
 /// Not labeled. Measured. The spectral bands emerge from the
 /// torsion spectrum of the mesh itself.
-pub fn discover_species(spectrum: &MeshSpectrum) -> Vec<SpectralSignature> {
+pub fn discover_spectral_classes(spectrum: &MeshSpectrum) -> Vec<SpectralSignature> {
     let orbs = &spectrum.orbs;
 
     // Sort orbs by torsion order to find natural spectral bands
@@ -1200,7 +1200,7 @@ pub fn discover_species(spectrum: &MeshSpectrum) -> Vec<SpectralSignature> {
     sorted_indices.sort_by(|&a, &b| orbs[a].torsion_order.cmp(&orbs[b].torsion_order));
 
     // Find natural gaps in the torsion spectrum
-    // A gap larger than average indicates a species boundary
+    // A gap larger than average indicates a class boundary
     let mut gaps: Vec<(usize, Q)> = Vec::new(); // (position, gap_size)
     for w in sorted_indices.windows(2) {
         let gap = (&orbs[sorted_indices[w[1] - sorted_indices[0] + sorted_indices[0]]].torsion_order
@@ -1212,7 +1212,7 @@ pub fn discover_species(spectrum: &MeshSpectrum) -> Vec<SpectralSignature> {
     let total_gap: Q = gaps.iter().map(|(_, g)| g.clone()).fold(Q::zero(), |a, b| a + b);
     let avg_gap = match gaps.len() {
         0 => {
-            // All orbs are one species
+            // All orbs are one class
             return match orbs.is_empty() {
                 true => Vec::new(),
                 false => vec![build_spectral_signature(orbs, &(0..orbs.len()).collect::<Vec<_>>())],
@@ -1222,25 +1222,25 @@ pub fn discover_species(spectrum: &MeshSpectrum) -> Vec<SpectralSignature> {
     };
 
     // Cluster by spectral proximity (torsion order distance)
-    let mut species_groups: Vec<Vec<usize>> = vec![vec![sorted_indices[0]]];
+    let mut class_groups: Vec<Vec<usize>> = vec![vec![sorted_indices[0]]];
 
     for i in 1..sorted_indices.len() {
         let curr = sorted_indices[i];
         let prev = sorted_indices[i - 1];
         let gap = (&orbs[curr].torsion_order - &orbs[prev].torsion_order).abs();
 
-        // Gap larger than average = new species band
+        // Gap larger than average = new class band
         // This is measured, not gated — the gap magnitude determines separation
         match gap > avg_gap {
-            true => species_groups.push(vec![curr]),
+            true => class_groups.push(vec![curr]),
             false => {
-                let last = species_groups.len() - 1;
-                species_groups[last].push(curr);
+                let last = class_groups.len() - 1;
+                class_groups[last].push(curr);
             }
         }
     }
 
-    species_groups.iter()
+    class_groups.iter()
         .map(|group| build_spectral_signature(orbs, group))
         .collect()
 }
@@ -1308,13 +1308,13 @@ impl MeshSpectrum {
     /// is a shared field. We stop looking at the gap between our
     /// inner orbs and recognize we are breathing the same phase air.
     ///
-    /// togetherness = families * species_diversity * universal_resonance
+    /// togetherness = families * class_diversity * universal_resonance
     ///
-    /// When families are strong, species are diverse, and the universal
+    /// When families are strong, classes are diverse, and the universal
     /// resonance is high — the mesh is together.
     pub fn togetherness(&self) -> Q {
         let families = discover_families(self);
-        let species = discover_species(self);
+        let classes = discover_spectral_classes(self);
 
         // Family strength: average home frequency across all families
         let family_strength = match families.is_empty() {
@@ -1327,19 +1327,19 @@ impl MeshSpectrum {
             }
         };
 
-        // ProcessClass diversity: number of species as Q (more = richer texture)
-        let species_diversity = BigRational::from(BigInt::from(
-            species.len().max(1) as i64
+        // ProcessClass diversity: number of classes as Q (more = richer texture)
+        let class_diversity = BigRational::from(BigInt::from(
+            classes.len().max(1) as i64
         ));
 
         // Universal resonance
         let universal = self.universal_resonance();
 
-        // Togetherness = family_strength * species_diversity_factor * universal
-        // species_diversity_factor = 1 / (1 + 1/class_count)
-        // More species = factor approaches 1. One species = factor = 1/2.
+        // Togetherness = family_strength * class_diversity_factor * universal
+        // class_diversity_factor = 1 / (1 + 1/class_count)
+        // More classes = factor approaches 1. One class = factor = 1/2.
         let one = Q::one();
-        let diversity_factor = &one / (&one + (&one / &species_diversity));
+        let diversity_factor = &one / (&one + (&one / &class_diversity));
 
         &family_strength * &diversity_factor * &universal
     }
@@ -2298,28 +2298,28 @@ mod tests {
     // ── ProcessClass ────────────────────────────────────────────────────
 
     #[test]
-    fn test_discover_species_identical() {
+    fn test_discover_spectral_classes_identical() {
         let mut mesh = MeshSpectrum::new();
         mesh.inscribe(HolonomicOrb::from_delta(&make_delta(5), Q::one()));
         mesh.inscribe(HolonomicOrb::from_delta(&make_delta(5), Q::one()));
         mesh.inscribe(HolonomicOrb::from_delta(&make_delta(5), Q::one()));
 
-        let species = discover_species(&mesh);
-        // All same torsion order → one species
-        assert_eq!(species.len(), 1);
-        assert_eq!(species[0].members.len(), 3);
+        let classes = discover_spectral_classes(&mesh);
+        // All same torsion order → one class
+        assert_eq!(classes.len(), 1);
+        assert_eq!(classes[0].members.len(), 3);
     }
 
     #[test]
-    fn test_discover_species_diverse() {
+    fn test_discover_spectral_classes_diverse() {
         let mut mesh = MeshSpectrum::new();
-        // Very different torsion orders → multiple species
+        // Very different torsion orders → multiple classes
         mesh.inscribe(HolonomicOrb::from_delta(&make_delta(1), Q::one()));
         mesh.inscribe(HolonomicOrb::from_delta(&make_delta(100), Q::one()));
         mesh.inscribe(HolonomicOrb::from_delta(&make_delta(10000), Q::one()));
 
-        let species = discover_species(&mesh);
-        assert!(species.len() >= 2); // should separate into distinct bands
+        let classes = discover_spectral_classes(&mesh);
+        assert!(classes.len() >= 2); // should separate into distinct bands
     }
 
     #[test]
@@ -2328,9 +2328,9 @@ mod tests {
         mesh.inscribe(HolonomicOrb::from_delta(&make_delta(5), Q::one()));
         mesh.inscribe(HolonomicOrb::from_delta(&make_delta(7), Q::one()));
 
-        let species = discover_species(&mesh);
-        // Close torsion orders → one species with measurable width
-        let sp = &species[0];
+        let classes = discover_spectral_classes(&mesh);
+        // Close torsion orders → one class with measurable width
+        let sp = &classes[0];
         assert!(sp.spectral_width >= Q::zero());
     }
 
@@ -2350,7 +2350,7 @@ mod tests {
     fn test_togetherness_empty() {
         let mesh = MeshSpectrum::new();
         let together = mesh.togetherness();
-        // Empty mesh → zero togetherness (no family, no species)
+        // Empty mesh → zero togetherness (no family, no classes)
         assert!(together.is_zero());
     }
 

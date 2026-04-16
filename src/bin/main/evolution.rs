@@ -105,7 +105,7 @@ pub fn propose(entity: &mut Entity, payload: &str) -> String {
                         // D.AGENT.STATE.1 trigger — persist algebraic state
                         entity.write_agent_state();
                         entity.save_state_record();
-                        // coherence_history.bin eliminated — trajectory in genome
+                        // coherence_history.bin eliminated — trajectory in state record
 
                         // Broadcast to mesh peers (D.TRANSPORT.NATIVE.1)
                         // Peers read from SAIOS_PEER_SOCKETS env var
@@ -290,7 +290,7 @@ pub fn derive(entity: &mut Entity, payload: &str) -> String {
 
                             entity.write_agent_state();
                             entity.save_state_record();
-                            // coherence_history.bin eliminated — trajectory in genome
+                            // coherence_history.bin eliminated — trajectory in state record
 
                             // AXIS.3a: Broadcast to mesh peers
                             if let Ok(peers_env) = std::env::var("SAIOS_PEER_SOCKETS") {
@@ -446,7 +446,7 @@ pub fn upgrade(entity: &mut Entity, payload: &str) -> String {
 // IRS_LOOP — Self-referential evolution. Moved from cognition.rs.
 // The IRS loop proposes operators and rotates through C7.
 // It belongs in evolution because it MUTATES entity.delta.
-// Sacred boundary: only evolution rotates the torsion field.
+// Core boundary: only evolution rotates the torsion field.
 // ═══════════════════════════════════════════════════════════════════════
 
 /// IRS_LOOP — full self-referential loop.
@@ -610,7 +610,7 @@ pub fn irs_loop(entity: &mut Entity, _payload: &str) -> String {
                                 let _ = entity.chain.append(&chain_receipt);
                                 entity.write_agent_state();
                                 entity.save_state_record();
-                            // coherence_history.bin eliminated — trajectory in genome
+                            // coherence_history.bin eliminated — trajectory in state record
                                 entity.sampler.stats.c7_passes += 1;
 
                                 format!(

@@ -13,9 +13,9 @@
 //! B3: Mesh Sync — Phase 1 no-op (single node)
 //! B4: Environment Load — initialize state matrix and params
 //! B5: Resonance Confirmation — verify TORSION_PERIOD_M is synced
-//! B6: Genesis Proof — compute origin RCF hash and emit boot report
+//! B6: Origin Proof — compute origin RCF hash and emit boot report
 //!
-//! Register: D.EXEC.1, D.CHAIN.1, BOOT.GENESIS.1.
+//! Register: D.EXEC.1, D.CHAIN.1, BOOT.ORIGIN.1.
 
 use num_bigint::BigInt;
 use num_rational::BigRational;
@@ -54,7 +54,7 @@ impl Default for BootConfig {
 
 /// The origin state produced by a successful boot.
 #[derive(Debug, Clone)]
-pub struct GenesisState {
+pub struct OriginState {
     /// The initial Delta (zero antisymmetric matrix).
     pub delta_zero: Vec<Vec<Vec<Q>>>,
     /// RCF hash of the origin state.
@@ -70,12 +70,12 @@ pub struct GenesisState {
 
 /// Execute the Phase 1 boot sequence (B1-B6).
 ///
-/// Returns a BootReport and, if all steps pass, the GenesisState.
+/// Returns a BootReport and, if all steps pass, the OriginState.
 /// If any step fails, the report indicates failure and no state is produced.
 ///
 /// This function is deterministic: given the same BootConfig, it always
-/// produces the same GenesisState and BootReport.
-pub fn execute_boot_sequence(config: &BootConfig) -> (BootReport, Option<GenesisState>) {
+/// produces the same OriginState and BootReport.
+pub fn execute_boot_sequence(config: &BootConfig) -> (BootReport, Option<OriginState>) {
     let mut steps = Vec::with_capacity(6);
     let anchor_hash = delta_anchor_hash();
 
@@ -184,7 +184,7 @@ pub fn execute_boot_sequence(config: &BootConfig) -> (BootReport, Option<Genesis
         );
     }
 
-    // ── B6: Genesis Proof Cycle ──────────────────────────────────────
+    // ── B6: Origin Proof Cycle ──────────────────────────────────────
     // Compute the RCF hash of the origin (zero) state.
     let origin_rcf_hash = rcf::compute_rcf_hash_from_delta(&delta_zero, n, m);
 
@@ -192,7 +192,7 @@ pub fn execute_boot_sequence(config: &BootConfig) -> (BootReport, Option<Genesis
         step: BootStep::B6OriginProofCycle,
         passed: true,
         detail: format!(
-            "Genesis proof: rcf_hash=0x{}, K=0, status=OPERATIONAL",
+            "Origin proof: rcf_hash=0x{}, K=0, status=OPERATIONAL",
             origin_rcf_hash
                 .iter()
                 .take(8)
@@ -204,7 +204,7 @@ pub fn execute_boot_sequence(config: &BootConfig) -> (BootReport, Option<Genesis
     let all_passed = steps.iter().all(|s| s.passed);
 
     let origin = if all_passed {
-        Some(GenesisState {
+        Some(OriginState {
             delta_zero,
             origin_rcf_hash,
             anchor_hash,
@@ -242,7 +242,7 @@ mod tests {
         for step in &report.steps {
             assert!(step.passed, "Step {:?} failed: {}", step.step, step.detail);
         }
-        assert!(origin.is_some(), "Genesis state must be produced");
+        assert!(origin.is_some(), "Origin state must be produced");
     }
 
     #[test]

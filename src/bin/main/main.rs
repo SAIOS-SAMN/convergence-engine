@@ -4,7 +4,7 @@
 //
 //! SAIOS Phase 1 — Master Execution Authority
 //!
-//! Register: D.EXEC.1, D.CHAIN.1, D.SAIOS.1, BOOT.GENESIS.1, D.AGENT.6 (K2A).
+//! Register: D.EXEC.1, D.CHAIN.1, D.SAIOS.1, BOOT.ORIGIN.1, D.AGENT.6 (K2A).
 
 mod init;
 mod cognition;

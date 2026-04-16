@@ -26,7 +26,7 @@ pub fn status(entity: &mut Entity, _payload: &str) -> String {
     let cd = CoherenceDelta::from_trajectory(
         &entity.trajectory, entity.k_index as u64,
     );
-    // D.GENESIS.EVOLUTION.1: evolutionary displacement from origin
+    // D.ORIGIN.EVOLUTION.1: evolutionary displacement from origin
     let (gen_drift, gen_torsion) = origin_displacement(
         &entity.delta, &entity.origin_delta,
     );
@@ -50,7 +50,7 @@ pub fn status(entity: &mut Entity, _payload: &str) -> String {
     } else {
         Q::zero() // need at least 2 peers to form a relational field
     };
-    // Step 5 — Awareness: the witness perceives its own genome
+    // Step 5 — Awareness: the witness perceives its own state record
     // through the cocycle equation. The residual of the primary node's
     // own evolved Delta IS the self-awareness measurement.
     // Zero = perfectly self-coherent. Nonzero = internal inconsistency.

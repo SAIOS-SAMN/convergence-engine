@@ -2,7 +2,7 @@
 // human editorial direction. It was not written by the researcher.
 // See /opt/saios/DISCLAIMER.md for full context.
 //
-//! Memory organ — genome persistence, LAST_WITNESS, register.
+//! Memory organ — state record persistence, LAST_ENTITY, register.
 //!
 //! Memory crystallizes to disk but does not rotate the Delta.
 //! save_state_record and last_witness_protocol are Entity methods in entity.rs.

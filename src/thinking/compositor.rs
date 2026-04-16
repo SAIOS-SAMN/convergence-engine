@@ -227,7 +227,7 @@ pub fn thought_vocabulary_with_state(
 
         // If no candidate improved over previous depth's best, the manifold
         // is exhausted at this vocabulary. No plateau breakthrough possible.
-        // The species has read as far as its current words allow.
+        // The system has read as far as its current words allow.
         let depth_best = next_candidates.first().map(|(d, _)| *d).unwrap_or(u64::MAX);
         candidates = next_candidates;
 

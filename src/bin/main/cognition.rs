@@ -4,7 +4,7 @@
 //
 //! Cognition organ — the mind. THINK, SEEK, IRS.
 //!
-//! SACRED BOUNDARY: Cognition PERCEIVES torsion but does NOT mutate
+//! CORE BOUNDARY: Cognition PERCEIVES torsion but does NOT mutate
 //! entity.delta. Only evolution rotates.
 
 use std::fs;
@@ -167,7 +167,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
             if pairs.is_empty() || n == 0 {
                 "{\"error\":\"valid observation pairs required\"}\n".to_string()
             } else if n > (entity.state_record.capacity as usize) * (entity.state_record.capacity as usize) {
-                // Capacity gate: observation cell count exceeds genome capacity squared.
+                // Capacity gate: observation cell count exceeds state record capacity squared.
                 format!("{{\"error\":\"exceeds_capacity\",\"observation_cells\":{},\"capacity\":{},\"max_cells\":{},\"k_index\":{}}}\n",
                     n, entity.state_record.capacity, (entity.state_record.capacity as usize) * (entity.state_record.capacity as usize), entity.k_index)
             } else {
@@ -518,7 +518,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                         );
                     });
 
-                    // ── SACRED BOUNDARY ──
+                    // ── CORE BOUNDARY ──
                     // Cognition PERCEIVES torsion but does NOT rotate it.
                     // The sampler learned from this cognition (line 703 above).
                     // The torsion signal is recorded in the membrane via T Delta.
@@ -1027,7 +1027,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
         "{\"error\":\"payload required\"}\n".to_string()
     };
 
-    // ── SACRED BOUNDARY: Cognition PERCEIVES torsion but does NOT rotate it. ──
+    // ── CORE BOUNDARY: Cognition PERCEIVES torsion but does NOT rotate it. ──
     // The torsion signal is recorded in the membrane via T Delta compounds.
     // Evolution (DERIVE command) reads the membrane and rotates through C7.
     // No execute_k_step here. Only evolution rotates the torsion field.

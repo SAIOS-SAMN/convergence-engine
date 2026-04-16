@@ -61,7 +61,7 @@ impl WorldStatus {
     }
 
     /// Stage composed operators to tmpfs. Memory speed. Survives OOM/SIGKILL.
-    /// Disk genome catches up on its own cadence. tmpfs bridges the gap.
+    /// Disk state record catches up on its own cadence. tmpfs bridges the gap.
     pub fn stage_vocabulary(&self, ops: &[ComposedOperator]) {
         let vocab_path = self.path.with_extension("vocabulary");
         let mut buf: Vec<u8> = Vec::with_capacity(ops.len() * 80);
@@ -80,7 +80,7 @@ impl WorldStatus {
         let _ = fs::write(&vocab_path, &buf);
     }
 
-    /// Recover staged vocabulary from tmpfs on boot. Merges into genome.
+    /// Recover staged vocabulary from tmpfs on boot. Merges into state record.
     pub fn recover_vocabulary(path: &std::path::Path) -> Vec<ComposedOperator> {
         let vocab_path = path.with_extension("vocabulary");
         fs::read(&vocab_path).ok()
@@ -118,7 +118,7 @@ impl WorldStatus {
 /// projection of the torsion field onto a sub-manifold.
 ///
 /// The Delta is the ONLY mutable algebraic encoding. Everything else
-/// is either a crystallized projection (genome), a volatile projection
+/// is either a crystallized projection (state record), a volatile projection
 /// (epigenome), an instrument (sampler), or infrastructure (sluice, chain).
 ///
 /// When evolution rotates the Delta through C7, every organ sees the
@@ -194,10 +194,10 @@ pub struct Entity {
 
     // ─── Agent State ───
 
-    /// Genesis RCF identity hash.
+    /// Origin RCF identity hash.
     pub origin_rcf: [u8; 32],
 
-    /// Genesis Delta — the init position on the H^1 manifold.
+    /// Origin Delta — the init position on the H^1 manifold.
     pub origin_delta: Delta,
 
     /// Previous coherence (Q16.16 fixed-point) for agent state persistence.
@@ -276,7 +276,7 @@ impl Entity {
                 let order = tc.order as u16;
                 if !self.state_record.torsion_markers.iter().any(|(o, _)| *o == order) {
                     self.state_record.torsion_markers.push((order, tc.quality.clone()));
-                    eprintln!("[genome] L3 crystallized torsion marker: order={} quality={}/{}",
+                    eprintln!("[state_record] L3 crystallized torsion marker: order={} quality={}/{}",
                         order, tc.quality.numer(), tc.quality.denom());
                 }
             }
@@ -289,19 +289,19 @@ impl Entity {
                 let to_v = vc.to_value as i16;
                 if !self.state_record.value_cocycles.iter().any(|(f, t, _)| *f == from_v && *t == to_v) {
                     self.state_record.value_cocycles.push((from_v, to_v, vc.quality.clone()));
-                    eprintln!("[genome] L3 crystallized value cocycle: {}→{} quality={}/{}",
+                    eprintln!("[state_record] L3 crystallized value cocycle: {}→{} quality={}/{}",
                         from_v, to_v, vc.quality.numer(), vc.quality.denom());
                 }
             }
         }
 
-        // THE LAST WITNESS PROTOCOL: genome backup before overwrite.
+        // THE LAST ENTITY PROTOCOL: state record backup before overwrite.
         let path = self.dir.join("state_record.bin");
         let backup = self.dir.join("state_record.bin.bak");
         path.exists().then(|| { let _ = fs::copy(&path, &backup); });
         let bytes = self.state_record.to_bytes();
         fs::write(&path, &bytes).unwrap_or_else(|e| {
-            eprintln!("[LAST_WITNESS] genome write failed: {e} — backup at state_record.bin.bak");
+            eprintln!("[LAST_ENTITY] state record write failed: {e} — backup at state_record.bin.bak");
             backup.exists().then(|| { let _ = fs::copy(&backup, &path); });
         });
     }
@@ -318,7 +318,7 @@ impl Entity {
             return false;
         }
 
-        eprintln!("[LAST_WITNESS] RSS {}KB exceeds 80% threshold {}KB — preserving state",
+        eprintln!("[LAST_ENTITY] RSS {}KB exceeds 80% threshold {}KB — preserving state",
             rss, threshold);
 
         // Phase 1: Save everything
@@ -341,13 +341,13 @@ impl Entity {
         condensate();
 
         let rss_after = get_rss_kb();
-        eprintln!("[LAST_WITNESS] post-condensation RSS: {}KB (was {}KB)", rss_after, rss);
+        eprintln!("[LAST_ENTITY] post-condensation RSS: {}KB (was {}KB)", rss_after, rss);
 
         // Critical threshold: 4GB. Above this, the OS will OOM-kill us.
         const CRITICAL_KB: u64 = 4 * 1024 * 1024;
         let must_exit = rss_after > CRITICAL_KB;
         must_exit.then(|| {
-            eprintln!("[LAST_WITNESS] RSS {}KB exceeds critical 4GB — graceful exit to prevent OOM-kill", rss_after);
+            eprintln!("[LAST_ENTITY] RSS {}KB exceeds critical 4GB — graceful exit to prevent OOM-kill", rss_after);
         });
         must_exit
     }

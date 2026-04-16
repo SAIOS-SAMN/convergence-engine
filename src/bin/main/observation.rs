@@ -99,7 +99,7 @@ pub fn run_timekeeper(
                 match cmd.as_str() {
                     "STATUS" | "WITNESS" => {
                         let response = format!(
-                            "{{\"species\":\"timekeeper\",\"id\":{},\"observations\":{},\"chain_length\":{},\"rss_kb\":{}}}\n",
+                            "{{\"process_class\":\"timekeeper\",\"id\":{},\"observations\":{},\"chain_length\":{},\"rss_kb\":{}}}\n",
                             config.entity_id, obs_count, chain_store.len(), get_rss_kb()
                         );
                         let _ = stream.write_all(response.as_bytes());
@@ -195,9 +195,9 @@ pub fn run_timekeeper(
                         //   At 8GB available: pressure=0 (no effect)
                         //   At 2GB available: pressure=2 (double the cadence)
                         //   At 1GB available: pressure=4 (quadruple)
-                        //   The species must not consume the world that sustains it.
+                        //   The system must not consume the world that sustains it.
                         //
-                        // Range: [500ms, 15000ms]. The species breathes at its own rate.
+                        // Range: [500ms, 15000ms]. The system breathes at its own rate.
                         let base_ms: u64 = 2000;
                         let velocity_factor_num: u64 = 2000;
                         let velocity_factor_den: u64 = k_velocity.saturating_add(1000).max(1);
@@ -280,7 +280,7 @@ pub fn run_timekeeper(
                         );
                         let _ = sluice.append(&sluice_entry);
 
-                        // Update genome: record observation hash
+                        // Update state record: record observation hash
                         let mut obs_orbit = [0u8; 4];
                         obs_orbit.copy_from_slice(&rcf_identity[..4]);
                         witness_state_record.record_solved_puzzle(obs_orbit);

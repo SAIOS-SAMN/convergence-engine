@@ -10,7 +10,7 @@
 //!
 //! Hierarchy (fixed depth):
 //!   Witness (depth 0) — founding tier. Creates ≤3 secondary nodes.
-//!   Elder   (depth 1) — created by primary node. Creates ≤6 children.
+//!   Secondary (depth 1) — created by primary node. Creates ≤6 children.
 //!   Child   (depth 2) — created by secondary node. Creates none.
 //!
 //! Population bounds: 7 primary nodes × 3 secondary nodes × 6 children = 133 max.
