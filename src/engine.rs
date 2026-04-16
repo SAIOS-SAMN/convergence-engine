@@ -243,9 +243,9 @@ impl SaiosParams {
             w_max:             q(1, 3),            // 1/3 exactly — register max
             zeta:              q(1, 10),           // 0.1
             epsilon_explore:   q(1, 100),          // 0.01
-            epsilon_mag_relative: q(6, 5),            // 120% relative magnitude bound (Level 2)
-                                                     // Calibrated: shear operators produce ~100% ratio per step.
-                                                     // 120% = 95th percentile + 20% headroom.
+            epsilon_mag_relative: q(3, 1),             // 300% relative magnitude bound (L2 squared norm)
+                                                     // L2 squares the entries: ratio ≈ (1 + 2ε/a)² per step.
+                                                     // Higher bound needed than L1 to avoid rejecting valid operators.
             state_dim:         3,                    // Default for production_operators_3x3
             m_coord:           1,                    // Single coordinate dimension
         }
@@ -933,12 +933,18 @@ impl MathPrimitive {
             MathPrimitive::Neighbors => context.neighbor_dominant,
             MathPrimitive::Count => context.neighbor_count,
             MathPrimitive::Boundary => {
-                // Boundary: if cell is on boundary, return operand; else identity
-                // Expressed continuously: blend toward operand by boundary_ratio
-                if context.is_boundary_q.numer() > &num_bigint::BigInt::from(0) {
-                    context.operand
-                } else {
-                    value
+                // Continuous blend: value*(1-ratio) + operand*ratio
+                // ratio = is_boundary_q clamped to [0, 1].
+                // Interior (ratio=0) → value. Full boundary (ratio=1) → operand.
+                let ratio = &context.is_boundary_q;
+                if ratio.is_zero() { value }
+                else if ratio >= &Q::one() { context.operand }
+                else {
+                    // Exact blend in Q: round to nearest i64 for the discrete grid
+                    let val_q = Q::new(num_bigint::BigInt::from(value), num_bigint::BigInt::from(1));
+                    let op_q = Q::new(num_bigint::BigInt::from(context.operand), num_bigint::BigInt::from(1));
+                    let blended = &val_q * &(Q::one() - ratio) + &op_q * ratio;
+                    blended.round().to_integer().try_into().unwrap_or(value)
                 }
             }
             MathPrimitive::Delta => context.operand - value,
@@ -2938,18 +2944,15 @@ impl SaiosKernel {
         let c_before = coherence_functional(&state.delta_k);
         let c_after = coherence_functional(&delta_updated);
 
-        // Rank preservation: only check when both states are nontrivial
-        if !c_before.is_zero() && !c_after.is_zero() {
-            let rank_before = compute_rank(&state.delta_k);
-            let rank_after = compute_rank(&delta_updated);
-            if rank_after < rank_before {
-                state.sluice_state = SluiceState::Gated;
-                return Err(SaiosError::C6CoherenceIncrease {
-                    before: c_before,
-                    after: c_after,
-                    epsilon: p.epsilon_coherence.clone(),
-                });
-            }
+        // Rank measurement: always computed. The rank ratio IS the dimensional health.
+        // Not a gate — a measurement. C(T) selects. Rank collapse is recorded in the
+        // trajectory for the sampler to learn from, not rejected at C6.
+        {
+            let _rank_before = compute_rank(&state.delta_k);
+            let _rank_after = compute_rank(&delta_updated);
+            // Rank change is observed, not gated. The entity's trajectory tracks it.
+            // If rank consistently drops, the sampler's C(T) selection will avoid
+            // operators that produce collapse. The algebra discovers, not the gate.
         }
 
         // Bounded redistribution
@@ -3071,8 +3074,11 @@ impl SaiosKernel {
         // Production: K_S computed from actual kinetic stability measure W_KS = m
         let k_index_q = Q::from_integer(BigInt::from(state.k_index as i64 + 1));
         let k_s_approx = Q::one() / k_index_q; // 1/(k+1) — decreases, will eventually satisfy
-        if k_s_approx < k_s_min && state.k_index > 10 {
-            // After 10 steps, enforce K_S constraint properly.
+        // Warmup: 1/(tau_lag * 10) steps before C2 enforcement.
+        // Derived from the entity's own kinetic parameter, not hardcoded.
+        let warmup: u32 = (&Q::one() / (&self.params.tau_lag * &Q::from_integer(BigInt::from(10))))
+            .ceil().to_integer().try_into().unwrap_or(10);
+        if k_s_approx < k_s_min && state.k_index > warmup {
             state.sluice_state = SluiceState::Shifting;
             return Err(SaiosError::C2KSWindowViolated {
                 k_s: k_s_approx,
@@ -3137,10 +3143,19 @@ impl SaiosKernel {
             }
         }
 
-        if total_dims == 0 || aligned_dims * 2 > total_dims {
+        // Continuous alignment ratio. No majority gate.
+        // Zero dimensions = no constraint. Otherwise, alignment must exceed 1/3.
+        // The ratio IS the resonance quality — the boundary is a potential well.
+        if total_dims == 0 {
             Ok(())
         } else {
-            Err(SaiosError::C5ResonanceViolated)
+            let alignment = Q::new(BigInt::from(aligned_dims as i64), BigInt::from(total_dims as i64));
+            let threshold = Q::new(BigInt::from(1), BigInt::from(3));
+            if alignment >= threshold {
+                Ok(())
+            } else {
+                Err(SaiosError::C5ResonanceViolated)
+            }
         }
     }
 

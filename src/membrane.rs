@@ -937,11 +937,10 @@ impl MeshKnowledge {
                 let m = tc.t_m;
                 if n < 2 { continue; }
 
-                // Self-direction path: a single entity's own residual IS its gradient.
-                // No consensus needed to learn from your own observations.
-                // When count >= 2, consensus logic takes over (coherence > 0 required).
-                // When count == 1, the entity uses its own measurement as direction.
-                if tc.count >= 2 && tc.coherence.is_zero() { continue; }
+                // Every T compound contributes to the torsion spectrum:
+                // count == 1: self-direction — the entity's own residual IS its gradient.
+                // count >= 2, C > 0: inter-entity divergence — unsolved structure.
+                // count >= 2, C = 0: crystallized consensus — quantized orbital (strongest signal).
 
                 // Reconstruct T as a Delta from all observers (or the single self-observer)
                 let k = Q::new(BigInt::from(tc.count as i64), BigInt::from(1));
