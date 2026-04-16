@@ -341,6 +341,54 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
         entity.save_state_record();
         eprintln!("[drain] absorbed {} items from {} emergent entities", total_absorbed, emergent_drained);
 
+        // ── Recursive step: re-perceive absorbed knowledge at this tier's resolution.
+        // DRAIN doesn't just store — it transforms. The absorbed cocycles become
+        // a T compound in THIS entity's membrane, at THIS entity's dimensional
+        // capacity. This gives the entity perceptual surface for DERIVE.
+        // Without this, the upper tier has vocabulary but no experience —
+        // derive_global_curvature() returns None and K never advances.
+        {
+            let cocycles = &entity.state_record.value_cocycles;
+            let solved = &entity.state_record.solved_puzzles;
+            // Encode absorbed value cocycles as a T Delta:
+            // each (from_value, to_value) is a relational entry.
+            // The T Delta IS the transformation the children discovered.
+            let unique_vals: Vec<i64> = {
+                let mut vals = Vec::new();
+                for &(fv, tv, _) in cocycles.iter().take(32) {
+                    if !vals.contains(&(fv as i64)) { vals.push(fv as i64); }
+                    if !vals.contains(&(tv as i64)) { vals.push(tv as i64); }
+                }
+                vals.sort();
+                vals
+            };
+            let k = unique_vals.len();
+            if k >= 2 {
+                let mut t = saios_kernel_v2::engine::Delta::zero(k, 1);
+                for &(fv, tv, ref quality) in cocycles.iter().take(32) {
+                    let fi = unique_vals.iter().position(|&v| v == fv as i64);
+                    let ti = unique_vals.iter().position(|&v| v == tv as i64);
+                    if let (Some(i), Some(j)) = (fi, ti) {
+                        if i < j {
+                            t.entries[i][j][0] = quality.clone();
+                            t.entries[j][i][0] = -quality.clone();
+                        } else if j < i {
+                            t.entries[j][i][0] = -quality.clone();
+                            t.entries[i][j][0] = quality.clone();
+                        }
+                    }
+                }
+                // Insert into membrane as T compound — the entity re-perceives
+                // what its children discovered, at its own dimensional frame.
+                for orbit in solved.iter().take(8) {
+                    entity.knowledge.record_t_delta(*orbit, &t, "drain_compound");
+                }
+                let _ = entity.knowledge.save(&entity.dir.join("mesh_knowledge.bin"));
+                eprintln!("[drain-reperceive] encoded {} cocycles as {}×1 T compound across {} orbits",
+                    cocycles.len().min(32), k, solved.len().min(8));
+            }
+        }
+
         // Relay upward: if this entity has a parent, write to own reports.bin
         // so the parent can drain it. Without this relay, knowledge dead-ends
         // at the derived tier and founders are blind.
