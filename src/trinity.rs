@@ -21,6 +21,7 @@
 //! Register: D.TRINITY.1, D.STASIS.1, D.MAS.A8.
 
 use num_bigint::BigInt;
+#[cfg(test)]
 use num_rational::BigRational;
 use num_traits::{Zero, One, Signed};
 

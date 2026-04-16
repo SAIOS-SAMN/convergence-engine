@@ -870,7 +870,6 @@ impl AlgebraicSampler {
             // independent antisymmetric entries. Map the strongest gravitational
             // dimensions onto the matrix entries. The entity falls toward the epicenter.
             gravity.map(|g| {
-                let n_entries = dim * (dim - 1) / 2;
                 let mut entry_idx = 0;
                 for i in 0..dim {
                     for j in (i+1)..dim {

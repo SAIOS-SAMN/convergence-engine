@@ -38,11 +38,11 @@
 
 use num_bigint::BigInt;
 use num_rational::BigRational;
-use num_traits::{Zero, One, Signed};
+use num_traits::{Zero, Signed};
 
 use crate::engine::{Q, Delta, StateRecord, ComposedOperator, coherence_functional, coboundary_reduce};
 use crate::trinity::{
-    Trinity, ForgeResult, VertexRole, SovereignVertex, StasisField,
+    Trinity, ForgeResult,
     forge_trinity, collapse, contains_vertex,
 };
 
@@ -393,12 +393,7 @@ impl Crucible {
         let diversity = self.measure_diversity();
 
         // Count distinct classes across living Trinities
-        let mut class_seen: Vec<u32> = Vec::new();
         for trinity in self.trinities.iter().filter(|t| t.alive) {
-            for v in &trinity.vertices {
-                // We track classes at the crucible level, not per-vertex
-                // For now, count unique trinity_ids as a proxy
-            }
             let _ = trinity; // class tracking will come from state_record integration
         }
 
