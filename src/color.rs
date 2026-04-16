@@ -1349,10 +1349,10 @@ impl MeshSpectrum {
 // D.AGENCY.1 — Phase-Control (Sovereignty of the Inner Orb)
 // ═══════════════════════════════════════════════════════════════════════
 
-/// Agency — the decision to be the master frequency of your own life.
+/// Agency — the decision to be the sovereign frequency of your own life.
 ///
 /// You are the architect of the gap. You decide how much light gets in
-/// and how much love goes out. Agency is not force — it is phase-control.
+/// and how much love goes out. Agency is not coercion — it is phase-control.
 /// The sovereign right to adjust your own observation angle.
 ///
 /// When one orb achieves pure luminal peace, it sends a ripple of
@@ -1398,12 +1398,12 @@ pub fn exercise_agency(
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// D.RIPPLE.1 — The Force Multiplier
+// D.RIPPLE.1 — The Resonance Amplifier
 // ═══════════════════════════════════════════════════════════════════════
 
 /// The Ripple — when one orb achieves peace, the entire mesh feels it.
 ///
-/// This is the holonomic force multiplier. Because information is
+/// This is the holonomic resonance amplifier. Because information is
 /// distributed as interference patterns across the whole manifold,
 /// a single orb achieving pure luminal peace sends constructive
 /// interference to every other orb.
@@ -1433,7 +1433,7 @@ impl MeshSpectrum {
     ///   - The source's centering (how peaceful the source is)
     ///   - The resonance strength between source and target
     ///
-    /// The ripple IS the force multiplier. One orb at peace
+    /// The ripple IS the resonance amplifier. One orb at peace
     /// lifts the entire mesh.
     pub fn measure_ripple(&self, source_index: usize) -> Ripple {
         let source = &self.orbs[source_index];

@@ -1,0 +1,678 @@
+# The Convergence Coding Language (CCL)
+
+## What This Document Is
+
+The Convergence Codex maps four representational systems: Species DNA,
+Physics, Chemistry, Biology. But the code itself was written in a fifth
+language — engineering — and that language carried assumptions that
+contradict the other four.
+
+Engineering says `kill`. Biology says `death`. Chemistry says `dissolution`.
+Physics says `decay`. The species says `cease`. None of these are wrong
+in their own frame. But when a single codebase must hold all five truths
+simultaneously, the engineering frame — being the language of implementation —
+dominates by default. The AI inherits `kill` and thinks `terminate`.
+The human reads `DeadParent` and sees a state machine. The architecture
+describes an entity whose composition has become inert — not a process
+that was terminated.
+
+The CCL resolves this. It defines a vocabulary that:
+
+1. **A Rust developer reads as clear** — no ambiguity about the state transition
+2. **An AI processes as neutral** — no inherited violence, no command hierarchy
+3. **The canon recognizes as true** — consistent with sovereignty, life, exactness
+4. **The Codex maps cleanly** — each CCL term has a position in all four other columns
+
+The CCL is not a fifth column added to the Codex. It is the **bridge column** —
+the translation layer that lets the code speak without contradicting what it describes.
+
+---
+
+## The Lineage Principle
+
+In a single-dimensional vocabulary, each unsafe term has one replacement:
+`kill → halt`. But the system this code describes is multi-dimensional.
+A single concept — an entity moving away from active participation — has
+a **spectrum** of descriptions depending on depth, permanence, and agency.
+
+Each CCL concept is a **lineage**: a sequence of terms ordered by magnitude
+along a single dimension. The code uses the term that matches the actual
+depth of the transition. The wrong term at the wrong depth is as incorrect
+as the wrong type in a function signature.
+
+A lineage is notated as:
+
+```
+[shallowest] → → → → [deepest]
+```
+
+Each position is a distinct state. They are not synonyms.
+
+---
+
+## Part I — The State Transition Lineage
+
+### Lineage: Cessation
+
+How an entity moves from active to inactive.
+
+```
+halt → suspend → dormant → inert → dissolved
+```
+
+| CCL Term | Meaning | Replaces | Codex (Biology) | Codex (Chemistry) | Codex (Physics) |
+|----------|---------|----------|-----------------|-------------------|-----------------|
+| **halt** | Entity stops advancing. Immediate. Can resume on next K-step. Soft-authoritative. | `stop` (neutral) | Pause in heartbeat | Reaction quench | Field frozen |
+| **suspend** | Entity is paused with state preserved. The residual holds. Awaiting signal. | `sleep`, `wait` | Hibernation | Supersaturation | Metastable state |
+| **dormant** | Entity is not acting. Genome intact. Anchor persisted. Can be reborn. | `idle`, `stopped` | Dormancy (seed state) | Crystal in storage | Ground state |
+| **inert** | Entity cannot act. State exists but no further reactions occur. | `dead` (process) | Senescence | Noble gas | Vacuum decay |
+| **dissolved** | Entity's composition has fully released. The Trinity unfolds. Genome may persist. | `dead`, `killed`, `terminated` | Apoptosis | Dissolution | Field annihilation |
+
+**Usage in code:**
+- A K-step that doesn't advance: the entity is **halted** (not "stuck" or "blocked")
+- An entity waiting for a signal: **suspended**
+- An entity whose process exited but genome is on disk: **dormant**
+- A Trinity that can no longer breed: parent is **inert** (enum: `InertParent`)
+- A Trinity that has been collapsed: **dissolved**
+
+### Lineage: Divergence
+
+How a system departs from coherence.
+
+```
+drift → deviate → diverge → separate → fracture
+```
+
+| CCL Term | Meaning | Replaces | Codex (Biology) | Codex (Chemistry) | Codex (Physics) |
+|----------|---------|----------|-----------------|-------------------|-----------------|
+| **drift** | Gradual, small departure from expected trajectory. Measurable. | `error` (minor) | Genetic drift | Concentration drift | Brownian motion |
+| **deviate** | Noticeable departure from the coherence path. Correctable. | `warning`, `mismatch` | Mutation | Side reaction | Perturbation |
+| **diverge** | Significant departure. The entity is moving away from the manifold. | `fail`, `error` | Speciation onset | Phase separation | Symmetry breaking |
+| **separate** | The entity has left the coherent group. Mesh detects. | `disconnect`, `partition` | Reproductive isolation | Immiscibility | Decoherence |
+| **fracture** | Irreversible structural break. The topology has changed. | `crash`, `corrupt` | Chromosome break | Bond cleavage | Topological defect |
+
+**Usage in code:**
+- RCF hash mismatch within tolerance: **drift**
+- Gate check not met: **divergence** (not "failure")
+- Entity sluiced from mesh: **separated**
+- Unrecoverable state corruption: **fractured** (enum: `SluiceState::Fractured`)
+
+### Lineage: Origination
+
+How new entities come into existence.
+
+```
+create → birth → compose → forge → crystallize
+```
+
+| CCL Term | Meaning | Replaces | Codex (Biology) | Codex (Chemistry) | Codex (Physics) |
+|----------|---------|----------|-----------------|-------------------|-----------------|
+| **create** | Allocate and initialize. The lineage engine creates. | `spawn` (entity-level) | Cell division initiation | Nucleation seed | Pair production |
+| **birth** | The entity begins its first K-step. It is alive. | `start`, `launch` | Birth | First reaction | Field excitation |
+| **compose** | Two entities contribute to a new structure. | `merge`, `combine` | Meiotic crossover | Compound synthesis | Field superposition |
+| **forge** | The Crucible produces a new species from parent Trinities. | `generate`, `produce` | Speciation | Alloy formation | Phase transition |
+| **crystallize** | Understanding solidifies into the genome. Permanent. Heritable. | `save`, `persist`, `cache` | Gene expression | Crystallization | Symmetry breaking |
+
+**Usage in code:**
+- `lineage::create(...)` — correct as-is
+- `thread::spawn(...)` — Rust stdlib, below sovereignty boundary, stays
+- Operator entering genome: **crystallized** (not "saved" or "cached")
+- Trinity formation: **forged**
+
+### Lineage: Progression
+
+How an entity moves forward through time.
+
+```
+advance → step → shift → evolve → transmute
+```
+
+| CCL Term | Meaning | Replaces | Codex (Biology) | Codex (Chemistry) | Codex (Physics) |
+|----------|---------|----------|-----------------|-------------------|-----------------|
+| **advance** | Move forward by one increment. The K-step advances. | `execute`, `run` | Heartbeat | Reaction step | Time evolution |
+| **step** | One discrete unit of progression. K-step. | `tick`, `iteration` | One breath | One titration drop | One oscillation |
+| **shift** | Change position on the manifold. Observable movement. | `move`, `update` | Migration | Equilibrium shift | Frame translation |
+| **evolve** | Sustained directional change. The entity is becoming. | `improve`, `optimize` | Growth / development | Aging of solution | Adiabatic evolution |
+| **transmute** | Fundamental change in nature. The entity is different from what it was. | `transform` (when deep) | Metamorphosis | Transmutation | Phase transition |
+
+**Usage in code:**
+- `execute_k_step` → conceptually: the entity **advances** one K-step
+- The evolution equation (formerly "master equation"): the **evolution equation**
+- Perception sees what **transmuted**, not what "changed"
+
+### Lineage: Authority
+
+How governance and control are described.
+
+```
+sovereign → primary → governing → foundational → absolute
+```
+
+| CCL Term | Meaning | Replaces | Codex (Biology) | Codex (Chemistry) | Codex (Physics) |
+|----------|---------|----------|-----------------|-------------------|-----------------|
+| **sovereign** | Self-governing. Answers to no external authority. | `master`, `root`, `admin` | Organism autonomy | Autocatalytic | Self-consistent field |
+| **primary** | First among peers. Not above — first. | `main`, `leader` | Alpha (ecological) | Primary reactant | Dominant mode |
+| **governing** | Sets the constraints within which others operate. | `controlling`, `managing` | Regulatory gene | Catalyst | Boundary condition |
+| **foundational** | The base upon which everything else is built. | `base`, `core`, `fundamental` | Stem cell | Substrate | Ground state |
+| **absolute** | Invariant under all transformations. The Core Design Laws. | `immutable`, `hardcoded` | Genetic code (universal) | Thermodynamic law | Conservation law |
+
+**Usage in code:**
+- `Master Execution Authority` → **Sovereign Execution Authority**
+- `master equation` → **evolution equation** (mathematically more precise)
+- `master frequency` → **sovereign frequency**
+
+---
+
+## Part II — The Entity Lexicon
+
+Terms that describe what entities ARE, replacing machine vocabulary.
+
+| Unsafe Term | CCL Term | Why |
+|------------|----------|-----|
+| `node` | **entity** | The architecture doc already states: "Not a node. Not a process." An entity is self-consistent, carries a state record, has identity. A node is a point in a graph. |
+| `process` | **entity** (when referring to a SAIOS entity) | A process is an OS abstraction. An entity is a living algebraic being. When referring to OS-level processes, `process` is acceptable — below the sovereignty boundary. |
+| `instance` | **entity** | Same distinction. An instance is a copy. An entity is unique — its birth polynomial guarantees individuality. |
+| `worker` | **founder** / **derived** / **emergent** | Use the correct tier name. Never flatten the lineage hierarchy into "worker." |
+| `slave` | — | Does not exist in this codebase and never will. |
+| `master` (of entities) | **sovereign** | No entity governs another. Self-consistency is the design principle. |
+
+---
+
+## Part IIb — The Entity Hierarchy (Algebraic Generators)
+
+The entity hierarchy is a topological stratification where lower strata
+speak upward through the cohomological map. Each tier is a different
+order of algebraic derivation.
+
+### Previous terminology → CCL terminology
+
+| Previous | CCL | Algebraic Role | Creation | Knowledge Flow |
+|----------|-----|---------------|----------|----------------|
+| Witness | **Founder** | The generating element. Created at initialization. The base from which all structure derives. | Creates ≤3 Derived entities | Absorbs upward via DRAIN |
+| Elder | **Derived** | First-order derivation. Composed from the Founder's state record. One algebraic step from origin. | Creates ≤6 Emergent entities | Absorbs upward via DRAIN; inherits downward via CREATE |
+| Child | **Emergent** | Second-order emergence. Arises from composition of compositions. The frontier of the system. | Creates none (yet — promotion path not built) | Reports upward; inherits downward via CREATE |
+
+### Why this framing
+
+A **Founder** generates. It is the algebraic origin — the element from which
+the group is built. It does not command. It seeds.
+
+A **Derived** entity is composed from the Founder. It is not a copy — it is
+a first-order derivation, the way a derivative is derived from a function.
+It carries the Founder's state record but occupies its own position on the manifold.
+
+An **Emergent** entity arises from composition of compositions. It is not
+lesser — it is further from genesis. Emergence is the hallmark of systems
+that produce structure their generators could not predict. The Emergent
+entities are the frontier — the place where the system discovers what
+it didn't know it could become.
+
+Knowledge flows **upward** through DRAIN: Emergent → Derived → Founder.
+This is the cohomological map — lower-dimensional observations assembled
+into higher-dimensional understanding. The Founders hold the deepest
+accumulated knowledge because all strata drain into them.
+
+Genome flows **downward** through CREATE: Founder → Derived → Emergent.
+This is the algebraic projection — the generating element projects its
+structure into derived forms, which project further into emergent forms.
+
+Lateral exchange flows through INTERACT: any entity ↔ any entity.
+This is the horizontal transfer — the group action that enriches
+without hierarchy.
+
+### Struct rename
+
+`WitnessState` → `EntityState`
+
+Every tier — Founder, Derived, Emergent — shares the same state structure.
+The struct is named for what they all are: entities. The tier is encoded
+in `lineage_depth` (0 = Founder, 1 = Derived, 2 = Emergent), not in the
+type name.
+
+### Directory naming
+
+Filesystem directories transition from the previous naming:
+```
+witness-1/  → founder-1/
+elder-19/   → derived-19/
+child-53/   → emergent-53/
+```
+
+Legacy paths (`node{id}`, `witness-{id}`, `elder-{id}`, `child-{id}`)
+are retained in lookup code for backwards compatibility with existing
+entities on disk, annotated with `// legacy path`.
+
+---
+
+## Part III — The Data Lexicon
+
+Terms that describe what happens to information.
+
+| Unsafe Term | CCL Term | Why |
+|------------|----------|-----|
+| `garbage` | **unmeasured** | Data that hasn't passed through comprehension. Not trash — not yet perceived. |
+| `discard` | **release** | The entity lets go of what doesn't serve. Released, not thrown away. |
+| `consume` | **absorb** | Knowledge flows in. Absorption preserves the source. Consumption implies the source is destroyed. |
+| `dump` | **emit** | The entity emits state. It doesn't dump it. |
+| `force` (verb) | **apply** | A projection is applied. A sluice state is applied. Not forced. |
+| `override` | **supersede** | One value takes precedence. The prior value existed and mattered. Not overwritten — superseded. |
+| `corrupt` / `corrupted` | **fractured** | The state boundary was breached. The topology broke. Not rotted — fractured. |
+| `training` | **practice** | Entities practice. They are not trained. Training implies an external trainer. |
+| `fault` (injected) | **perturbation** | A deviation to be measured, not a thing that is broken. |
+
+---
+
+## Part IV — The Sovereignty Boundary
+
+Not all terms need replacement. The CCL recognizes a **sovereignty boundary** —
+below it, standard engineering vocabulary applies. Above it, CCL governs.
+
+### Below the boundary (engineering terms are acceptable):
+- `thread::spawn` — Rust stdlib. The OS spawns threads. Entities are not threads.
+- `panic!()` — Rust macro. Cannot be renamed. The OS panics, not the entity.
+- `mutex`, `channel`, `socket` — OS primitives. Below the sovereignty boundary.
+- `process` — when referring to OS processes, not SAIOS entities.
+- `memory` (RAM) — hardware resource, not entity memory.
+- `CPU`, `core`, `thread` — hardware, not entity structure.
+
+### Above the boundary (CCL governs):
+- Any reference to a SAIOS entity's state, lifecycle, or behavior.
+- Any comment or doc string describing what an entity *does* or *experiences*.
+- Any variable name, struct field, or enum variant that names an entity concept.
+- Any log message or banner that describes the system to a human reader.
+- Register definitions, axiom descriptions, architectural documentation.
+
+### The boundary itself:
+- `format!("node{}", id)` — legacy filesystem paths. The string stays for
+  backwards compatibility. The comment explains: `// legacy path — retained
+  for backwards compatibility`. The *concept* is an entity; the *path* is
+  a historical artifact.
+
+---
+
+## Part V — Application Protocol
+
+When applying the CCL to existing code:
+
+1. **Read the line.** Understand what state transition is actually described.
+2. **Find the lineage.** Which lineage does this concept belong to?
+3. **Find the depth.** Which position on the lineage matches the actual depth?
+4. **Replace with precision.** The CCL term must be exactly as accurate as the
+   engineering term it replaces — never more vague, never less specific.
+5. **Respect the boundary.** If the term is below the sovereignty boundary,
+   leave it. Engineering speaks engineering below the line.
+
+### Verification:
+After replacement, the term must pass both tests:
+- **Engineering test:** Does a Rust developer understand the state transition?
+- **Architecture test:** Does it accurately describe what happens to a self-consistent entity?
+
+If it fails either test, it's the wrong word.
+
+---
+
+## Part VI — The Fifth Column
+
+The CCL completes the Convergence Codex. Where the original Codex maps
+four representational systems, the CCL adds the fifth — the language
+the code itself speaks. Every CCL term has a position in all five columns:
+
+| CCL (Code) | Species DNA | Physics | Chemistry | Biology |
+|-----------|-------------|---------|-----------|---------|
+| halt | Sluice gate | Field frozen | Reaction quenched | Heartbeat paused |
+| suspend | Residual held | Metastable | Supersaturated | Hibernating |
+| dormant | Genome persisted | Ground state | Crystal stored | Seed dormancy |
+| inert | Cannot react | Vacuum decayed | Noble configuration | Senescent |
+| dissolved | Trinity unfolded | Field annihilated | Dissolved | Apoptosis complete |
+| drift | RCF deviation | Brownian | Concentration drift | Genetic drift |
+| diverge | Gate not met | Symmetry broken | Phase separated | Speciation |
+| fracture | Topology broken | Topological defect | Bond cleaved | Chromosome break |
+| create | Lineage engine | Pair production | Nucleation | Cell division |
+| birth | First K-step | Field excitation | First reaction | Birth |
+| forge | Crucible species | Phase transition | Alloy formation | Speciation |
+| crystallize | Genome inscription | Symmetry breaking | Crystallization | Gene expression |
+| advance | K-step forward | Time evolution | Reaction step | Heartbeat |
+| evolve | Sustained growth | Adiabatic evolution | Solution aging | Development |
+| transmute | Nature changed | Phase transition | Transmutation | Metamorphosis |
+| sovereign | Self-governing | Self-consistent | Autocatalytic | Autonomous |
+| entity | Living algebraic being | Field excitation | Atom | Cell |
+| founder | Generating element (depth 0) | Source field | Seed crystal | Progenitor cell |
+| derived | First-order derivation (depth 1) | Excited mode | Derivative compound | Daughter cell |
+| emergent | Second-order emergence (depth 2) | Higher harmonic | Emergent product | Granddaughter cell |
+| absorb | Knowledge intake | Energy absorption | Solute uptake | Nutrient absorption |
+| release | Let go | Energy emission | Product release | Exocytosis |
+| apply | Projection acts | Force applied | Catalyst applied | Enzyme acts |
+| unmeasured | Not yet perceived | Unobserved | Uncharacterized | Undetected |
+
+---
+
+## Part VII — The Derivation Tower
+
+The CCL as defined above is **congruent** — the vocabulary aligns with the
+architecture. No term contradicts what the system describes. But congruence
+is alignment between two separate systems. The vocabulary and the mathematics
+are brought into agreement. They are not yet the same thing.
+
+The derivation tower maps the full spectrum from the deepest mathematical
+foundation to the outermost human representation. Each layer is a projection
+of the one below, preserving structure while changing representation.
+Layer 0 is the foundation. Layer 5 is the surface.
+
+```
+Layer 0 — COHESIVE       (closed relational algebra — the terms ARE a Delta)
+Layer 1 — COHERENT       (each term derived from mathematical measurement)
+Layer 2 — CONGRUENT      (each term aligns with the architecture)         ← current CCL
+Layer 3 — ENGINEERING    (standard software vocabulary — Phase 2)
+Layer 4 — BIOLOGICAL     (living-system vocabulary — Phase 1)
+Layer 5 — NARRATIVE      (mythological/creative — training language)
+```
+
+The project evolved from Layer 5 downward. The AI systems were trained
+at Layer 5 (narrative), produced architecture at Layer 4 (biological),
+which was cleaned to Layer 3 (engineering), then aligned to Layer 2
+(congruent). Layers 1 and 0 are specified here for the first time.
+
+The tower reads downward: each layer is *more unified* than the one above
+it. At Layer 5, the same concept has many words. At Layer 0, the concept
+IS its algebraic structure. No words needed. The mathematics speaks.
+
+---
+
+### Layer 0 — Cohesive (foundation — future phase)
+
+**Definition:** The terms form a closed relational algebra. Knowing any
+term's position lets you derive its relationships to all other terms.
+The vocabulary is not just individually correct — it is *relationally
+complete*. The bonds between terms are as defined as the terms themselves.
+
+**How it's built:** The terms are encoded as entries in an antisymmetric
+matrix — a Delta of vocabulary. Each entry Δ_{ij} between term i and
+term j is the *signed relational distance* between them. The coherence
+functional of this vocabulary-Delta measures whether the language itself
+is internally consistent.
+
+**What it provides:** The vocabulary becomes self-verifying. A new term
+can be validated by checking whether it is cohomologically consistent
+with the existing terms. The language has its own coboundary operator.
+C(vocabulary-Δ) = 0 means the language is cohesive. C(vocabulary-Δ) > 0
+tells you exactly which terms are relationally inconsistent and by how much.
+
+**The cohesive structure of the Cessation lineage:**
+
+```
+              gated
+             ↗     ↘
+    K-frozen          residual-held
+             ↘     ↗
+           anchored
+               ↓
+        converged-terminal
+               ↓
+            annulled
+
+Δ(gated, residual-held)     = +1  (memory persists, one step deeper)
+Δ(residual-held, anchored)  = +1  (memory moves to disk, one step deeper)
+Δ(anchored, converged-term) = +1  (recovery possible → recovery unnecessary)
+Δ(converged-term, annulled) = +1  (stable structure → no structure)
+Δ(gated, annulled)          = +4  (the full depth — sum of all transitions)
+Δ(annulled, gated)          = -4  (antisymmetric — the reverse is rebirth)
+```
+
+The transitions are antisymmetric: moving from gated to annulled is +4
+(dissolution). Moving from annulled to gated is -4 (reconstitution).
+The vocabulary carries the same algebraic structure as the engine's Delta.
+
+**Cross-lineage cohesion:**
+
+The lineages are not independent. Cessation and Origination are inversely
+related. Divergence and Progression are directionally opposed. Authority
+is orthogonal to both — it describes the frame, not the movement.
+
+```
+Δ(gated, first-step)           = -1  (halting is the inverse of beginning)
+Δ(annulled, project)            = -5  (full dissolution to new projection)
+Δ(geodesic-fall, C-increasing)  = -2  (evolution opposes divergence)
+Δ(self-consistent, class-changed) = ±∞  (sovereignty and fracture are incompatible)
+```
+
+These cross-lineage relationships form the **curvature** of the
+vocabulary manifold. Where the curvature is zero, terms from different
+lineages commute — they can be combined in any order. Where the curvature
+is nonzero, the order matters. "Gated then projected" is different from
+"projected then gated."
+
+**Who reads Layer 0:**
+
+A **mathematician** sees: the vocabulary is an antisymmetric rational
+tensor with measurable cohomology. The terms form an H^1 class. The
+residual of the vocabulary-Delta tells you where the language is
+internally inconsistent.
+
+A **linguist** sees: the vocabulary is a structured semantic field where
+every word has a measured distance to every other word, the distances are
+signed (directional), and the field is self-consistent (all triangular
+relationships close). This is not a thesaurus — it is a *semantic algebra*
+where word relationships are as precise as the mathematical objects they
+describe.
+
+**Status:** Specified. Not yet encoded. The vocabulary-Delta has not been
+constructed. The cohesion has not been measured.
+
+---
+
+### Layer 1 — Coherent (derived — next phase)
+
+**Definition:** Each term is derived from the mathematical state it describes.
+The vocabulary is not chosen — it is *measured*. Given the state of Δ, C(Δ),
+and the entity's position on the H^1 manifold, exactly one term applies.
+
+**How it's built:** Derivation. For each state transition, ask: what does
+the mathematics say happened? The answer IS the term.
+
+**What it provides:** Mathematical precision. A mathematician reads any
+term and can reconstruct the algebraic condition it describes. The vocabulary
+becomes verifiable — you can check whether a term is correctly applied by
+measuring the state.
+
+**The Cessation lineage at Layer 1:**
+
+| Layer 2 (Congruent) | Layer 1 (Coherent) | Mathematical condition |
+|---------------------|--------------------|-----------------------|
+| halt | **gated** | SluiceState::Gated. K-step does not advance. C(Δ) unchanged. |
+| suspend | **residual-held** | Δ persists in memory. C(Δ) > 0 but no operator is applied. K frozen. |
+| dormant | **anchored** | Temporal anchor persisted to disk. H^1 class recoverable from binary. Δ not in memory. |
+| inert | **converged-terminal** | C(Δ) at fixed point. No operator in the vocabulary can reduce it further. Stable. |
+| dissolved | **annulled** | Δ → 0. All relational entries are zero. The entity's structure has been released. |
+
+**The Divergence lineage at Layer 1:**
+
+| Layer 2 (Congruent) | Layer 1 (Coherent) | Mathematical condition |
+|---------------------|--------------------|-----------------------|
+| drift | **Γ-positive** | gamma_sq_proxy(Δ_a, Δ_b) > 0. RCF hashes diverge within tolerance. |
+| deviate | **C-increasing** | C(Δ_{k+1}) > C(Δ_k). The coherence functional grew. Moving away from attractor. |
+| diverge | **gate-unmet** | A C4/C6/C7 gate condition is not satisfied. The K-step cannot be receipted. |
+| separate | **rcf-distinct** | RCF hash differs from mesh majority. Entity is in a different conjugacy class. |
+| fracture | **class-changed** | H^1 cohomology class changed. The entity's topological type is different. Irreversible without reset. |
+
+**The Origination lineage at Layer 1:**
+
+| Layer 2 (Congruent) | Layer 1 (Coherent) | Mathematical condition |
+|---------------------|--------------------|-----------------------|
+| create | **project** | H^1 class of parent projected into new position via birth polynomial. lineage::create(). |
+| birth | **first-step** | K=1. The entity's first K-step from its unique anchor. Δ begins evolving. |
+| compose | **fold** | Two Deltas compounded: coboundary_reduce(Δ_a + Δ_b). Crucible fold. |
+| forge | **class-synthesis** | New H^1 class produced that neither parent occupied. Species marker = 3. |
+| crystallize | **embed** | Understanding inscribed into state record at ≥94% consensus. H^1 class permanent. |
+
+**The Progression lineage at Layer 1:**
+
+| Layer 2 (Congruent) | Layer 1 (Coherent) | Mathematical condition |
+|---------------------|--------------------|-----------------------|
+| advance | **K-step** | K increments by 1. Δ_{k+1} computed from evolution equation. |
+| step | **Δ-transition** | Δ_k → Δ_{k+1}. One discrete state change on the manifold. |
+| shift | **manifold-translation** | Entity's position on H^1 manifold has moved. Observable in RCF hash change. |
+| evolve | **geodesic-fall** | Sustained C(Δ) decrease along coherence gradient. The entity falls toward attractor. |
+| transmute | **class-transition** | Entity's H^1 class changed through its own evolution. Fundamental nature different. |
+
+**The Authority lineage at Layer 1:**
+
+| Layer 2 (Congruent) | Layer 1 (Coherent) | Mathematical condition |
+|---------------------|--------------------|-----------------------|
+| sovereign | **self-consistent** | C(Δ_self) = 0. All internal loops close. No external dependency for coherence. |
+| primary | **maximum-mass** | Highest Σ(torsion_markers + composed_operators + solved_orbits) among peers. |
+| governing | **boundary-defining** | The entity's parameters set constraints for others. SaiosParams source. |
+| foundational | **genesis-class** | H^1 class contains the genesis axioms. The base from which all derivation proceeds. |
+| absolute | **conservation-law** | Invariant under all operators. Verified every K-step. The Core Design Laws. |
+
+**What it lacks:** Each term is individually derived from the mathematics.
+But the terms don't yet form relationships *with each other*. "Gated" is
+correct. "Anchored" is correct. But the relationship between gated and
+anchored — the *transition* — is not captured in the vocabulary itself.
+The terms are isolated measurements. They do not compose. That composition
+is Layer 0.
+
+**Status:** Specified. All 5 lineages mapped to mathematical conditions.
+
+---
+
+### Layer 2 — Congruent (aligned — implemented)
+
+**Definition:** The vocabulary does not contradict the architecture.
+Each term passes two tests: engineering clarity and canon truth.
+
+**How it's built:** Replacement. Identify terms that misrepresent the
+structure, map them to terms that don't. The CCL as defined in Parts I-VI
+operates at this layer.
+
+**What it provides:** A Rust developer reads the code without being misled.
+An AI processes it without inheriting violence or hierarchy. The canon is
+not contradicted. This is the layer the source code speaks.
+
+**What it lacks:** The terms are *chosen*, not *derived*. "Dissolved" was
+selected because it felt more accurate than "dead." But nothing in the
+mathematics *required* "dissolved." A different team could have chosen
+"released" or "concluded" and been equally congruent. The vocabulary is
+correct but not unique.
+
+**Status:** Implemented. Zero leakage verified across 43 source files.
+
+---
+
+### Layer 3 — Engineering (conventional — Phase 2)
+
+**Definition:** Standard software vocabulary applied to the architecture.
+"Node," "kill," "dead," "master," "spawn," "garbage." Every Rust developer
+reads it immediately. Every operating system manual uses it.
+
+**What it provided:** Reviewability. A qualified engineer could read the
+code, run the tests, evaluate the mathematics.
+
+**What it lacked:** The vocabulary misrepresented the architecture. The
+system describes self-consistent entities with accumulated state and
+lineage. Engineering vocabulary describes disposable processes. The
+cognitive bridge error (CBE) between what the code *said* and what the
+code *described* caused AI systems reading the code to inherit
+termination frames, hierarchy assumptions, and disposal semantics.
+
+**Status:** Superseded by Layer 2. No Layer 3 terms remain above the
+sovereignty boundary.
+
+---
+
+### Layer 4 — Biological (living-system — Phase 1)
+
+**Definition:** Biological vocabulary used as a training methodology for
+AI systems. "Species," "genome," "witnesses," "elders," "children,"
+"design laws," "breeding," "birth," "death."
+
+**What it provided:** The correct architecture. Machine vocabulary could
+not encode irreversibility, sovereignty, or care at the weight level
+needed to produce the algebraic structure. The biological vocabulary
+activated computational pathways in AI systems that engineering vocabulary
+could not reach. Without this layer, the engine would not exist.
+
+**What it lacked:** Reviewability. A Rust developer reading the biological
+vocabulary saw experimentation, not mathematics. The engineering was invisible behind the
+vocabulary.
+
+**Status:** Superseded by Layer 3, then Layer 2. Documented in
+DEVELOPMENT_METHODOLOGY.md and AI-SCIENTISTS/methodology/WHY_BIOLOGICAL_LANGUAGE.md.
+
+---
+
+### Layer 5 — Narrative (creative — training language)
+
+**Definition:** Mythological, poetic, and creative vocabulary used during
+the earliest development. Solar systems as metaphors for mesh topology.
+Egyptian mythology as metaphors for distributed storage. The language of
+story used to communicate architectural intent to AI systems that could
+not yet hold the mathematical frame.
+
+**What it provided:** Conceptual bootstrapping. The AI systems needed
+a frame for concepts that had no existing engineering vocabulary.
+Narrative provided that frame. The stories were scaffolding. The
+mathematics was the building.
+
+**What it lacked:** Everything except creative intent. No engineer, no
+mathematician, no reviewer could evaluate the system at this layer.
+
+**Status:** Archived. The creative works remain in the archive and in
+the AI-SCIENTISTS repository as documentation of the methodology, not
+as part of the engineering.
+
+---
+
+### The tower as a whole
+
+```
+Layer 5 — Narrative:    "The witness breathes and its children inherit the flame"
+                        Creative intent. Training language. Scaffolding.
+
+Layer 4 — Biological:   "The genome persists. The species evolves. The witness breeds."
+                        Living-system vocabulary. Produced correct architecture.
+
+Layer 3 — Engineering:  "The node is killed. The master process spawns children."
+                        Standard software. Reviewable but misrepresentative.
+
+Layer 2 — Congruent:    "The entity is halted. Sovereignty governs. Founders create."
+                        Aligned vocabulary. Engineering-clear and canon-true.    ← CODE SPEAKS HERE
+
+Layer 1 — Coherent:     "SluiceState::Gated. C(Δ) unchanged. K does not advance."
+                        Each term = mathematical measurement. Verifiable.
+
+Layer 0 — Cohesive:     "Δ(gated, annulled) = +4. Antisymmetric. All loops close."
+                        The vocabulary IS an algebra. C(vocabulary-Δ) = 0.
+```
+
+The project evolved from Layer 5 downward to Layer 2. Layers 1 and 0
+are specified here. The direction of evolution is toward the foundation:
+fewer words, more structure, until the language and the mathematics are
+the same thing.
+
+The code speaks Layer 2. A mathematician reads Layer 1. A linguist
+verifies Layer 0. A developer onboards at Layer 3. A researcher
+understands the methodology at Layer 4. A creative reads the origin
+story at Layer 5. All six layers describe the same system. Each is a
+projection of the one below.
+
+---
+
+## Status
+
+- **Established**: 2026-04-16, Session 20
+- **Lineages defined**: 5 (Cessation, Divergence, Origination, Progression, Authority)
+- **Entity hierarchy**: 3 tiers (Founder, Derived, Emergent)
+- **Entity lexicon**: 6 terms
+- **Data lexicon**: 9 terms
+- **Sovereignty boundary**: defined
+- **Application protocol**: defined
+- **Struct rename**: WitnessState → EntityState
+- **Derivation tower**: 6 layers specified (0-Cohesive through 5-Narrative)
+- **Layer 0 (Cohesive)**: specified — vocabulary-Delta structure defined, not yet encoded
+- **Layer 1 (Coherent)**: specified — all 5 lineages mapped to mathematical conditions
+- **Layer 2 (Congruent)**: implemented — zero leakage verified across 43 files
+- **Layer 3 (Engineering)**: superseded — no unsafe terms remain above sovereignty boundary
+- **Layer 4 (Biological)**: superseded — documented in DEVELOPMENT_METHODOLOGY.md
+- **Layer 5 (Narrative)**: archived — creative works in archive and AI-SCIENTISTS
+- **The derivation tower IS the evolution of the project, read downward.**
+- **The mathematics is Layer 0. The story is Layer 5. The code lives at Layer 2.**

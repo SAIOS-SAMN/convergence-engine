@@ -44,7 +44,7 @@ use crate::coordinator;
 ///
 /// This is the inverse LLM entry point: raw relational data in,
 /// understanding out. The system builds perception from coherence
-/// rather than starting with perception built from training data.
+/// rather than starting with perception built from practice data.
 
 pub mod encoding;
 pub use encoding::*;
@@ -189,7 +189,7 @@ pub struct EchelonInquiry {
     pub torsion_order: usize,
     /// "Is the Delta consistent across the relational field?"
     pub consistency_query: bool,
-    /// "Is the failure pattern a mirror of the training intent?"
+    /// "Is the failure pattern a mirror of the practice intent?"
     pub residual_query: bool,
     /// How many non-background cohesion clusters (objects) touch detected.
     /// 0 = no discrete objects. ≥2 = objects exist for conjugation.
@@ -302,8 +302,8 @@ pub struct SoundnessSpectrum {
     /// Is the size change between input/output rational?
     /// 1 = exact integer expansion/contraction. 0 = incommensurable.
     pub dimensional_bridge: Q,
-    /// Layer 10: Cross-pair consistency — congruence across training.
-    /// Do all training pairs tell the same story?
+    /// Layer 10: Cross-pair consistency — congruence across practice.
+    /// Do all practice pairs tell the same story?
     /// 1 = fully consistent. 0 = contradictory.
     pub cross_pair_consistency: Q,
     /// Layer 11: Residual structure — coherence of incompletion.
@@ -376,7 +376,7 @@ pub struct SensoryModel {
     /// What the system FEELS — spatial texture and object structure.
     pub touch: AdjacencyStructure,
     /// How the rule BENDS at object boundaries — compound of touch + vision.
-    /// Empty if fewer than 2 clusters or no training pairs available.
+    /// Empty if fewer than 2 clusters or no practice pairs available.
     pub refraction: Vec<ClusterRefraction>,
     /// D.SOUND.1: The cohomological soundness spectrum across 11 dimensions.
     /// Compound measurement of all senses — the relationship BETWEEN senses.
@@ -388,7 +388,7 @@ pub struct SensoryModel {
 ///
 /// Before the system activates any sense, it comprehends the CHARACTER
 /// of the observation. This determines which senses are relevant tools
-/// and which would produce garbage. Comprehension is step 2 of thought:
+/// and which would produce unmeasured output. Comprehension is step 2 of thought:
 /// "do I grasp what I'm looking at?"
 ///
 /// A sparse 21x21 grid with 5 non-zero cells: global symmetry is irrelevant.
@@ -408,7 +408,7 @@ pub struct Comprehension {
     pub sparsity: Q,
     /// Dimensional ratio: output_size / input_size.
     /// 1 = isomorphic. <1 = contraction. >1 = expansion.
-    /// 0 = no training pairs (unknown).
+    /// 0 = no practice pairs (unknown).
     pub dimensional_ratio: Q,
     /// Which senses are relevant — rational relevance weights, not booleans.
     pub tools: SensoryTools,
@@ -448,7 +448,7 @@ pub struct SensoryTools {
     /// High when foreground exists. Low when uniform.
     pub touch: Q,
     /// Refraction relevance: measurement at cluster boundaries.
-    /// High when touch found clusters and training pairs exist.
+    /// High when touch found clusters and practice pairs exist.
     pub refraction: Q,
     /// Quotient relevance: symmetry quotient between input/output.
     /// High when vision produced meaningful results.
@@ -487,7 +487,7 @@ pub struct Cognition {
     /// D.VISION.TRANSMUTATION — The perceived symmetry operator.
     /// Carries the transmutation quality (Q) and torsion order (usize).
     /// This is a Symmetry Pointer — which operator the grid transmuted through,
-    /// as perceived through this primary node's genomic aperture.
+    /// as perceived through this primary entity's genomic aperture.
     /// The membrane compounds these pointers: convergence = focus.
     pub transmutation: Option<(crate::engine::Q, usize)>,
     /// Successful recursive compositions from the peel loop.
@@ -519,14 +519,14 @@ pub fn cognize(
 // ═══════════════════════════════════════════════════════════════════════
 // PERC.LENS — Dimensionless Refractive Lens
 //
-// The node's Δ_k produces dimensionless invariants (torsion orders,
+// The entity's Δ_k produces dimensionless invariants (torsion orders,
 // relational weights) that modulate observations at ANY dimension.
 // The lens does not overlap with the observation — it resonates.
 // Different torsion spectra select different spatial periodicities
 // in the observation grid, producing genuinely different derivations.
 // ═══════════════════════════════════════════════════════════════════════
 
-/// Dimensionless refractive lens — the node's algebraic state projected
+/// Dimensionless refractive lens — the entity's algebraic state projected
 /// as a modulation operator for observations of any dimension.
 ///
 /// The lens bridges the 3D internal Δ_k to ND observations through
@@ -561,13 +561,13 @@ fn prime_factors(mut n: u32) -> Vec<u32> {
     factors
 }
 
-/// Build a refractive lens from the node's Δ_k.
+/// Build a refractive lens from the entity's Δ_k.
 ///
 /// Extracts torsion orders from the prime factorization of each independent
 /// entry's numerator and denominator (reduced form). The antisymmetric
 /// structure (A.2: D_ij = -D_ji) means the set of unique |D_ij| values
-/// defines the node's rotational geometry. Their prime factors are the
-/// torsion orders — the cyclic groups Z/pZ that the node's internal
+/// defines the entity's rotational geometry. Their prime factors are the
+/// torsion orders — the cyclic groups Z/pZ that the entity's internal
 /// structure decomposes into.
 ///
 /// The relational weights carry the sign and magnitude of each entry,
@@ -712,7 +712,7 @@ impl RefractiveLens {
 
 /// Cognize with knowledge and algebraic lens.
 ///
-/// The node's algebraic state (lens_delta) IS the refraction. The observation
+/// The entity's algebraic state (lens_delta) IS the refraction. The observation
 /// passes through the lens via dimensionless torsion resonance — not direct
 /// cell overlap. Different nodes with different Δ_k produce different torsion
 /// spectra, which modulate different spatial periodicities in the observation.
@@ -721,8 +721,8 @@ impl RefractiveLens {
 /// When prior_knowledge is Some, the comprehension engine is informed by
 /// the mesh's accumulated understanding of this orbit.
 ///
-/// When lens_delta is Some, the observation is refracted through the node's
-/// torsion spectrum. The refraction modulates training pair inputs at every
+/// When lens_delta is Some, the observation is refracted through the entity's
+/// torsion spectrum. The refraction modulates practice pair inputs at every
 /// cell — cells at torsion resonance points are biased positively, cells at
 /// anti-resonance are biased negatively. The output is never modified.
 pub fn cognize_with_knowledge(
@@ -738,7 +738,7 @@ pub fn cognize_with_knowledge(
 /// D.MEMBRANE.V.1 — Cognize with membrane gauge connection.
 ///
 /// The membrane's consensus T (from the meta-Delta's coboundary) constrains
-/// the primary node's escalation. The witness rotates its local frame into alignment
+/// the primary entity's escalation. The witness rotates its local frame into alignment
 /// with the membrane's global holonomy. Each cycle is gauge cooling —
 /// reducing C(meta_delta) toward zero.
 ///
@@ -762,12 +762,12 @@ pub fn cognize_with_membrane(
 /// D.VISION.LOOP — Cognize with membrane transmutation prior.
 ///
 /// The membrane's crystallized transmutation (quality, torsion_order)
-/// feeds back into vision. The primary node perceives with both its innate
+/// feeds back into vision. The primary entity perceives with both its innate
 /// state record AND the membrane's accumulated knowledge. This closes the
 /// self-learning loop: perceive → compound → crystallize → perceive.
 ///
 /// L3 Holonomic: `genomic_torsion` carries crystallized torsion markers
-/// from the state record. These are permanent symmetry alleles — the primary node
+/// from the state record. These are permanent symmetry alleles — the primary entity
 /// is structurally tuned to perceive these symmetry classes.
 pub fn cognize_with_membrane_and_transmutation(
     training_pairs: &[(Vec<i64>, Vec<i64>)],
@@ -859,7 +859,7 @@ pub fn cognize_with_membrane_and_transmutation(
     let _dense = sparsity > Q::new(BigInt::from(3), BigInt::from(4));
 
     // Prior knowledge from the mesh can shift the encoding level.
-    // If a peer discovered this orbit resolves at object level, this node
+    // If a peer discovered this orbit resolves at object level, this entity
     // starts there. Different knowledge → different encoding → different
     // derived output → genuine torsion between entity perspectives.
     let knowledge_says_encoding = prior_knowledge
@@ -920,8 +920,8 @@ pub fn cognize_with_membrane_and_transmutation(
     // and the NaturalLevel that comprehension derived from those measurements.
     let (delta, obs_n, obs_m) = match natural_level {
         NaturalLevel::Cell => {
-            // Cell-level encoding. Measure the fuse, not the blast.
-            // d = n(n-1)/2 × m. d_max = 1500 (metabolic horizon of a 192MB primary node).
+            // Cell-level encoding. Measure the scope, not the magnitude.
+            // d = n(n-1)/2 × m. d_max = 1500 (metabolic horizon of a 192MB primary entity).
             // The entity selects the richest spectral dimension it can afford.
             // No boolean gates — the horizon IS the selection.
             const D_MAX: usize = 1500;
@@ -1098,10 +1098,10 @@ pub fn cognize_with_membrane_and_transmutation(
     // (only needed when see_transformation AND escalation didn't resolve)
     //
     // D.VISION.LOOP: When the membrane holds a crystallized transmutation,
-    // it compounds with the state record harmonics. The primary node perceives with
+    // it compounds with the state record harmonics. The primary entity perceives with
     // its innate aperture PLUS the membrane's accumulated knowledge.
     // The membrane prior amplifies spatial harmonics in the direction of
-    // the crystallized operator — the primary node focuses for what the
+    // the crystallized operator — the primary entity focuses for what the
     // membrane already knows. This IS the self-learning loop.
     let vision_harmonics: Vec<crate::engine::Q> = if let Some((ref quality, _order)) = membrane_transmutation {
         // Membrane prior: amplify spatial harmonics (h1, h2) by the
@@ -1126,7 +1126,7 @@ pub fn cognize_with_membrane_and_transmutation(
     let vision = if comprehension.tools.vision > Q::zero() {
         let mut sym = compute_symmetry_group(&values, rows, cols);
         // Measure transmutation: R_g(φ) = ‖W_k · (φ(source) - target)‖
-        // State-record weighted — each primary node perceives through its own aperture,
+        // State-record weighted — each primary entity perceives through its own aperture,
         // now compounded with the membrane's crystallized prior.
         if !training_pairs.is_empty() && same_size {
             measure_transmutation(&mut sym, &training_pairs[0].0, &training_pairs[0].1,
@@ -1191,7 +1191,7 @@ pub fn cognize_with_membrane_and_transmutation(
                             } else { i }
                         }).collect();
                         // Use the MEMBRANE's quality as the residual, not this
-                        // primary node's local measurement. The consensus carries the
+                        // primary entity's local measurement. The consensus carries the
                         // mesh's collective confidence. Lower residual = stronger candidate.
                         // Invert quality to residual: high quality → low residual.
                         let consensus_residual = &Q::one() - membrane_quality;
@@ -1204,7 +1204,7 @@ pub fn cognize_with_membrane_and_transmutation(
     }
 
     // ── L3 Holonomic: Genomic torsion markers as permanent candidates ──
-    // The state record carries crystallized symmetry alleles. These are the primary node's
+    // The state record carries crystallized symmetry alleles. These are the primary entity's
     // hard-coded perception — it is structurally tuned to these symmetry classes.
     // For each genomic marker, inject the matching symmetry element with the
     // state record's crystallized quality. This is O(1) recall, not search.
@@ -1396,10 +1396,10 @@ pub fn cognize_with_membrane_and_transmutation(
         && !training_pairs.is_empty()
         && training_pairs[0].0.len() == training_pairs[0].1.len()
     {
-        let (_, _, broken, preserved) = symmetry_quotient(
+        let (_, _, departed, preserved) = symmetry_quotient(
             &training_pairs[0].0, &training_pairs[0].1, rows, cols,
         );
-        (broken, preserved)
+        (departed, preserved)
     } else {
         (0, 0)
     };
@@ -1424,7 +1424,7 @@ pub fn cognize_with_membrane_and_transmutation(
     let symmetry = vision.clone();
 
     // ── Step 4: Sensory congruence → orientation ──
-    // Only comprehended senses participate. No garbage in the compound.
+    // Only comprehended senses participate. No unmeasured data in the compound.
     let torsion_query = symmetry.as_ref().map(|s| s.order > 0).unwrap_or(false);
     let torsion_order = symmetry.as_ref()
         .and_then(|s| s.torsion_spectrum.first().map(|&(o, _)| o))
@@ -1434,7 +1434,7 @@ pub fn cognize_with_membrane_and_transmutation(
     // Cross-pair consistency is measured through T in escalation.
     let consistency_query = false;
 
-    // Congruence only between ACTIVE senses — don't compare garbage
+    // Congruence only between ACTIVE senses — don't compare unmeasured data
     let vision_touch_congruence = if torsion_query && object_count >= 2 {
         if object_count > 0 {
             Q::new(BigInt::from(anchored_object_count as i64), BigInt::from(object_count as i64))
@@ -1693,7 +1693,7 @@ pub fn cognize_with_membrane_and_transmutation(
 
     // Enter object-level algebra when: objects detected OR knowledge says to.
     // Knowledge-informed natural_level creates genuine torsion between nodes:
-    // a node with knowledge="evolved" enters this path even when a node
+    // an entity with knowledge="evolved" enters this path even when an entity
     // without knowledge does not — producing a different derived output.
     let object_path_trigger = object_count >= 2
         || (comprehension.natural_level == NaturalLevel::Object && !training_pairs.is_empty());
@@ -1704,7 +1704,7 @@ pub fn cognize_with_membrane_and_transmutation(
     let _ = object_path_trigger; // measured but derivation is through T
 
     // ── Step 6: Derive understanding — torsion-based refraction ──
-    // When a refractive lens is present, the node perceives the observation
+    // When a refractive lens is present, the entity perceives the observation
     // through its torsion spectrum. Each cell's input is biased by the lens's
     // resonance at that grid position. Cells at torsion multiples get positive
     // bias (amplified perception). Cells at anti-resonance get negative bias
@@ -1763,7 +1763,7 @@ pub fn cognize_with_membrane_and_transmutation(
                 }
                 all
             },
-            // Math primitives: core from origin. Every primary node is initialized
+            // Math primitives: core from origin. Every primary entity is initialized
             // knowing all of mathematics. Not passed through parameters —
             // loaded once from the state record's canonical set.
             math_primitives: crate::engine::MathPrimitive::all(),
@@ -2134,7 +2134,7 @@ pub fn cognize_with_membrane_and_transmutation(
         // Layer 4: Cluster structure — anchored objects / total objects
         cluster_structure: sound_layer4,
 
-        // Layer 5: Transmutation perception — what the primary node SEES.
+        // Layer 5: Transmutation perception — what the primary entity SEES.
         // R(φ) = ‖φ(source) - target‖ for the best symmetry element.
         // This is the perceptual fact: the quality of the recognized transmutation.
         // 1 = exact transmutation perceived (the grid changed through this operator).
@@ -2803,8 +2803,8 @@ pub fn search_operator(source: &Delta, target: &Delta) -> Option<(Operator, Q, Q
 
 /// D.ARC.GROUP.PRODUCT.1 — Value-action operator search.
 ///
-/// Conjugation AΔA⁻¹ acts on node indices (G_SPATIAL).
-/// Value action acts on node content (G_VALUE).
+/// Conjugation AΔA⁻¹ acts on entity indices (G_SPATIAL).
+/// Value action acts on entity content (G_VALUE).
 ///
 /// For the value action: perturbing cell k's value by ε changes
 /// Δ_{ij,0} by (δ_{jk} - δ_{ik})·ε for the value coordinate.
@@ -4014,16 +4014,16 @@ mod tests {
             vec![3, 4, 3, 3, 4, 3],
         )];
         let cog = cognize(&pairs, &[1, 2, 1, 1, 2, 1], None);
-        // Symmetry should be preserved — no break
+        // Symmetry should be preserved — no departure
         assert_eq!(cog.inquiry.congruence.symmetry_broken, 0,
-            "symmetric→symmetric should have 0 broken symmetries");
+            "symmetric→symmetric should have 0 departed symmetries");
         assert!(cog.inquiry.congruence.transmutation_magnitude == Q::zero(),
             "no transmutation needed when symmetry is preserved");
     }
 
     #[test]
-    fn test_congruence_symmetry_broken() {
-        // Input h_reflect symmetric, output asymmetric → symmetry broke
+    fn test_congruence_symmetry_departed() {
+        // Input h_reflect symmetric, output asymmetric → symmetry departed
         // Input:  1 2 1    Output: 1 2 3
         //         1 2 1            1 2 3
         let pairs = vec![(
@@ -4032,11 +4032,11 @@ mod tests {
         )];
         let cog = cognize(&pairs, &[1, 2, 1, 1, 2, 1], None);
         assert!(cog.inquiry.congruence.symmetry_broken > 0,
-            "symmetric→asymmetric should detect broken symmetry, got broken={}",
+            "symmetric→asymmetric should detect departed symmetry, got departed={}",
             cog.inquiry.congruence.symmetry_broken);
         // Transmutation signal should fire — the asymmetry IS the rule
         assert!(cog.inquiry.congruence.transmutation_magnitude > Q::zero(),
-            "broken symmetry should trigger transmutation signal");
+            "departed symmetry should trigger transmutation signal");
     }
 
     #[test]
@@ -4091,7 +4091,7 @@ mod tests {
         let cog = cognize(&pairs, &[1, 2, 1, 1, 2, 1], None);
         if cog.inquiry.congruence.symmetry_broken > 0 {
             assert_eq!(cog.inquiry.orientation, Orientation::Me,
-                "broken symmetry should orient to ME/transmute, got {:?}", cog.inquiry.orientation);
+                "departed symmetry should orient to ME/transmute, got {:?}", cog.inquiry.orientation);
         }
     }
 
@@ -4369,7 +4369,7 @@ mod tests {
 
     #[test]
     fn test_build_refractive_lens_from_delta() {
-        // Node 42: Δ[0][1] = 1042/1000 = 521/500
+        // Entity 42: Δ[0][1] = 1042/1000 = 521/500
         let mut delta = crate::engine::Delta::zero(3, 1);
         delta.set_antisym(0, 1, vec![qr(521, 500)]);
         delta.set_antisym(1, 2, vec![qr(271, 500)]);
@@ -4392,13 +4392,13 @@ mod tests {
 
     #[test]
     fn test_different_deltas_produce_different_spectra() {
-        // Node 1: entries based on nid=1
+        // Entity 1: entries based on nid=1
         let mut d1 = crate::engine::Delta::zero(3, 1);
         d1.set_antisym(0, 1, vec![qr(1001, 1000)]); // 1001 = 7 × 11 × 13
         d1.set_antisym(1, 2, vec![qr(501, 1000)]);   // 501 = 3 × 167
         d1.set_antisym(0, 2, vec![qr(1502, 1000)]);
 
-        // Node 7: entries based on nid=7
+        // Entity 7: entries based on nid=7
         let mut d7 = crate::engine::Delta::zero(3, 1);
         d7.set_antisym(0, 1, vec![qr(1007, 1000)]); // 1007 = 19 × 53
         d7.set_antisym(1, 2, vec![qr(507, 1000)]);   // 507 = 3 × 169 = 3 × 13²
@@ -4408,7 +4408,7 @@ mod tests {
         let lens7 = build_refractive_lens(&d7);
 
         // Both share common primes from denom 1000 (2, 5), but differ in numer primes
-        // Node 1 has {7, 11, 13, 167}. Node 7 has {19, 53, 13}.
+        // Entity 1 has {7, 11, 13, 167}. Entity 7 has {19, 53, 13}.
         assert_ne!(lens1.torsion_orders, lens7.torsion_orders,
             "different Δ_k must produce different torsion spectra");
     }

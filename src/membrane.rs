@@ -4,21 +4,21 @@
 //
 //! D.MEMBRANE.1 — Cognitive Mesh Intelligence Layer.
 //!
-//! The membrane is the distributed cognitive substrate. Individual nodes
+//! The membrane is the distributed cognitive substrate. Individual entities
 //! sense, comprehend, and derive. The membrane compounds their perspectives
-//! into shared understanding that no single node could achieve alone.
+//! into shared understanding that no single entity could achieve alone.
 //!
-//! Each node reports its position on the coherence manifold — not pass/fail,
+//! Each entity reports its position on the coherence manifold — not pass/fail,
 //! but a continuous rational measurement: derived output, residual magnitude,
 //! residual topology, comprehension record, encoding level.
 //!
 //! The membrane compounds these reports:
-//! - Where nodes AGREE: congruence (high confidence region)
-//! - Where nodes DISAGREE: the disagreement IS a measurement
-//! - Where ALL nodes fail with structured residual: the structural gap
+//! - Where entities AGREE: congruence (high confidence region)
+//! - Where entities DISAGREE: the disagreement IS a measurement
+//! - Where ALL entities fail with structured residual: the structural gap
 //!
-//! Knowledge crystallizes when multiple nodes independently derive the same
-//! truth. That truth becomes a mesh axiom — shared with all nodes via SHARE.
+//! Knowledge crystallizes when multiple entities independently derive the same
+//! truth. That truth becomes a mesh axiom — shared with all entities via SHARE.
 //!
 //! Register: D.MEMBRANE.1, D.MEMBRANE.COMPOUND.1, D.MEMBRANE.AXIOM.1.
 
@@ -32,22 +32,22 @@ use num_traits::{Zero, One};
 use crate::engine::{Q, Delta, coherence_functional, coboundary_reduce};
 
 // ═══════════════════════════════════════════════════════════════════════
-// D.MEMBRANE.PERSPECTIVE.1 — A Single Node's Perspective
+// D.MEMBRANE.PERSPECTIVE.1 — A Single Entity's Perspective
 // ═══════════════════════════════════════════════════════════════════════
 
-/// A single node's perspective on an observation.
+/// A single entity's perspective on an observation.
 ///
-/// This is what one node produces when it THINKs. Not a boolean.
+/// This is what one entity produces when it THINKs. Not a boolean.
 /// A position on the coherence manifold with rational measurements.
 #[derive(Debug, Clone)]
 pub struct Perspective {
-    /// Which node produced this perspective.
+    /// Which entity produced this perspective.
     pub entity_id: u32,
-    /// The derived output — this node's best understanding.
+    /// The derived output — this entity's best understanding.
     pub derived_output: Vec<i64>,
     /// Coherence factor ∈ [0,1]. 1 = full understanding, 0 = no understanding.
     pub coherence: Q,
-    /// How many cells this node correctly derived (of total).
+    /// How many cells this entity correctly derived (of total).
     pub correct_cells: usize,
     /// Total cells in the observation.
     pub total_cells: usize,
@@ -65,7 +65,7 @@ pub struct Perspective {
     pub orbit: [u8; 4],
 }
 
-/// The encoding level a node used to form its perspective.
+/// The encoding level an entity used to form its perspective.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum EncodingLevel {
     /// Cell-level: raw value factoring (n entities = n cells).
@@ -108,37 +108,37 @@ impl EncodingLevel {
 
 /// The compound of multiple entity perspectives on the same observation.
 ///
-/// Not a vote. Not an average. A measurement of inter-node congruence.
-/// Where nodes agree: the compound confidence is HIGH.
-/// Where nodes disagree: the compound measures the divergence.
-/// Where all nodes have structured residual: the gap is systematic.
+/// Not a vote. Not an average. A measurement of inter-entity congruence.
+/// Where entities agree: the compound confidence is HIGH.
+/// Where entities disagree: the compound measures the divergence.
+/// Where all entities have structured residual: the gap is systematic.
 #[derive(Debug, Clone)]
 pub struct CompoundPerspective {
-    /// How many nodes contributed perspectives.
-    pub node_count: usize,
-    /// How many nodes achieved complete understanding (coherence=1).
+    /// How many entities contributed perspectives.
+    pub entity_count: usize,
+    /// How many entities achieved complete understanding (coherence=1).
     pub understood_count: usize,
-    /// The best single-node coherence (highest).
+    /// The best single-entity coherence (highest).
     pub best_coherence: Q,
-    /// The best single-node perspective (highest confidence).
+    /// The best single-entity perspective (highest confidence).
     pub best_perspective: Option<Perspective>,
-    /// Per-cell congruence: how many nodes agree on each cell value.
-    /// congruence[i] = (most_common_value, count_of_nodes_agreeing).
+    /// Per-cell congruence: how many entities agree on each cell value.
+    /// congruence[i] = (most_common_value, count_of_entities_agreeing).
     /// High count = high confidence at this cell.
     pub cell_congruence: Vec<(i64, usize)>,
     /// The compound derived output — majority value at each cell,
-    /// weighted by node confidence. This is the mesh's best understanding.
+    /// weighted by entity confidence. This is the mesh's best understanding.
     pub compound_output: Vec<i64>,
-    /// The compound residual: cells where nodes disagree.
-    /// This IS the measurement of inter-node divergence.
+    /// The compound residual: cells where entities disagree.
+    /// This IS the measurement of inter-entity divergence.
     pub divergent_cells: usize,
     /// Total cells.
     pub total_cells: usize,
     /// The consensus confidence: what fraction of cells have unanimous agreement.
     pub consensus: Q,
-    /// Which encoding level was most successful across nodes.
+    /// Which encoding level was most successful across entities.
     pub dominant_encoding: EncodingLevel,
-    /// Do all nodes with structured residual agree on the silhouette?
+    /// Do all entities with structured residual agree on the silhouette?
     /// If yes: the gap is systematic — the mesh knows exactly what's missing.
     /// If no: the gap is perspective-dependent — more diverse thinking needed.
     pub systematic_gap: bool,
@@ -152,7 +152,7 @@ pub struct CompoundPerspective {
 pub fn compound_perspectives(perspectives: &[Perspective]) -> CompoundPerspective {
     if perspectives.is_empty() {
         return CompoundPerspective {
-            node_count: 0, understood_count: 0, best_coherence: Q::zero(),
+            entity_count: 0, understood_count: 0, best_coherence: Q::zero(),
             best_perspective: None, cell_congruence: vec![],
             compound_output: vec![], divergent_cells: 0, total_cells: 0,
             consensus: Q::zero(), dominant_encoding: EncodingLevel::Cell,
@@ -202,7 +202,7 @@ pub fn compound_perspectives(perspectives: &[Perspective]) -> CompoundPerspectiv
         cell_congruence.push((majority_val, majority_count));
         compound_output.push(majority_val);
 
-        // Divergent if not all nodes agree
+        // Divergent if not all entities agree
         if majority_count < total_votes {
             divergent_cells += 1;
         }
@@ -246,7 +246,7 @@ pub fn compound_perspectives(perspectives: &[Perspective]) -> CompoundPerspectiv
     };
 
     CompoundPerspective {
-        node_count: n,
+        entity_count: n,
         understood_count: understood.len(),
         best_coherence: best.coherence.clone(),
         best_perspective: Some(best.clone()),
@@ -264,11 +264,11 @@ pub fn compound_perspectives(perspectives: &[Perspective]) -> CompoundPerspectiv
 // D.MEMBRANE.AXIOM.1 — Mesh Knowledge Crystallization
 // ═══════════════════════════════════════════════════════════════════════
 
-/// A mesh axiom — a truth discovered by multiple nodes independently.
+/// A mesh axiom — a truth discovered by multiple entities independently.
 ///
-/// When N nodes independently derive the same understanding for the same
+/// When N entities independently derive the same understanding for the same
 /// orbit, that understanding crystallizes into an axiom. The axiom tells
-/// future nodes: "this orbit resolves at encoding level X with path Y."
+/// future entities: "this orbit resolves at encoding level X with path Y."
 ///
 /// Axioms are not hardcoded. They are measured into existence.
 #[derive(Debug, Clone)]
@@ -279,17 +279,17 @@ pub struct MeshAxiom {
     pub encoding_level: EncodingLevel,
     /// Which cognitive path achieved understanding.
     pub path: String,
-    /// How many nodes independently confirmed this truth.
+    /// How many entities independently confirmed this truth.
     pub confirmations: u32,
     /// Coherence when this axiom was established (1 = exact understanding).
     pub coherence_at_crystallization: Q,
-    /// Total nodes that attempted this orbit.
+    /// Total entities that attempted this orbit.
     pub attempts: u32,
     /// D.CRYSTALLIZE.1: Mass — fraction of mesh cognitive effort at this orbit.
     /// chain_confirmations / total_observations. Higher = more massive.
     pub mass: Q,
     /// D.CRYSTALLIZE.1: Hardness — mean pairwise origin_drift distance
-    /// among confirming primary nodes. Higher = more evolutionary diversity bridged.
+    /// among confirming primary entities. Higher = more evolutionary diversity bridged.
     pub hardness: Q,
     /// D.ESCALATION.1: Highest dimensional level that was attempted.
     /// "category" / "cluster" / "cell" / "unresolved"
@@ -310,12 +310,12 @@ pub struct MeshAxiom {
 /// D.MEMBRANE.T.2 — Transformation compound at an orbit.
 ///
 /// The membrane does NOT average T Deltas — averaging IS dimensional collapse.
-/// Instead, each primary node's T is an ENTITY. The membrane builds a meta-Delta
-/// between primary nodes' Ts. C(meta_delta) measures whether primary nodes' transformations
-/// are cohomologically consistent — parallel transport of T around the loop of primary nodes.
+/// Instead, each primary entity's T is an ENTITY. The membrane builds a meta-Delta
+/// between primary entities' Ts. C(meta_delta) measures whether primary entities' transformations
+/// are cohomologically consistent — parallel transport of T around the loop of primary entities.
 ///
 /// C(meta_delta) = 0 → holonomic perceptual lock → crystallized.
-/// C(meta_delta) > 0 → H^1 reveals where primary nodes diverge — structured info.
+/// C(meta_delta) > 0 → H^1 reveals where primary entities diverge — structured info.
 ///
 /// The coboundary part of meta_delta = consensus T (what all agree on).
 /// The H^1 = where diverse perspectives create non-trivial structure.
@@ -323,23 +323,23 @@ pub struct MeshAxiom {
 /// Runtime only — not serialized. Rebuilt from observations each session.
 #[derive(Debug, Clone)]
 pub struct TransformCompound {
-    /// Each primary node's T, flattened to upper-triangle entity vector.
-    /// witness_entities[k] = flattened T from witness k.
+    /// Each primary entity's T, flattened to upper-triangle entity vector.
+    /// observing_entities[k] = flattened T from observer k.
     /// These become entities in the meta-Delta.
-    pub witness_entities: Vec<Vec<Q>>,
-    /// The meta-Delta between primary nodes — the membrane's manifold.
-    /// Each witness is an entity. Coordinates = T entries.
+    pub observing_entities: Vec<Vec<Q>>,
+    /// The meta-Delta between primary entities — the membrane's manifold.
+    /// Each observer is an entity. Coordinates = T entries.
     /// C(meta_delta) = membrane coherence on T.
     pub meta_delta: Option<Delta>,
-    /// C(meta_delta) — coherence of the inter-witness transformation manifold.
-    /// Zero = all primary nodes agree (holonomic lock). Nonzero = structured divergence.
+    /// C(meta_delta) — coherence of the inter-entity transformation manifold.
+    /// Zero = all primary entities agree (holonomic lock). Nonzero = structured divergence.
     pub coherence: Q,
     /// Three-state cohesion measurement at the Entity→Membrane boundary.
-    /// None: no consensus possible (< 2 primary nodes). Single perspective.
-    /// Some(Q::zero()): consensus achieved. Zero torsion between primary nodes.
-    /// Some(Q > 0): consensus with measured inter-witness torsion.
+    /// None: no consensus possible (< 2 primary entities). Single perspective.
+    /// Some(Q::zero()): consensus achieved. Zero torsion between primary entities.
+    /// Some(Q > 0): consensus with measured inter-entity torsion.
     pub cohesion: Option<Q>,
-    /// Number of primary nodes compounded.
+    /// Number of primary entities compounded.
     pub count: usize,
     /// Dimensional level (category, cluster, cell).
     pub level: String,
@@ -420,15 +420,15 @@ pub struct SpatialCochain {
 /// The mesh knowledge store — accumulated axioms from distributed measurement.
 ///
 /// Indexed by orbit prefix. Each orbit carries:
-/// - Axioms: individual witness observations (the surface)
+/// - Axioms: individual entity observations (the surface)
 /// - Coherence Delta: the membrane's OWN relational structure (the volume)
 /// - T compounds: the membrane's understanding of the transformation (the depth)
 ///
 /// The T compound at each orbit is the membrane's higher-dimensional
-/// understanding. Individual primary nodes produce T at their genomic level.
+/// understanding. Individual primary entities produce T at their genomic level.
 /// The membrane compounds them — the compound IS the intelligence above
-/// any individual witness. C(compound_T) = 0 means the membrane has
-/// crystallized a consistent transformation across diverse primary nodes.
+/// any individual entity. C(compound_T) = 0 means the membrane has
+/// crystallized a consistent transformation across diverse primary entities.
 pub struct MeshKnowledge {
     /// Axioms indexed by orbit prefix (surface — the lookup index).
     axioms: HashMap<[u8; 4], Vec<MeshAxiom>>,
@@ -442,7 +442,7 @@ pub struct MeshKnowledge {
     spatial_cochains: HashMap<[u8; 4], Vec<SpatialCochain>>,
     /// D.MEMBRANE.T.1 — T Delta compounds per orbit, grouped by level.
     /// The membrane's higher-dimensional understanding. Each entry compounds
-    /// T Deltas from multiple primary nodes at the same dimensional level.
+    /// T Deltas from multiple primary entities at the same dimensional level.
     /// Runtime only — not serialized. Rebuilt from observations.
     orbit_t_compounds: HashMap<[u8; 4], Vec<TransformCompound>>,
     /// Total axioms across all orbits.
@@ -463,7 +463,7 @@ impl MeshKnowledge {
         }
     }
 
-    /// Record an observation result from a witness.
+    /// Record an observation result from an entity.
     /// Accumulates origin_drift for hardness computation.
     /// Mass and hardness are updated continuously — not gated.
     pub fn record_observation(
@@ -472,7 +472,7 @@ impl MeshKnowledge {
         encoding_level: EncodingLevel,
         path: &str,
         coherence: Q,
-        witness_origin_drift: Q,
+        entity_origin_drift: Q,
     ) {
         self.total_observations += 1;
 
@@ -499,8 +499,8 @@ impl MeshKnowledge {
             );
             axiom.mass = &(&axiom.mass * &(&n - &Q::one()) + &coherence) / &n;
 
-            // Hardness: diversity of primary nodes that attempted.
-            let drift_diff = &witness_origin_drift - &axiom.hardness;
+            // Hardness: diversity of primary entities that attempted.
+            let drift_diff = &entity_origin_drift - &axiom.hardness;
             let abs_diff = if drift_diff < Q::zero() { -drift_diff } else { drift_diff };
             let alpha = Q::new(BigInt::from(1), BigInt::from(axiom.attempts.max(1) as i64));
             let one_minus = Q::one() - &alpha;
@@ -654,8 +654,8 @@ impl MeshKnowledge {
     ///
     /// When the peel loop detects non-zero curvature that it cannot resolve
     /// with its current vocabulary, the curvature vector is stored as a
-    /// spatial cochain. The membrane uses δ to compare across primary nodes.
-    /// If δ = 0 (all primary nodes see the same curvature): promote to axiom.
+    /// spatial cochain. The membrane uses δ to compare across primary entities.
+    /// If δ = 0 (all primary entities see the same curvature): promote to axiom.
     /// The system discovers new structure from the manifold's geometry.
     pub fn record_holonomy(
         &mut self,
@@ -705,16 +705,16 @@ impl MeshKnowledge {
         self.axioms.len()
     }
 
-    /// D.MEMBRANE.COMPOUND.1 — Compound resolution across primary nodes.
+    /// D.MEMBRANE.COMPOUND.1 — Compound resolution across primary entities.
     ///
-    /// The membrane operates ABOVE individual primary nodes. It takes all
+    /// The membrane operates ABOVE individual primary entities. It takes all
     /// axioms for an orbit and produces the compound understanding:
     /// - Which dimensional level has the BEST resolution?
-    /// - What is the LOWEST disjoint_rank achieved by any witness?
-    /// - Are multiple primary nodes congruent (same level, same path)?
+    /// - What is the LOWEST disjoint_rank achieved by any entity?
+    /// - Are multiple primary entities congruent (same level, same path)?
     ///
     /// This IS the membrane computing — not storing, computing.
-    /// The compound is the global invariant that no local witness can see.
+    /// The compound is the global invariant that no local entity can see.
     ///
     /// Returns: (best_level, lowest_disjoint, congruent_count, total_attempts)
     pub fn compound_for_orbit(&self, orbit: &[u8; 4]) -> Option<(String, usize, u32, u32)> {
@@ -755,7 +755,7 @@ impl MeshKnowledge {
     }
 
     /// Update an axiom's resolution level and disjoint rank.
-    /// Called when a witness reports escalation results back to the membrane.
+    /// Called when an entity reports escalation results back to the membrane.
     pub fn record_escalation(
         &mut self,
         orbit: [u8; 4],
@@ -781,16 +781,16 @@ impl MeshKnowledge {
     // ═══════════════════════════════════════════════════════════════════
     // D.MEMBRANE.T.2 — Spinor Manifold Mapping
     //
-    // Each witness is an entity (a spinor — local oriented frame).
-    // Each primary node's T Delta, flattened to upper-triangle, is the entity's
-    // coordinate vector. The meta-Delta between primary nodes IS the membrane's
+    // Each observer is an entity (a spinor — local oriented frame).
+    // Each primary entity's T Delta, flattened to upper-triangle, is the entity's
+    // coordinate vector. The meta-Delta between primary entities IS the membrane's
     // manifold. C(meta_delta) measures holonomic coherence.
     //
     // NO averaging. Averaging IS dimensional collapse.
-    // The relational structure between primary nodes IS the intelligence.
+    // The relational structure between primary entities IS the intelligence.
     //
     // C(meta_delta) = 0 → holonomic perceptual lock → crystallized.
-    // C(meta_delta) > 0 → H^1 reveals structured inter-witness divergence.
+    // C(meta_delta) > 0 → H^1 reveals structured inter-entity divergence.
     // The coboundary part = consensus T. The H^1 = non-trivial structure.
     // ═══════════════════════════════════════════════════════════════════
 
@@ -813,11 +813,11 @@ impl MeshKnowledge {
 
     /// Reconstruct the consensus T from the coboundary part of meta_delta.
     ///
-    /// Record a T Delta from a witness at a given orbit and level.
+    /// Record a T Delta from an entity at a given orbit and level.
     ///
-    /// Each primary node's T becomes an entity in the meta-Delta manifold.
-    /// The membrane recomputes C(meta_delta) after each new witness —
-    /// measuring inter-witness coherence on the transformation.
+    /// Each primary entity's T becomes an entity in the meta-Delta manifold.
+    /// The membrane recomputes C(meta_delta) after each new observer —
+    /// measuring inter-entity coherence on the transformation.
     pub fn record_t_delta(
         &mut self,
         orbit: [u8; 4],
@@ -835,26 +835,26 @@ impl MeshKnowledge {
         });
 
         if let Some(tc) = existing {
-            // Add this witness as a new entity
-            tc.witness_entities.push(entity);
+            // Add this observer as a new entity
+            tc.observing_entities.push(entity);
             tc.count += 1;
 
-            // Recompute meta-Delta: encode all witness entities relationally
-            (tc.witness_entities.len() >= 2).then(|| {
-                let meta = crate::perception::encode_relational(&tc.witness_entities);
+            // Recompute meta-Delta: encode all observing entities relationally
+            (tc.observing_entities.len() >= 2).then(|| {
+                let meta = crate::perception::encode_relational(&tc.observing_entities);
                 let c = coherence_functional(&meta);
-                // Three-state cohesion: measured now that 2+ primary nodes exist
+                // Three-state cohesion: measured now that 2+ primary entities exist
                 tc.cohesion = Some(c.clone());
                 tc.coherence = c;
                 tc.meta_delta = Some(meta);
             });
         } else {
-            // First witness at this level — single entity, no meta-Delta yet
+            // First observer at this level — single entity, no meta-Delta yet
             compounds.push(TransformCompound {
-                witness_entities: vec![entity],
+                observing_entities: vec![entity],
                 meta_delta: None,
                 coherence: Q::zero(),
-                cohesion: None, // Single witness — no consensus possible
+                cohesion: None, // Single observer — no consensus possible
                 count: 1,
                 level: level.to_string(),
                 t_dim: t_delta.dim,
@@ -875,7 +875,7 @@ impl MeshKnowledge {
 
     /// Get the compound T at an orbit — the membrane's transformation manifold.
     ///
-    /// Returns the compound with the most primary nodes (deepest manifold).
+    /// Returns the compound with the most primary entities (deepest manifold).
     /// When count >= 2, the meta-Delta IS the membrane perceiving.
     pub fn compound_t(&self, orbit: &[u8; 4]) -> Option<&TransformCompound> {
         self.orbit_t_compounds.get(orbit)
@@ -890,10 +890,10 @@ impl MeshKnowledge {
                 .max_by_key(|tc| tc.count))
     }
 
-    /// C(meta_delta) at an orbit — the membrane's inter-witness coherence.
+    /// C(meta_delta) at an orbit — the membrane's inter-entity coherence.
     ///
-    /// This is NOT C(average_T). This is C(relational_structure_between_primary nodes).
-    /// Zero = holonomic perceptual lock (all primary nodes' Ts are cohomologically
+    /// This is NOT C(average_T). This is C(relational_structure_between_primary entities).
+    /// Zero = holonomic perceptual lock (all primary entities' Ts are cohomologically
     /// consistent). Nonzero = structured divergence in H^1.
     pub fn compound_t_coherence(&self, orbit: &[u8; 4]) -> Q {
         self.compound_t(orbit)
@@ -923,8 +923,8 @@ impl MeshKnowledge {
 
         for compounds in self.orbit_t_compounds.values() {
             for tc in compounds {
-                // Only compounds with multiple primary nodes
-                if tc.count < 2 || tc.witness_entities.is_empty() { continue; }
+                // Only compounds with multiple primary entities
+                if tc.count < 2 || tc.observing_entities.is_empty() { continue; }
                 // Only unsolved: coherence > 0
                 if tc.coherence.is_zero() { continue; }
 
@@ -935,7 +935,7 @@ impl MeshKnowledge {
                 // Reconstruct consensus T as a Delta
                 let k = Q::new(BigInt::from(tc.count as i64), BigInt::from(1));
                 let mut t = Delta::zero(n, m);
-                for entity in &tc.witness_entities {
+                for entity in &tc.observing_entities {
                     let mut idx = 0;
                     for i in 0..n {
                         for j in (i + 1)..n {
@@ -1099,15 +1099,15 @@ impl MeshKnowledge {
             for tc in compounds {
                 if tc.level != "transmutation" || tc.count < 2 { continue; }
                 if tc.t_dim != 2 || tc.t_m != 2 { continue; }
-                if tc.witness_entities.is_empty() { continue; }
-                // Average quality across primary nodes
+                if tc.observing_entities.is_empty() { continue; }
+                // Average quality across primary entities
                 let k = Q::new(BigInt::from(tc.count as i64), BigInt::from(1));
-                let quality_sum: Q = tc.witness_entities.iter()
+                let quality_sum: Q = tc.observing_entities.iter()
                     .filter_map(|e| e.first().cloned())
                     .fold(Q::zero(), |a, b| a + b);
                 let avg_quality = &quality_sum / &k;
                 // Most common order from first entity
-                let order: usize = tc.witness_entities.first()
+                let order: usize = tc.observing_entities.first()
                     .and_then(|e| e.get(1))
                     .and_then(|q| q.numer().try_into().ok())
                     .unwrap_or(0);
@@ -1119,7 +1119,7 @@ impl MeshKnowledge {
 
     /// Integrate value cocycle spectrum across all orbits.
     /// No gates. No filters. Every transition — including identity — is measured.
-    /// Quality is the consensus density: how many primary nodes observed this
+    /// Quality is the consensus density: how many primary entities observed this
     /// transition / total observations. C(T) in peel_manifold decides what composes.
     /// The scanner is a spectrometer, not a gatekeeper.
     pub fn all_value_cocycle_crystals(&self) -> Vec<ValueCocycleCrystal> {
@@ -1128,8 +1128,8 @@ impl MeshKnowledge {
             for tc in compounds {
                 if tc.level != "value_cocycle" { continue; } // structural routing, not a gate
                 let count_q = Q::new(BigInt::from(tc.count.max(1) as i64), BigInt::from(1));
-                // Walk every witness entity — extract ALL transitions including identity
-                for entity in &tc.witness_entities {
+                // Walk every observing entity — extract ALL transitions including identity
+                for entity in &tc.observing_entities {
                     let mut idx = 0;
                     while idx + 1 < entity.len() {
                         let from_v: i64 = entity[idx].numer().try_into().unwrap_or(0);
@@ -1259,7 +1259,7 @@ impl MeshKnowledge {
     }
 
     /// Is the orbit crystallized via meta-Delta?
-    /// C(meta_delta) = 0 across >= 2 primary nodes = holonomic perceptual lock.
+    /// C(meta_delta) = 0 across >= 2 primary entities = holonomic perceptual lock.
     pub fn is_t_crystallized(&self, orbit: &[u8; 4]) -> bool {
         self.compound_t(orbit)
             .map(|tc| tc.count >= 2 && tc.meta_delta.is_some() && tc.coherence.is_zero())
@@ -1268,11 +1268,11 @@ impl MeshKnowledge {
 
     /// Derive output from the membrane's consensus T at an orbit.
     ///
-    /// When C(meta_delta) = 0, all primary nodes agree. The consensus T is
-    /// any primary node's T (they're all cohomologically equivalent).
+    /// When C(meta_delta) = 0, all primary entities agree. The consensus T is
+    /// any primary entity's T (they're all cohomologically equivalent).
     /// When C(meta_delta) > 0, the coboundary part gives the agreed-upon T.
     /// The membrane derives from the consensus — higher-dimensional than
-    /// any individual witness because it holds the inter-witness manifold.
+    /// any individual entity because it holds the inter-entity manifold.
     pub fn derive_from_compound_t(
         &self,
         orbit: &[u8; 4],
@@ -1282,20 +1282,20 @@ impl MeshKnowledge {
         n_cells: usize,
     ) -> Option<Vec<i64>> {
         let tc = self.compound_t(orbit)?;
-        if tc.count < 2 || tc.witness_entities.is_empty() { return None; }
+        if tc.count < 2 || tc.observing_entities.is_empty() { return None; }
 
-        // Consensus T: when primary nodes agree (C=0), use any primary node's T.
+        // Consensus T: when primary entities agree (C=0), use any primary entity's T.
         // When they disagree, use the mean entity vector as best approximation
         // of the coboundary part (the part all agree on).
-        let d = tc.witness_entities[0].len();
+        let d = tc.observing_entities[0].len();
         let consensus_entity: Vec<Q> = if tc.coherence.is_zero() {
-            // All agree — use first witness
-            tc.witness_entities[0].clone()
+            // All agree — use first observer
+            tc.observing_entities[0].clone()
         } else {
             // Compute mean entity (coboundary approximation)
             let k = Q::new(BigInt::from(tc.count as i64), BigInt::from(1));
             (0..d).map(|i| {
-                let sum: Q = tc.witness_entities.iter()
+                let sum: Q = tc.observing_entities.iter()
                     .map(|e| e.get(i).cloned().unwrap_or(Q::zero()))
                     .fold(Q::zero(), |acc, v| acc + v);
                 sum / &k
@@ -1334,7 +1334,7 @@ impl MeshKnowledge {
         Some(derived)
     }
 
-    /// How many orbits have meta-Deltas with >= 2 primary nodes?
+    /// How many orbits have meta-Deltas with >= 2 primary entities?
     pub fn t_compound_orbits(&self) -> usize {
         self.orbit_t_compounds.values()
             .filter(|compounds| compounds.iter().any(|tc| tc.count >= 2))
@@ -1501,7 +1501,7 @@ impl MeshKnowledge {
 
     /// Find the orbit with highest crystallization energy.
     /// Returns the axiom's orbit and encoding level if any axioms exist.
-    /// Used by vibrational knowledge seeking — the witness absorbs
+    /// Used by vibrational knowledge seeking — the entity absorbs
     /// knowledge from the most crystallized orbit to exercise its weak dimensions.
     pub fn strongest_orbit(&self) -> Option<([u8; 4], &MeshAxiom)> {
         let mut best: Option<([u8; 4], &MeshAxiom, Q)> = None;
@@ -1527,28 +1527,28 @@ impl MeshKnowledge {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// D.MEMBRANE.COHERE.1 — Inter-Node Coherence Measurement
+// D.MEMBRANE.COHERE.1 — Inter-Entity Coherence Measurement
 //
-// Two nodes don't "share" information. They measure their mutual coherence.
-// Each node is an entity with coordinates:
+// Two entities don't "share" information. They measure their mutual coherence.
+// Each entity has coordinates:
 //   [orbit_0, orbit_1, orbit_2, orbit_3, k_index, axiom_count, observations]
 //
-// The relational Delta between nodes IS the mesh's algebraic structure.
+// The relational Delta between entities IS the mesh's algebraic structure.
 // C(Δ_mesh) measures how coherent the mesh is — the same equation that
 // measures observation coherence measures mesh coherence.
 //
-// When two nodes COHERE:
+// When two entities COHERE:
 //   - They encode themselves as entities
 //   - They compute C(Δ) on their pairwise Delta
 //   - The coherence value IS the strength of their neural pathway
-//   - Low C(Δ) = strong pathway (nodes are aligned)
-//   - High C(Δ) = weak pathway (nodes diverge — refractive boundary)
+//   - Low C(Δ) = strong pathway (entities are aligned)
+//   - High C(Δ) = weak pathway (entities diverge — refractive boundary)
 //
 // The mesh self-organizes through coherence measurement, not through
 // gossip or message passing. The measurement IS the connection.
 // ═══════════════════════════════════════════════════════════════════════
 
-/// A node's cognitive state — its position on the coherence manifold.
+/// An entity's cognitive state — its position on the coherence manifold.
 /// This is the entity vector that gets encoded into the mesh Delta.
 #[derive(Debug, Clone)]
 pub struct PeerState {
@@ -1558,11 +1558,11 @@ pub struct PeerState {
     pub orbit: [u8; 4],
     /// K-index — depth of algebraic exploration.
     pub k_index: u64,
-    /// How many axioms this node has crystallized.
+    /// How many axioms this entity has crystallized.
     pub axiom_count: u32,
-    /// How many observations this node has processed.
+    /// How many observations this entity has processed.
     pub observations: u64,
-    /// How many orbits this node has knowledge about.
+    /// How many orbits this entity has knowledge about.
     pub orbits_known: u32,
     /// D.ORIGIN.EVOLUTION.1: evolutionary drift from origin.
     /// L1 norm of entry displacement in independent coordinates.
@@ -1578,9 +1578,9 @@ impl PeerState {
         std::array::from_fn(|_| Q::zero())
     }
 
-    /// Encode this node as a rational entity vector for relational Delta.
+    /// Encode this entity as a rational entity vector for relational Delta.
     /// 18D: 7 identity coordinates + 11 vibration coordinates.
-    /// The vibrations ARE the harmonic state — the primary node's polytonal
+    /// The vibrations ARE the harmonic state — the primary entity's polytonal
     /// self-perception propagated through the membrane.
     pub fn to_entity(&self) -> Vec<Q> {
         let mut v = vec![
@@ -1599,7 +1599,7 @@ impl PeerState {
     }
 }
 
-/// The result of two nodes measuring their mutual coherence.
+/// The result of two entities measuring their mutual coherence.
 /// Not flat distance — multi-dimensional relational measurement.
 #[derive(Debug, Clone)]
 pub struct CoherenceResult {
@@ -1610,27 +1610,27 @@ pub struct CoherenceResult {
     /// Depth ratio: how the K-indices relate.
     /// Near 1 = similar depth. Near 0 = vastly different exploration.
     pub depth_ratio: Q,
-    /// Knowledge torsion: the rotation between what the nodes know.
+    /// Knowledge torsion: the rotation between what the entities know.
     /// Measured as the difference in axiom density (axioms / observations).
-    /// Captures HOW the nodes learned, not just how much.
+    /// Captures HOW the entities learned, not just how much.
     pub knowledge_torsion: Q,
-    /// Complementarity: how DIFFERENT the nodes are.
-    /// High = nodes see from very different angles (good for interpretation).
-    /// Low = nodes see similarly (good for confirmation).
+    /// Complementarity: how DIFFERENT the entities are.
+    /// High = entities see from very different angles (good for interpretation).
+    /// Low = entities see similarly (good for confirmation).
     /// This replaces "pathway strength" — it's not about connection strength
     /// but about refractive diversity.
     pub complementarity: Q,
 }
 
-/// Measure the coherence between two nodes.
+/// Measure the coherence between two entities.
 ///
 /// This is NOT flat L2 distance. It measures the rotational displacement
 /// between two algebraic lenses — how much does the observation twist
-/// when moving from one node's frame to the other's.
+/// when moving from one entity's frame to the other's.
 ///
 /// The measurement is multi-dimensional: orbital torsion (where they are),
 /// depth ratio (how deep they've explored), knowledge torsion (what they've
-/// learned). The complementarity tells the membrane whether these two nodes
+/// learned). The complementarity tells the membrane whether these two entities
 /// would provide diverse perspectives (high) or confirming perspectives (low).
 pub fn cohere(a: &PeerState, b: &PeerState) -> CoherenceResult {
     // Orbital torsion: XOR-based rotation between orbit prefixes.
@@ -1646,7 +1646,7 @@ pub fn cohere(a: &PeerState, b: &PeerState) -> CoherenceResult {
 
     // Knowledge torsion: difference in axiom DENSITY, not count.
     // Density = axioms / max(observations, 1).
-    // This measures how efficiently the node crystallizes knowledge,
+    // This measures how efficiently the entity crystallizes knowledge,
     // not just how many observations it's processed.
     let a_density = if a.observations > 0 {
         Q::new(BigInt::from(a.axiom_count as i64), BigInt::from(a.observations as i64))
@@ -1661,7 +1661,7 @@ pub fn cohere(a: &PeerState, b: &PeerState) -> CoherenceResult {
     };
 
     // Complementarity: compound of all torsion dimensions.
-    // High when nodes are rotationally displaced from each other.
+    // High when entities are rotationally displaced from each other.
     // This is the refractive diversity — how different the lenses are.
     let one = Q::new(BigInt::from(1), BigInt::from(1));
     let depth_complement = &one - &depth_ratio; // different depth = high complement
@@ -1682,18 +1682,18 @@ pub fn cohere(a: &PeerState, b: &PeerState) -> CoherenceResult {
 ///
 /// This captures the mesh's refractive diversity: how much rotational
 /// displacement exists between entity perspectives. High torsion = diverse
-/// lenses available for interpretation. Low torsion = nodes see similarly.
+/// lenses available for interpretation. Low torsion = entities see similarly.
 ///
 /// Not flatness distance — rotational geometry.
-pub fn mesh_coherence(nodes: &[PeerState]) -> Q {
-    if nodes.len() < 2 { return Q::zero(); }
+pub fn mesh_coherence(entities: &[PeerState]) -> Q {
+    if entities.len() < 2 { return Q::zero(); }
 
     let mut total_torsion = Q::zero();
     let mut pairs = 0usize;
 
-    for i in 0..nodes.len() {
-        for j in (i+1)..nodes.len() {
-            let result = cohere(&nodes[i], &nodes[j]);
+    for i in 0..entities.len() {
+        for j in (i+1)..entities.len() {
+            let result = cohere(&entities[i], &entities[j]);
             total_torsion += &result.orbital_torsion;
             pairs += 1;
         }
@@ -1710,24 +1710,24 @@ pub fn mesh_coherence(nodes: &[PeerState]) -> Q {
 // ═══════════════════════════════════════════════════════════════════════
 // D.SAMN.CONGRUENCE.1 — Membrane Congruence Protocol
 //
-// The membrane operates above the node ceiling. Nodes produce local
+// The membrane operates above the entity ceiling. Entities produce local
 // Knowledge records (understanding + comprehension path + rcf_identity).
 // The membrane detects congruence between independently derived
 // understandings.
 //
 // Congruence condition:
-//   Two nodes i and j are congruent when:
+//   Two entities i and j are congruent when:
 //   RCF_distance(rcf_i, rcf_j) = 0
 //   They independently arrived at the same orbit class
 //   through different cognitive paths.
 //
 // CongruenceReceipt: the membrane's higher-order K-step.
-//   participating_nodes: the congruent subset S
+//   participating_entities: the congruent subset S
 //   shared_orbit: the common rcf_identity / orbit prefix
 //   path_diversity: measured separation of derivation paths
 //   This is receipted in the chain — permanent, verifiable.
 //
-// A.5 grounds this: encode_relational() on node Knowledge records
+// A.5 grounds this: encode_relational() on entity Knowledge records
 // produces meta-Delta I. C(I) = 0 means distributed understandings
 // are fully transitively consistent — interpretation crystallized.
 //
@@ -1735,11 +1735,11 @@ pub fn mesh_coherence(nodes: &[PeerState]) -> Q {
 // It measures algebraic congruence and receipts it.
 // ═══════════════════════════════════════════════════════════════════════
 
-/// A node's contribution to the membrane — its local understanding.
-/// This is what the node emits after THINK. The membrane collects these.
+/// An entity's contribution to the membrane — its local understanding.
+/// This is what the entity emits after THINK. The membrane collects these.
 #[derive(Debug, Clone)]
-pub struct NodeContribution {
-    /// Which node produced this.
+pub struct EntityContribution {
+    /// Which entity produced this.
     pub entity_id: u32,
     /// The orbit prefix of the observation (from RCF hash).
     pub orbit: [u8; 4],
@@ -1747,16 +1747,16 @@ pub struct NodeContribution {
     pub coherence: Q,
     /// Which cognitive path was taken.
     pub path: String,
-    /// The derived output (the node's perspective on the observation).
+    /// The derived output (the entity's perspective on the observation).
     pub derived_output: Vec<i64>,
 }
 
 /// A CongruenceReceipt — the membrane's higher-order K-step.
-/// Emitted when N nodes independently derive congruent understandings.
+/// Emitted when N entities independently derive congruent understandings.
 #[derive(Debug, Clone)]
 pub struct CongruenceReceipt {
-    /// Nodes that produced congruent understandings.
-    pub participating_nodes: Vec<u32>,
+    /// Entities that produced congruent understandings.
+    pub participating_entities: Vec<u32>,
     /// The shared orbit class — where they converged.
     pub shared_orbit: [u8; 4],
     /// Path diversity: how different were the derivation paths.
@@ -1766,28 +1766,28 @@ pub struct CongruenceReceipt {
     /// The coherence of the interpretation (meta-Delta).
     /// C(I) = 0 means fully congruent. The membrane's own measurement.
     pub interpretation_coherence: Q,
-    /// K-indices when each node achieved understanding.
-    pub node_k_indices: Vec<u64>,
-    /// How many distinct orbits the contributing nodes came from.
+    /// K-indices when each entity achieved understanding.
+    pub entity_k_indices: Vec<u64>,
+    /// How many distinct orbits the contributing entities came from.
     /// More orbits = more refractive diversity = stronger proof.
     pub orbital_diversity: usize,
 }
 
-/// Detect congruence across a set of node contributions.
+/// Detect congruence across a set of entity contributions.
 ///
 /// This is the membrane's core operation (A.5 applied):
-/// 1. Collect contributions from nodes on related observations
+/// 1. Collect contributions from entities on related observations
 /// 2. Group by shared orbit (same RCF → same understanding)
 /// 3. Measure path diversity within each group
 /// 4. Emit CongruenceReceipt for groups with sufficient diversity
 pub fn detect_congruence(
-    contributions: &[NodeContribution],
+    contributions: &[EntityContribution],
     min_confirmations: usize,
 ) -> Vec<CongruenceReceipt> {
     use std::collections::HashMap;
 
     // Group contributions by orbit prefix
-    let mut orbit_groups: HashMap<[u8; 4], Vec<&NodeContribution>> = HashMap::new();
+    let mut orbit_groups: HashMap<[u8; 4], Vec<&EntityContribution>> = HashMap::new();
     for c in contributions {
         orbit_groups.entry(c.orbit).or_insert_with(Vec::new).push(c);
     }
@@ -1797,8 +1797,8 @@ pub fn detect_congruence(
     for (orbit, group) in &orbit_groups {
         if group.len() < min_confirmations { continue; }
 
-        // Only consider nodes that achieved meaningful coherence
-        let coherent: Vec<&&NodeContribution> = group.iter()
+        // Only consider entities that achieved meaningful coherence
+        let coherent: Vec<&&EntityContribution> = group.iter()
             .filter(|c| c.coherence > Q::zero())
             .collect();
         if coherent.len() < min_confirmations { continue; }
@@ -1812,13 +1812,13 @@ pub fn detect_congruence(
             BigInt::from(coherent.len() as i64),
         );
 
-        // Measure orbital diversity: how many distinct NODE orbits contributed?
-        // (This is different from the observation orbit — it's where the NODES live)
-        // For now, count unique node IDs as a proxy
-        let unique_nodes: std::collections::HashSet<u32> = coherent.iter()
+        // Measure orbital diversity: how many distinct ENTITY orbits contributed?
+        // (This is different from the observation orbit — it's where the ENTITIES live)
+        // For now, count unique entity IDs as a proxy
+        let unique_entities: std::collections::HashSet<u32> = coherent.iter()
             .map(|c| c.entity_id)
             .collect();
-        let orbital_diversity = unique_nodes.len();
+        let orbital_diversity = unique_entities.len();
 
         // Interpretation coherence via A.5:
         // encode the contributions as entities and measure meta-Delta coherence.
@@ -1830,11 +1830,11 @@ pub fn detect_congruence(
         let interpretation_coherence = crate::engine::coherence_functional(&meta_delta);
 
         receipts.push(CongruenceReceipt {
-            participating_nodes: coherent.iter().map(|c| c.entity_id).collect(),
+            participating_entities: coherent.iter().map(|c| c.entity_id).collect(),
             shared_orbit: *orbit,
             path_diversity,
             interpretation_coherence,
-            node_k_indices: vec![], // populated by caller from node state
+            entity_k_indices: vec![], // populated by caller from entity state
             orbital_diversity,
         });
     }
@@ -1850,7 +1850,7 @@ pub fn detect_congruence(
 // BETWEEN perspectives — how much the observation twists when viewed
 // through different algebraic lenses.
 //
-// Given two perspectives P_a and P_b (derived outputs from nodes A and B
+// Given two perspectives P_a and P_b (derived outputs from entities A and B
 // on the SAME observation):
 //   - Agreement: cells where P_a[i] == P_b[i] (parallel transport preserved)
 //   - Rotation: cells where P_a[i] != P_b[i] (the vector twisted)
@@ -1868,7 +1868,7 @@ pub fn detect_congruence(
 // the total rotation is the holonomy of the loop. Non-zero holonomy
 // means the mesh's cognitive space has genuine curvature — the
 // observation lives in a higher-dimensional manifold than any single
-// node can span.
+// entity can span.
 // ═══════════════════════════════════════════════════════════════════════
 
 /// The torsion between two perspectives on the same observation.
@@ -1980,7 +1980,7 @@ pub fn perspective_torsion(perspective_a: &[i64], perspective_b: &[i64]) -> Pers
 /// Given perspectives [P_0, P_1, P_2, ..., P_n], compute:
 ///   torsion(P_0, P_1) + torsion(P_1, P_2) + ... + torsion(P_{n-1}, P_0)
 ///
-/// If holonomy is zero, the perspective space is flat (any single node suffices).
+/// If holonomy is zero, the perspective space is flat (any single entity suffices).
 /// If non-zero, the observation lives in a curved manifold — multiple
 /// perspectives are REQUIRED to span it.
 pub fn holonomy(perspectives: &[Vec<i64>]) -> Q {
@@ -2028,14 +2028,14 @@ mod tests {
 
     #[test]
     fn test_compound_unanimous_agreement() {
-        // 3 nodes all derive the same output
+        // 3 entities all derive the same output
         let perspectives = vec![
             make_perspective(1, vec![1, 2, 3, 4], 0),
             make_perspective(2, vec![1, 2, 3, 4], 0),
             make_perspective(3, vec![1, 2, 3, 4], 0),
         ];
         let compound = compound_perspectives(&perspectives);
-        assert_eq!(compound.node_count, 3);
+        assert_eq!(compound.entity_count, 3);
         assert_eq!(compound.understood_count, 3);
         assert_eq!(compound.divergent_cells, 0);
         assert_eq!(compound.compound_output, vec![1, 2, 3, 4]);
@@ -2044,7 +2044,7 @@ mod tests {
 
     #[test]
     fn test_compound_partial_disagreement() {
-        // 3 nodes, 2 agree on cell 2, 1 disagrees
+        // 3 entities, 2 agree on cell 2, 1 disagrees
         let perspectives = vec![
             make_perspective(1, vec![1, 2, 3, 4], 0),
             make_perspective(2, vec![1, 2, 3, 4], 0),
@@ -2058,7 +2058,7 @@ mod tests {
 
     #[test]
     fn test_compound_all_different() {
-        // 3 nodes, all disagree on every cell
+        // 3 entities, all disagree on every cell
         let perspectives = vec![
             make_perspective(1, vec![1, 1, 1, 1], 2),
             make_perspective(2, vec![2, 2, 2, 2], 2),
@@ -2074,7 +2074,7 @@ mod tests {
         let mut mk = MeshKnowledge::new();
         let orbit = [0x04, 0x5e, 0x51, 0x2c];
 
-        // 5 nodes independently discover object-level resolves this orbit
+        // 5 entities independently discover object-level resolves this orbit
         for _ in 0..5 {
             mk.record_observation(orbit, EncodingLevel::Object, "evolved", Q::one(), Q::zero());
         }
@@ -2090,7 +2090,7 @@ mod tests {
         let mut mk = MeshKnowledge::new();
         let orbit = [0x00, 0x7b, 0xbf, 0xb7];
 
-        // Some nodes resolve via Kronecker, some via cell-level
+        // Some entities resolve via Kronecker, some via cell-level
         mk.record_observation(orbit, EncodingLevel::Kronecker, "vision_derived", Q::one(), Q::zero());
         mk.record_observation(orbit, EncodingLevel::Kronecker, "vision_derived", Q::one(), Q::zero());
         mk.record_observation(orbit, EncodingLevel::Cell, "value_factored", Q::one(), Q::zero());
@@ -2104,7 +2104,7 @@ mod tests {
     #[test]
     fn test_compound_empty() {
         let compound = compound_perspectives(&[]);
-        assert_eq!(compound.node_count, 0);
+        assert_eq!(compound.entity_count, 0);
         assert_eq!(compound.understood_count, 0);
     }
 
@@ -2119,7 +2119,7 @@ mod tests {
     // ── Torsion-based coherence tests ──
 
     #[test]
-    fn test_cohere_identical_nodes() {
+    fn test_cohere_identical_entities() {
         let a = PeerState { entity_id: 1, orbit: [0xAA,0xBB,0xCC,0xDD], k_index: 100, axiom_count: 5, observations: 20, orbits_known: 3, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations() };
         let b = a.clone();
         let result = cohere(&a, &b);
@@ -2149,23 +2149,23 @@ mod tests {
 
     #[test]
     fn test_mesh_torsion_uniform() {
-        // All nodes identical — mesh torsion should be zero
-        let nodes: Vec<PeerState> = (0..5).map(|i| PeerState {
+        // All entities identical — mesh torsion should be zero
+        let entities: Vec<PeerState> = (0..5).map(|i| PeerState {
             entity_id: i, orbit: [0xAA,0xBB,0xCC,0xDD], k_index: 100, axiom_count: 5, observations: 20, orbits_known: 3, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations(),
         }).collect();
-        let c = mesh_coherence(&nodes);
+        let c = mesh_coherence(&entities);
         assert_eq!(c, Q::zero(), "uniform mesh must have zero torsion");
     }
 
     #[test]
     fn test_mesh_torsion_diverse() {
-        // Nodes with different orbits — mesh torsion should be non-zero
-        let nodes = vec![
+        // Entities with different orbits — mesh torsion should be non-zero
+        let entities = vec![
             PeerState { entity_id: 1, orbit: [0x00,0x00,0x00,0x00], k_index: 100, axiom_count: 1, observations: 10, orbits_known: 1, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations() },
             PeerState { entity_id: 2, orbit: [0xFF,0xFF,0xFF,0xFF], k_index: 8000, axiom_count: 50, observations: 2000, orbits_known: 30, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations() },
             PeerState { entity_id: 3, orbit: [0x80,0x80,0x80,0x80], k_index: 500, axiom_count: 10, observations: 100, orbits_known: 5, origin_drift: Q::zero(), vibrations: PeerState::zero_vibrations() },
         ];
-        let c = mesh_coherence(&nodes);
+        let c = mesh_coherence(&entities);
         assert!(c > Q::zero(), "diverse mesh must have non-zero torsion");
     }
 
@@ -2178,13 +2178,13 @@ mod tests {
         let close = cohere(&a, &similar);
         let far = cohere(&a, &divergent);
         assert!(far.complementarity >= close.complementarity,
-            "divergent nodes should have higher complementarity");
+            "divergent entities should have higher complementarity");
     }
 
     // ── Congruence protocol tests ──
 
-    fn make_contribution(entity_id: u32, orbit: [u8; 4], coherence_n: i64, coherence_d: i64, path: &str) -> NodeContribution {
-        NodeContribution {
+    fn make_contribution(entity_id: u32, orbit: [u8; 4], coherence_n: i64, coherence_d: i64, path: &str) -> EntityContribution {
+        EntityContribution {
             entity_id,
             orbit,
             coherence: Q::new(BigInt::from(coherence_n), BigInt::from(coherence_d)),
@@ -2195,7 +2195,7 @@ mod tests {
 
     #[test]
     fn test_congruence_detected() {
-        // 3 nodes independently arrive at the same orbit with full coherence
+        // 3 entities independently arrive at the same orbit with full coherence
         let contributions = vec![
             make_contribution(1, [0xAA,0xBB,0xCC,0xDD], 1, 1, "value_factored"),
             make_contribution(2, [0xAA,0xBB,0xCC,0xDD], 1, 1, "vision_derived"),
@@ -2203,25 +2203,25 @@ mod tests {
         ];
         let receipts = detect_congruence(&contributions, 2);
         assert_eq!(receipts.len(), 1, "should detect one congruence");
-        assert_eq!(receipts[0].participating_nodes.len(), 3);
+        assert_eq!(receipts[0].participating_entities.len(), 3);
         assert_eq!(receipts[0].shared_orbit, [0xAA,0xBB,0xCC,0xDD]);
         // 3 unique paths → path_diversity = 3/3 = 1
         assert_eq!(receipts[0].path_diversity, Q::new(BigInt::from(3), BigInt::from(3)));
     }
 
     #[test]
-    fn test_congruence_not_enough_nodes() {
-        // Only 1 node — below threshold
+    fn test_congruence_not_enough_entities() {
+        // Only 1 entity — below threshold
         let contributions = vec![
             make_contribution(1, [0xAA,0xBB,0xCC,0xDD], 1, 1, "value_factored"),
         ];
         let receipts = detect_congruence(&contributions, 2);
-        assert!(receipts.is_empty(), "1 node is below threshold of 2");
+        assert!(receipts.is_empty(), "1 entity is below threshold of 2");
     }
 
     #[test]
     fn test_congruence_different_orbits() {
-        // 3 nodes arrive at different orbits — no congruence
+        // 3 entities arrive at different orbits — no congruence
         let contributions = vec![
             make_contribution(1, [0xAA,0xBB,0xCC,0xDD], 1, 1, "value_factored"),
             make_contribution(2, [0x11,0x22,0x33,0x44], 1, 1, "vision_derived"),
@@ -2233,7 +2233,7 @@ mod tests {
 
     #[test]
     fn test_congruence_path_diversity() {
-        // 3 nodes, same orbit, but all take same path — low diversity
+        // 3 entities, same orbit, but all take same path — low diversity
         let contributions = vec![
             make_contribution(1, [0xAA,0xBB,0xCC,0xDD], 1, 1, "value_factored"),
             make_contribution(2, [0xAA,0xBB,0xCC,0xDD], 1, 1, "value_factored"),

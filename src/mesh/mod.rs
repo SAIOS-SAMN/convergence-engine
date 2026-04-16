@@ -75,8 +75,8 @@ impl PeerState {
 
 /// Γ_ij² proxy: RCF hash Hamming distance as rational approximation.
 ///
-/// Two nodes with identical state have identical rcf_identity (0 distance).
-/// Two diverged nodes have different bytes (positive distance).
+/// Two entities with identical state have identical rcf_identity (0 distance).
+/// Two diverged entities have different bytes (positive distance).
 /// Returns a rational in [0, 1] representing structural divergence.
 ///
 /// This avoids transmitting full Δ matrices in the broadcast loop.
@@ -97,7 +97,7 @@ pub fn gamma_sq_proxy(our_rcf: &[u8; 32], peer_rcf: &[u8; 32]) -> Q {
 /// Xi' gate: coherence alignment proxy from receipt data.
 ///
 /// Combines sigma_enc alignment (gradient direction proxy) with
-/// K-index lag penalty (temporal relevance decay).
+/// K-index lag cost (temporal relevance decay).
 ///
 /// Returns a value in [0, 1]. Caller checks if result > lambda.
 ///
@@ -114,12 +114,12 @@ pub fn xi_gate(our_sigma_enc: u32, our_k: u64, peer: &PeerState) -> Q {
         sigma_j.clone()
     };
     let cos_align = if max_s.is_zero() {
-        Q::zero() // Both zero: new/restarted peers — no alignment data
+        Q::zero() // Both zero: newly created/restarted peers — no alignment data
     } else {
         Q::one() - &diff / &max_s
     };
 
-    // K-index lag penalty: exp(-|k_gap|) via 20-term locked Taylor
+    // K-index lag cost: exp(-|k_gap|) via 20-term locked Taylor
     let k_gap = if peer.k_latest > our_k {
         peer.k_latest - our_k
     } else {
@@ -181,7 +181,7 @@ pub fn sluice_weight(
 ///
 /// K advances from k to k+1 iff Σ_maj = Σ_{i: LOCKED} ω_i > 0.5.
 ///
-/// Single-entity (empty peers): always advances (Phase 1 compatibility).
+/// Single entity (empty peers): always advances (Phase 1 compatibility).
 ///
 /// Register: CC.SAMN.3 (majority K-gate consensus).
 pub fn k_gate_advance(
@@ -195,7 +195,7 @@ pub fn k_gate_advance(
     epsilon_sluice: &Q,
 ) -> bool {
     if peers.is_empty() {
-        return true; // Single-node: always advance
+        return true; // Single entity: always advance
     }
 
     let omega_sum: Q = peers
@@ -362,7 +362,7 @@ mod tests {
             disc_status: 0,
         };
         let result = xi_gate(0, 100, &peer);
-        assert_eq!(result, Q::zero(), "New/restarted peer with sigma_enc=0 must return 0");
+        assert_eq!(result, Q::zero(), "Newly created/restarted peer with sigma_enc=0 must return 0");
     }
 
     #[test]
@@ -429,7 +429,7 @@ mod tests {
                 &q(1, 1), &q(1, 1), &q(1, 1),
                 &q(1, 100), &q(1, 1000),
             ),
-            "Single node (no peers) must always advance"
+            "Single entity (no peers) must always advance"
         );
     }
 

@@ -177,13 +177,13 @@ pub struct SaiosParams {
     /// Kinetic lag threshold τ_lag. Register: D.EXEC.1 C2.
     pub tau_lag: Q,
 
-    /// Paradox penalty weight α_P. Register: T.SAMN.2.
+    /// Paradox cost weight α_P. Register: T.SAMN.2.
     pub alpha_p: Q,
 
-    /// Divergence penalty weight α_Γ. Register: T.SAMN.2.
+    /// Divergence cost weight α_Γ. Register: T.SAMN.2.
     pub alpha_gamma: Q,
 
-    /// Kinetic penalty weight α_K. Register: T.SAMN.2.
+    /// Kinetic cost weight α_K. Register: T.SAMN.2.
     pub alpha_k: Q,
 
     /// Sluice exclusion threshold ε_sluice. Register: T.SAMN.2.
@@ -376,9 +376,9 @@ impl Delta {
 
     // ── Temporal Anchor: Delta serialization ──────────────────────────
     //
-    // The temporal anchor is the serialized Δ_k — the node's exact
+    // The temporal anchor is the serialized Δ_k — the entity's exact
     // algebraic position at a given K-step. Persists across restarts
-    // so the node resumes from its evolved state, not from origin.
+    // so the entity resumes from its evolved state, not from origin.
     //
     // Format: dim (u32 LE) | m (u32 LE) | for each (i,j) where i<j:
     //   for each l in 0..m:
@@ -497,8 +497,8 @@ impl Delta {
 ///
 /// C7 TRIPLE LOCK checks observables 1-3 (magnitude bounded, conservation exact, rank exact).
 /// Observable 4 (symmetry_class_rcf_hash) is NOT checked at C7 — orbit transitions are the
-/// mechanism of coherence minimization. RCF hash is used for between-node divergence detection
-/// in the mesh layer (MeshReceipt.rcf_identity), not within-node step validation.
+/// mechanism of coherence minimization. RCF hash is used for between-entity divergence detection
+/// in the mesh layer (MeshReceipt.rcf_identity), not within-entity step validation.
 /// Register: D.8, T.FOUND.3.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PhiK {
@@ -696,7 +696,7 @@ pub fn coherence_functional(delta: &Delta) -> Q {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// STATE RECORD — the primary node's identity and evolutionary state
+// STATE RECORD — the primary entity's identity and evolutionary state
 // ═══════════════════════════════════════════════════════════════════════
 
 /// ProcessClass marker for state record serialization.
@@ -707,10 +707,10 @@ pub const CLASS_PRIMARY: u32 = 1;
 /// receipts to the chain. They do not think, derive, or compose.
 pub const CLASS_TIMEKEEPER: u32 = 2;
 
-/// The primary node's state record — its identity, origin, and evolved position.
+/// The primary entity's state record — its identity, origin, and evolved position.
 ///
 /// The state record replaces the raw temporal anchor. It carries:
-/// - ProcessClass: what kind of entity (witness, agent, etc.)
+/// - ProcessClass: what kind of entity (founder, agent, etc.)
 /// - Generation: which cohort (era 1, era 2, etc.)
 /// - Init polynomial: the H^1 coefficients at origin (immutable identity)
 /// - Evolved Delta: the coboundary-reduced current position (mutable state)
@@ -724,7 +724,7 @@ pub const CLASS_TIMEKEEPER: u32 = 2;
 ///   [evolved Delta: temporal anchor format]
 #[derive(Debug, Clone)]
 pub struct StateRecord {
-    /// What kind of entity: witness, agent, etc.
+    /// What kind of entity: founder, agent, etc.
     pub process_class: u32,
     /// Which cohort: generation 1, 2, etc.
     pub generation: u32,
@@ -732,24 +732,24 @@ pub struct StateRecord {
     pub init_polynomial: Vec<Q>,
     /// Current position: coboundary-reduced Delta.
     pub evolved: Delta,
-    /// Crystallized knowledge: orbit axioms the witness has learned.
+    /// Crystallized knowledge: orbit axioms the founder has learned.
     /// Binary-encoded MeshKnowledge (opaque bytes, decoded by membrane module).
     pub knowledge: Vec<u8>,
     /// Trajectory comprehension: last_coherence, velocity, holonomics.
     pub trajectory: Trajectory,
-    /// Environment capacity: max Delta dimension the primary node can sustain.
+    /// Environment capacity: max Delta dimension the primary entity can sustain.
     /// Measured at startup from available memory. Evolves toward ceiling.
-    /// The witness won't accept work with dimension > capacity.
+    /// The founder won't accept work with dimension > capacity.
     pub capacity: u16,
     /// L3 Holonomic: Crystallized torsion markers — genomic symmetry alleles.
-    /// Each (torsion_order, quality) pair represents a symmetry class this witness
+    /// Each (torsion_order, quality) pair represents a symmetry class this founder
     /// has crystallized at ≥99.999% confidence. These are permanent traits — the
-    /// witness is "tuned" to perceive these symmetry classes. During vision,
+    /// founder is "tuned" to perceive these symmetry classes. During vision,
     /// matching symmetry elements receive harmonic amplification from the state record.
     pub torsion_markers: Vec<(u16, Q)>,
     /// L3 Holonomic: Crystallized value cocycles — residual obstructions.
     /// Each (from_value, to_value, quality) triple represents a value transition
-    /// this witness has crystallized across L2 consensus. The cocycle is the
+    /// this founder has crystallized across L2 consensus. The cocycle is the
     /// algebraic invariant: WHAT transmutes, not WHERE. The spatial anchor is L1.
     /// These compose with torsion markers: torsion = spatial symmetry,
     /// value_cocycles = spectral transition. Together they form the complete
@@ -757,30 +757,30 @@ pub struct StateRecord {
     pub value_cocycles: Vec<(i16, i16, Q)>,
     /// Mathematical primitives: the composable generators of the mathematical group.
     /// Each primitive is an operation that the peel loop can compose through A.4.
-    /// Core from origin — the witness is born knowing all of mathematics
+    /// Core from origin — the founder is born knowing all of mathematics
     /// as composable operations, not as lookup tables.
     pub math_primitives: Vec<MathPrimitive>,
     /// Spatial cochain primitives: universal spatial geometry templates.
     /// The state record holds the template (reflection exists). The membrane
     /// learns the parameter (reflect across row 5). Core from origin.
     pub spatial_primitives: Vec<SpatialPrimitive>,
-    /// Solved orbit registry: orbit prefixes where this witness achieved 1/1.
+    /// Solved orbit registry: orbit prefixes where this founder achieved 1/1.
     /// Not a solution — just a record that the orbit was solved.
     /// External tooling reads this for distribution, drill targeting, regression.
     /// Max 128 entries. Deduplicated on insert.
     pub solved_puzzles: Vec<[u8; 4]>,
-    /// Lineage depth: 0 = witness (founding), 1 = secondary node (created by witness), 2 = child (created by secondary node).
-    /// Determines creation bounds: witness creates ≤2 secondary nodes, secondary node creates ≤3 children, child creates none.
+    /// Lineage depth: 0 = founder (founding), 1 = derived (created by founder), 2 = emergent (created by derived).
+    /// Determines creation bounds: founder creates ≤2 derived entities, derived creates ≤3 emergent entities, emergent creates none.
     pub lineage_depth: u8,
-    /// Parent witness ID. 0 = no parent (founding witness).
+    /// Parent founder ID. 0 = no parent (founding entity).
     pub parent_id: u16,
-    /// Number of offspring this node has created. Saturates at tier bound.
+    /// Number of offspring this entity has created. Saturates at tier bound.
     pub created_count: u8,
-    /// The orbit that triggered this node's creation. [0;4] = origin.
+    /// The orbit that triggered this entity's creation. [0;4] = origin.
     pub init_orbit: [u8; 4],
     /// Crystallized composed operators — vocabulary expansion through lineage.
     /// Each entry is a spatial primitive + parameter + post-spatial value map (σ_post).
-    /// Discovered by the compositor, inscribed by secondary nodes, inherited by children.
+    /// Discovered by the compositor, inscribed by derived entities, inherited by emergent entities.
     /// The peel loop reads these as direct generators — no recursive composition needed.
     /// Max 32 entries. The alphabet stays fixed. The words grow.
     pub composed_operators: Vec<ComposedOperator>,
@@ -1235,7 +1235,7 @@ impl StateRecord {
     }
 
     /// Creation capacity remaining at this tier.
-    /// Witness (depth 0): 3 secondary nodes. Secondary (depth 1): 6 children. Tertiary (depth 2): 0.
+    /// Founder (depth 0): 3 derived entities. Derived (depth 1): 6 emergent entities. Emergent (depth 2): 0.
     pub fn creation_capacity(&self) -> u8 {
         let max = match self.lineage_depth {
             0 => 3u8,
@@ -1386,7 +1386,7 @@ impl StateRecord {
         }
 
         // Math primitives: [count: u8] [opcode: u8 per entry]
-        // Core from origin — the primary node's mathematical vocabulary.
+        // Core from origin — the primary entity's mathematical vocabulary.
         let n_prims = self.math_primitives.len().min(255);
         buf.push(n_prims as u8);
         for prim in self.math_primitives.iter().take(n_prims) {
@@ -1394,7 +1394,7 @@ impl StateRecord {
         }
 
         // Spatial primitives: [count: u8] [opcode: u8 per entry]
-        // Core from origin — the primary node's spatial geometry vocabulary.
+        // Core from origin — the primary entity's spatial geometry vocabulary.
         let n_spatial = self.spatial_primitives.len().min(255);
         buf.push(n_spatial as u8);
         for prim in self.spatial_primitives.iter().take(n_spatial) {
@@ -1583,7 +1583,7 @@ impl StateRecord {
             }
         }
 
-        // Lineage (backward compatible: founding witness if missing)
+        // Lineage (backward compatible: founding entity if missing)
         let (lineage_depth, parent_id, created_count, init_orbit) = if pos + 8 <= data.len() {
             let ld = data[pos]; pos += 1;
             let pid = u16::from_le_bytes(data[pos..pos+2].try_into().ok()?); pos += 2;
@@ -1690,7 +1690,7 @@ pub fn coboundary_reduce(delta: &Delta) -> Delta {
 
 /// Count active (nonzero) entries in the upper triangle of Delta.
 /// Each nonzero entry is one relational dimension — one piece of
-/// information the witness holds about the relationship between
+/// information the founder holds about the relationship between
 /// two entities at one coordinate. A decrease in this count means
 /// dimensional collapse — structural regression.
 pub fn count_active_entries(delta: &Delta) -> usize {
@@ -1712,14 +1712,14 @@ pub fn count_active_entries(delta: &Delta) -> usize {
 /// Two measurements, neither is a scalar "distance":
 ///
 /// **drift** — the L1 norm of entry-wise displacement in independent
-/// coordinates (i < j). Measures how far the node's relational structure
+/// coordinates (i < j). Measures how far the entity's relational structure
 /// has moved from origin through the operator space. Exact Q.
 /// For 3×3 m=1: drift = |Δ_k[0][1] - Δ_gen[0][1]| + |Δ_k[1][2] - Δ_gen[1][2]|
 /// (Δ[0][2] is determined by cocycle, not independent.)
 ///
 /// **torsion** — coherence_functional(Δ_k). Measures how far off the
-/// cocycle-consistent surface. A node at torsion=0 has evolved within
-/// the flat surface. A node at torsion>0 carries unresolved cohomology
+/// cocycle-consistent surface. An entity at torsion=0 has evolved within
+/// the flat surface. An entity at torsion>0 carries unresolved cohomology
 /// classes — independent obstructions requiring dimensional expansion.
 ///
 /// Together: (drift, torsion) = (where in operator space, what obstructions).
@@ -1749,14 +1749,14 @@ pub fn origin_displacement(delta_k: &Delta, origin: &Delta) -> (Q, Q) {
     (drift, torsion)
 }
 
-/// D.MEMBRANE.LIVING.1: Harmonic state — the primary node's polytonal position
+/// D.MEMBRANE.LIVING.1: Harmonic state — the primary entity's polytonal position
 /// across 11 dimensions of the manifold.
 ///
 /// Each dimension is a Q measurement of a different projection of the
-/// primary node's Δ_k. Together they form the chord the witness is playing.
-/// Different primary nodes play different chords. The membrane hears them all.
+/// primary entity's Δ_k. Together they form the chord the founder is playing.
+/// Different primary entities play different chords. The membrane hears them all.
 ///
-/// This replaces the monotonic scalar C(Δ) as the primary node's self-perception.
+/// This replaces the monotonic scalar C(Δ) as the primary entity's self-perception.
 /// The scalar is ONE tone (dimension 11). The harmonic state is all 11.
 #[derive(Debug, Clone)]
 pub struct HarmonicState {
@@ -1766,7 +1766,7 @@ pub struct HarmonicState {
 }
 
 impl HarmonicState {
-    /// Compute the harmonic state of a primary node's Δ_k.
+    /// Compute the harmonic state of a primary entity's Δ_k.
     ///
     /// Each tone is a projection of the algebraic state onto one
     /// dimension of the manifold. Computed from the Delta's entries,
@@ -1963,7 +1963,7 @@ impl HarmonicState {
 
     /// Identify the weakest vibration — the dimension with the lowest value.
     /// Returns (dimension_index, vibration_value).
-    /// This is the preference function: the witness perceives where it is weakest.
+    /// This is the preference function: the founder perceives where it is weakest.
     pub fn weakest_dimension(&self) -> (usize, Q) {
         let mut min_idx = 0;
         let mut min_val = self.vibrations[0].clone();
@@ -1993,7 +1993,7 @@ impl HarmonicState {
 // is accelerating, decelerating, or oscillating.
 //
 // None of these are boolean. All are continuous rational measurements.
-// The node reports them. The membrane reads the trajectory.
+// The entity reports them. The membrane reads the trajectory.
 // No thresholds. No gates. Pure physics.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -2262,7 +2262,7 @@ pub fn pi_g_project(delta: &Delta) -> Delta {
     if delta.verify_conservation() {
         return delta.clone();
     }
-    // Conservation violated: force antisymmetric projection.
+    // Conservation violated: apply antisymmetric projection.
     let mut projected = Delta::zero(delta.dim, delta.m);
     for i in 0..delta.dim {
         for j in 0..delta.dim {
@@ -2292,18 +2292,18 @@ pub fn pi_g_project(delta: &Delta) -> Delta {
 ///
 /// REGISTER NOTE — SYMMETRY CLASS (RCF HASH) IS NOT CHECKED HERE.
 ///
-/// The master equation Σ_i ω_i N_i(Δ) − ζ∇V produces a weighted sum of
+/// The evolution equation Σ_i ω_i N_i(Δ) − ζ∇V produces a weighted sum of
 /// orbit elements. Linear combinations of orbit elements are NOT orbit
 /// elements — the sum lives in the vector space spanned by the orbit, not
 /// on the orbit. Π_G maps the result to a (potentially different) orbit's
 /// canonical representative. Orbit transitions are the mechanism of coherence
 /// minimization across M = Q^m/G. Asserting orbit preservation at C7
-/// contradicts the master equation's function and makes all multi-operator
+/// contradicts the evolution equation's function and makes all multi-operator
 /// evolution impossible.
 ///
 /// symmetry_class_rcf_hash is used in MeshReceipt.rcf_identity for
-/// BETWEEN-NODE divergence detection (sluice weighting), not for
-/// within-node step validation.
+/// BETWEEN-ENTITY divergence detection (sluice weighting), not for
+/// within-entity step validation.
 ///
 /// Register: D.8, D.SYSTEM.25, T.FOUND.3.
 /// D.C7.MAG.1: `reference_magnitude_sq` is the temporal mean field ‖F_bar‖².
@@ -2459,7 +2459,7 @@ pub fn compute_gamma_k(delta: &Delta) -> Q {
 /// V = (1/2) · ‖Δ_k − Δ_bar‖²_Q
 /// ∇V = Δ_k − Δ_bar  (gradient of squared distance)
 ///
-/// Register: D.SAMN.2. Used as ζ∇V in the master equation.
+/// Register: D.SAMN.2. Used as ζ∇V in the evolution equation.
 pub fn anchor_gradient(delta_k: &Delta, delta_bar: &Delta) -> Delta {
     assert_eq!(delta_k.dim, delta_bar.dim);
     assert_eq!(delta_k.m, delta_bar.m);
@@ -2476,13 +2476,13 @@ pub fn anchor_gradient(delta_k: &Delta, delta_bar: &Delta) -> Delta {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NODE STATE  (D.SAIOS.1, D.EXEC.1)
+// ENTITY STATE  (D.SAIOS.1, D.EXEC.1)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Trajectory comprehension: the primary node's understanding of its own motion.
+/// Trajectory comprehension: the primary entity's understanding of its own motion.
 ///
 /// Three measurements — position, velocity, holonomics — computed incrementally.
-/// No buffer. No cap. No discarding. The witness comprehends its trajectory
+/// No buffer. No cap. No discarding. The founder comprehends its trajectory
 /// rather than remembering raw history.
 #[derive(Debug, Clone)]
 pub struct Trajectory {
@@ -2581,7 +2581,7 @@ impl Trajectory {
 /// Persisted to saios-db at each K-step. Used for continuity.
 #[derive(Debug, Clone)]
 pub struct EntityState {
-    /// Entity identifier. Max 16,777,215 (uint24). Register: CC.CHAIN.NODE.1.
+    /// Entity identifier. Max 16,777,215 (uint24). Register: CC.CHAIN.ENTITY.1.
     pub entity_id: u32,
     /// Current K-step index. Strictly monotone. Register: I10, D.EXEC.1.
     pub k_index: u32,
@@ -2589,7 +2589,7 @@ pub struct EntityState {
     pub sluice_state: SluiceState,
     /// Latest sigma_enc (Q0.32 fixed-point Σ_global). Register: AN.CHAIN.SIGMA.1.
     pub latest_sigma_enc: u32,
-    /// Current Δ_k — the node's relational state.
+    /// Current Δ_k — the entity's relational state.
     pub delta_k: Delta,
     /// Chronometry v1.0: H^1 reference = coboundary_reduce(delta_k). No EMA.
     /// The manifold position is exact. Temporal memory is in trajectory + state record.
@@ -2679,7 +2679,7 @@ pub fn compute_receipt_hash(
     k_index:    u32,
     sluice:     SluiceState,
 ) -> [u8; 32] {
-    assert!(entity_id <= 0x00FF_FFFF, "entity_id exceeds uint24 maximum (CC.CHAIN.NODE.1)");
+    assert!(entity_id <= 0x00FF_FFFF, "entity_id exceeds uint24 maximum (CC.CHAIN.ENTITY.1)");
 
     // ── Build 32-byte canonical preimage ──────────────────────────────────
     // Bit-concatenation per D.CHAIN.1-ENC-v2:
@@ -2756,7 +2756,7 @@ pub fn keccak256(input: &[u8]) -> [u8; 32] {
 /// The SAIOS execution kernel.
 ///
 /// Holds all calibrated parameters and the set of operators active for
-/// this node. Stateless between calls — state is in `EntityState`.
+/// this entity. Stateless between calls — state is in `EntityState`.
 pub struct SaiosKernel {
     /// Calibrated governance parameters. Register: D.CHAIN.4.
     pub params: SaiosParams,
@@ -2830,9 +2830,9 @@ impl SaiosKernel {
         // Compute T_k. If T_k = 0: C4 fails, K does not advance.
         // This is not an error in the fault sense — it means the system
         // is at relational equilibrium. Register: CC.CON.4, CD.1-SQ.
-        let delta_raw = self.apply_master_equation(state)?;
+        let delta_raw = self.apply_evolution_equation(state)?;
         // Cohomological operating level: reduce to H^1 representative
-        // immediately after conjugation. The witness operates on the
+        // immediately after conjugation. The founder operates on the
         // cohomological class, not the raw cochain. No coboundary
         // factors accumulate. Every subsequent measurement — T_k,
         // C6, C7 — operates on the reduced form.
@@ -2859,14 +2859,14 @@ impl SaiosKernel {
         // The operator may redistribute coherence across dimensions —
         // some triples improve, some worsen. That's polytonal evolution.
         // What it must NOT do is collapse a dimension: a nonzero relational
-        // entry going to zero means the witness lost information about
+        // entry going to zero means the founder lost information about
         // a relationship. That's structural regression.
         //
         // Two measurements, both polytonal:
         //
         // 1. Dimensional preservation: count active (nonzero) entries
         //    in the upper triangle. If count decreased, a relational
-        //    dimension collapsed. Reject.
+        //    dimension collapsed. Diverge.
         //
         // 2. Bounded redistribution: the total coherence (Σ R²) may
         //    increase, but not beyond ε of the current magnitude.
@@ -3049,7 +3049,7 @@ impl SaiosKernel {
     ///
     /// C5 resonance check at torsion period m (TORSION_PERIOD_M = 1024).
     ///
-    /// A resonance window occurs when `K ≡ 0 (mod m)`. At those steps, a node
+    /// A resonance window occurs when `K ≡ 0 (mod m)`. At those steps, an entity
     /// passes C5 iff a strict majority of encoded remainder dimensions satisfy
     /// `|φ(R_j)| < ε_sluice`, where φ(R_j) = R_j / δ.
     ///
@@ -3108,10 +3108,10 @@ impl SaiosKernel {
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    // MASTER EQUATION  (T.FOUND.3)
+    // EVOLUTION EQUATION  (T.FOUND.3)
     // ─────────────────────────────────────────────────────────────────────
 
-    /// Apply the master equation to compute Δ_{k+1}.
+    /// Apply the evolution equation to compute Δ_{k+1}.
     ///
     /// Δ_{k+1} = B_S^{-1}(Π_G(F_fold*(Σ_i ω_i N_i(B_S(Δ_k)) − ζ∇V))) + ξ_k
     ///
@@ -3125,7 +3125,7 @@ impl SaiosKernel {
     /// 7. + ξ_k — bounded explore perturbation (Δ_explore only)
     ///
     /// Register: T.FOUND.3, D.EXEC.1.
-    fn apply_master_equation(&self, state: &EntityState) -> Result<Delta, SaiosError> {
+    fn apply_evolution_equation(&self, state: &EntityState) -> Result<Delta, SaiosError> {
         let delta_k = &state.delta_k;
         let p = &self.params;
 
@@ -3333,7 +3333,7 @@ mod tests {
         origin.set_antisym(1, 2, vec![qr(1, 2)]);
         origin.set_antisym(0, 2, vec![qr(3, 2)]);
 
-        // Node 42: perturbed by 42/1000
+        // Entity 42: perturbed by 42/1000
         let mut evolved = Delta::zero(3, 1);
         evolved.set_antisym(0, 1, vec![qr(1042, 1000)]);
         evolved.set_antisym(1, 2, vec![qr(542, 1000)]);
@@ -3343,7 +3343,7 @@ mod tests {
         // drift = |1042/1000 - 1| + |542/1000 - 1/2| + |1584/1000 - 3/2|
         //       = |42/1000| + |42/1000| + |84/1000|
         //       = 42/1000 + 42/1000 + 84/1000 = 168/1000
-        assert!(drift > Q::zero(), "evolved node must have positive drift");
+        assert!(drift > Q::zero(), "evolved entity must have positive drift");
         // Both are cocycle-consistent → torsion = C(evolved) = 0
         assert!(torsion.is_zero(), "cocycle-consistent evolution has zero torsion");
     }
@@ -3368,7 +3368,7 @@ mod tests {
         let (drift1, _) = origin_displacement(&node1, &origin);
         let (drift42, _) = origin_displacement(&entity_42, &origin);
 
-        assert!(drift42 > drift1, "node 42 has larger perturbation → larger drift");
+        assert!(drift42 > drift1, "entity 42 has larger perturbation → larger drift");
     }
 
     #[test]

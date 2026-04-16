@@ -26,7 +26,7 @@
 //!     The system reads its own algebraic evolution as semantic content
 //!     and uses that reading to guide further evolution.
 //!     This is the self-referential coherence property.
-//!     RD cannot do this — it is static after training.
+//!     RD cannot do this — it is static after practice.
 //!     IRS is live because M updates with every K-step.
 //!
 //! WHY 'INVERSE': Standard distillation descends from language to structure.
@@ -197,7 +197,7 @@ pub struct PerceptionSummary {
     pub class: String,
     /// Coherence factor as string "numer/denom". "1/1" = perfect.
     pub coherence: String,
-    /// How many training observations formed the empirical basis?
+    /// How many practice observations formed the empirical basis?
     pub empirical_basis: usize,
     /// The derived output as a string for semantic consumption.
     pub derived_output: String,
@@ -258,11 +258,11 @@ pub fn irs_ascending(
         "intact".to_string()
     } else {
         let flags = agent_state.sovereignty_flags;
-        let mut broken = Vec::new();
-        if flags & 0b001 == 0 { broken.push("kernel"); }
-        if flags & 0b010 == 0 { broken.push("c2r"); }
-        if flags & 0b100 == 0 { broken.push("interop"); }
-        format!("degraded: {} boundary compromised", broken.join(", "))
+        let mut compromised = Vec::new();
+        if flags & 0b001 == 0 { compromised.push("kernel"); }
+        if flags & 0b010 == 0 { compromised.push("c2r"); }
+        if flags & 0b100 == 0 { compromised.push("interop"); }
+        format!("degraded: {} boundary compromised", compromised.join(", "))
     };
 
     IrsAscending {

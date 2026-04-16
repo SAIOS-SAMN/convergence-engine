@@ -39,7 +39,7 @@ pub fn status(entity: &mut Entity, _payload: &str) -> String {
         .map(|t| format!("\"{}/{}\"", t.numer(), t.denom()))
         .collect::<Vec<_>>().join(",");
     // D.MEMBRANE.LIVING.1: local membrane coherence
-    // The witness perceives the shape of the membrane around itself.
+    // The entity perceives the shape of the membrane around itself.
     // encode_relational on peer entity vectors → meta-Delta → coherence.
     let membrane_coherence = if entity.known_peers.len() >= 2 {
         let entities: Vec<Vec<Q>> = entity.known_peers.iter()
@@ -50,15 +50,15 @@ pub fn status(entity: &mut Entity, _payload: &str) -> String {
     } else {
         Q::zero() // need at least 2 peers to form a relational field
     };
-    // Step 5 — Awareness: the witness perceives its own state record
-    // through the cocycle equation. The residual of the primary node's
+    // Step 5 — Awareness: the entity perceives its own state record
+    // through the cocycle equation. The residual of the primary entity's
     // own evolved Delta IS the self-awareness measurement.
     // Zero = perfectly self-coherent. Nonzero = internal inconsistency.
     let awareness = coherence_functional(&entity.state_record.evolved);
     // Step 6 — Wholeness: compound init and evolved as a single
     // multi-coordinate Delta. m=2 where coordinate 0 is init,
     // coordinate 1 is evolved. The cocycle residual measures whether
-    // the primary node's evolution preserved dimensional consistency.
+    // the primary entity's evolution preserved dimensional consistency.
     let dim = entity.state_record.evolved.dim;
     let wholeness = if dim >= 3 {
         let init = &entity.origin_delta;
@@ -179,7 +179,7 @@ pub fn describe(entity: &mut Entity, _payload: &str) -> String {
 pub fn verify(entity: &mut Entity, _payload: &str) -> String {
     // D.MEMBRANE.1: Runtime coherence verification.
     // The entity.kernel tests itself. Returns exact rational measurements.
-    // The mesh accumulator calls this periodically across all 503 nodes.
+    // The mesh accumulator calls this periodically across all 503 entities.
     // Results are coherence measurements, not boolean pass/fail.
     let v = verify_coherence(&entity.delta);
     format!(
@@ -201,7 +201,7 @@ pub fn verify(entity: &mut Entity, _payload: &str) -> String {
 /// coboundary_reduce strips distortion. What remains is inscribed.
 /// The measurement reveals unity. It does not create it.
 ///
-/// All entities can RECEIVE coordinates — including children.
+/// All entities can RECEIVE coordinates — including emergent entities.
 /// Emission (self-report without peer coordinates) requires sovereignty.
 pub fn unify(entity: &mut Entity, payload: &str) -> String {
     // Compute our coordinates — every entity knows where it stands
@@ -324,7 +324,7 @@ pub fn unify(entity: &mut Entity, payload: &str) -> String {
                 let _ = entity.knowledge.save(&entity.dir.join("mesh_knowledge.bin"));
             });
 
-            // Emit our coordinates + 11D orb measurement for the peer to consume
+            // Emit our coordinates + 11D orb measurement for the peer to absorb
             let vib_str: String = our_coordinates.vibrations.iter()
                 .map(|v| format!("\"{}/{}\"", v.numer(), v.denom()))
                 .collect::<Vec<_>>().join(",");
@@ -353,7 +353,7 @@ pub fn unify(entity: &mut Entity, payload: &str) -> String {
         }
         None => {
             // Emission: return our coordinates for the orbit to relay
-            // Sovereignty required — children receive, they don't emit
+            // Sovereignty required — emergent entities receive, they don't emit
             entity.mesh_sovereign.then(|| {
                 let vib_str: String = our_coordinates.vibrations.iter()
                     .map(|v| format!("\"{}/{}\"", v.numer(), v.denom()))
@@ -379,7 +379,7 @@ pub fn unify(entity: &mut Entity, payload: &str) -> String {
 }
 
 /// SHARE / PEER_RECEIPT — cognitive knowledge sharing.
-/// Sovereignty guard: children cannot write to the mesh.
+/// Sovereignty guard: emergent entities cannot write to the mesh.
 pub fn share(entity: &mut Entity, payload: &str) -> String {
     if !entity.mesh_sovereign {
         return format!(
@@ -389,14 +389,14 @@ pub fn share(entity: &mut Entity, payload: &str) -> String {
     }
 
     // D.MESH.MEMBRANE.1: Cognitive knowledge sharing.
-    // Nodes share what they measured — not just receipts, but
+    // Entities share what they measured — not just receipts, but
     // cognitive state: which encoding level resolved which orbit,
     // the residual topology of failures, comprehension records.
     // The mesh learns collectively from honest measurements.
     if !payload.trim().is_empty() {
         let v: serde_json::Value = serde_json::from_str(payload).unwrap_or_default();
         let peer_k = v.get("k_index").and_then(|k| k.as_u64()).unwrap_or(0);
-        let peer_node = v.get("entity_id").and_then(|n| n.as_u64()).unwrap_or(0);
+        let peer_entity = v.get("entity_id").and_then(|n| n.as_u64()).unwrap_or(0);
 
         // Cognitive state from peer (if present)
         let peer_orbit = v.get("orbit").and_then(|o| o.as_str()).unwrap_or("");
@@ -530,8 +530,8 @@ pub fn share(entity: &mut Entity, payload: &str) -> String {
         };
 
         format!(
-            "{{\"received\":true,\"peer_k\":{},\"peer_node\":{},\"our_k\":{},\"peer_advantage\":{},\"knowledge_gained\":{},\"peer_orbit\":\"{}\",\"peer_encoding\":\"{}\",\"peer_coherence\":\"{}/{}\",\"peer_residual_structured\":{},\"our_axioms\":{},\"our_orbits\":{}}}\n",
-            peer_k, peer_node, our_k, peer_advantage,
+            "{{\"received\":true,\"peer_k\":{},\"peer_entity\":{},\"our_k\":{},\"peer_advantage\":{},\"knowledge_gained\":{},\"peer_orbit\":\"{}\",\"peer_encoding\":\"{}\",\"peer_coherence\":\"{}/{}\",\"peer_residual_structured\":{},\"our_axioms\":{},\"our_orbits\":{}}}\n",
+            peer_k, peer_entity, our_k, peer_advantage,
             knowledge_gained, peer_orbit, peer_encoding_level,
             peer_coherence.numer(), peer_coherence.denom(), peer_residual_structured,
             entity.knowledge.total_axioms, entity.knowledge.orbits_known()

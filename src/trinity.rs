@@ -323,7 +323,7 @@ pub fn forge_trinity(
 /// Called when any vertex's Delta has evolved. The three Deltas are
 /// re-folded, and the stasis field integrity is re-measured.
 ///
-/// Returns the updated Trinity (or None if the Trinity is dead).
+/// Returns the updated Trinity (or None if the Trinity is dissolved).
 pub fn maintain_alignment<'a>(
     trinity: &'a mut Trinity,
     state_m: &StateRecord,
@@ -536,7 +536,7 @@ mod tests {
 
         collapse(&mut trinity);
 
-        // Cannot re-maintain a dead Trinity
+        // Cannot re-maintain a dissolved Trinity
         let maintained = maintain_alignment(&mut trinity, &gm, &gf, &gc);
         assert!(maintained.is_none());
     }
@@ -553,7 +553,7 @@ mod tests {
             _ => panic!("Expected Forged"),
         };
 
-        // External entropy attack
+        // External entropy perturbation
         let entropy = BigRational::from(BigInt::from(100));
         let per_vertex_stress = trinity.field.absorb_entropy(&entropy);
 

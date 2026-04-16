@@ -6,7 +6,7 @@
 //!
 //! Every K_BLOCK_INTERVAL receipts, batch them under a BLAKE3 Merkle root.
 //! Block header: {height, merkle_root, k_start, k_end, parent_block_hash, signer}.
-//! No multi-party signing. The block is a local checkpoint signed by this node.
+//! No multi-party signing. The block is a local checkpoint signed by this entity.
 //!
 //! Register: D.CHAIN.LOCAL.1.
 
@@ -26,7 +26,7 @@ pub struct BlockHeader {
     pub k_end: u64,
     /// Hash of the previous block header (all zeros for origin block).
     pub parent_block_hash: [u8; 32],
-    /// Ed25519 signature of this header by the local node.
+    /// Ed25519 signature of this header by the local entity.
     pub signature: [u8; 64],
 }
 

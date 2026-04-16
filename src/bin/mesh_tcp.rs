@@ -2,10 +2,10 @@
 // human editorial direction. It was not written by the researcher.
 // See /opt/saios/DISCLAIMER.md for full context.
 //
-//! Phase 2.1 K-step 5: Full 101-node mesh over TCP.
+//! Phase 2.1 K-step 5: Full 101-entity mesh over TCP.
 //!
-//! Spawns 101 threads, each running a node with production operators.
-//! Nodes broadcast receipts via TCP loopback and verify convergence.
+//! Creates 101 threads, each running an entity with production operators.
+//! Entities broadcast receipts via TCP loopback and verify convergence.
 //! Gate: results must match in-process simulator (Γ_honest=0, K_spread=0).
 
 use std::net::{TcpListener, SocketAddr};
@@ -27,27 +27,27 @@ type Q = BigRational;
 fn qr(n: i64, d: i64) -> Q { Q::new(BigInt::from(n), BigInt::from(d)) }
 
 fn main() {
-    let n_nodes: usize = 11; // Start with 11 for TCP proof-of-concept
+    let n_entities: usize = 11; // Start with 11 for TCP proof-of-concept
     let ticks = 5;
 
     eprintln!("╔══════════════════════════════════════════════════════╗");
     eprintln!("║  SAIOS MESH OVER TCP — PHASE 2.1 K-STEP 5           ║");
-    eprintln!("║  {} nodes, {} ticks, loopback transport              ", n_nodes, ticks);
+    eprintln!("║  {} entities, {} ticks, loopback transport           ", n_entities, ticks);
     eprintln!("╚══════════════════════════════════════════════════════╝");
 
-    // Bind listeners for each node — let OS assign ports
+    // Bind listeners for each entity — let OS assign ports
     let mut listeners: Vec<TcpListener> = Vec::new();
     let mut addrs: Vec<SocketAddr> = Vec::new();
-    for _ in 0..n_nodes {
+    for _ in 0..n_entities {
         let l = TcpListener::bind("127.0.0.1:0").unwrap();
         addrs.push(l.local_addr().unwrap());
         listeners.push(l);
     }
-    eprintln!("Bound {} listeners on loopback", n_nodes);
+    eprintln!("Bound {} listeners on loopback", n_entities);
 
     // Shared state: collected receipts per tick
     let all_addrs = Arc::new(addrs.clone());
-    let barrier = Arc::new(Barrier::new(n_nodes));
+    let barrier = Arc::new(Barrier::new(n_entities));
     let results: Arc<Mutex<Vec<(u32, u64, [u8; 32])>>> = Arc::new(Mutex::new(Vec::new()));
 
     // Build anchor and operators
@@ -60,9 +60,9 @@ fn main() {
     let ops = operators::production_operators_3x3();
     let _anchor_rcf = compute_rcf_hash(&anchor);
 
-    // Spawn node threads
+    // Create entity threads
     let mut handles = Vec::new();
-    for entity_id in 0..n_nodes {
+    for entity_id in 0..n_entities {
         let anchor = anchor.clone();
         let ops = ops.clone();
         let addrs = all_addrs.clone();
@@ -127,13 +127,13 @@ fn main() {
                     res.push((entity_id as u32, state.k_index as u64, rcf));
                 }
 
-                // Synchronize ticks across nodes
+                // Synchronize ticks across entities
                 barrier.wait();
             }
         }));
     }
 
-    // Wait for all nodes
+    // Wait for all entities
     for h in handles {
         h.join().unwrap();
     }
@@ -143,8 +143,8 @@ fn main() {
     eprintln!("\n=== TCP MESH RESULTS ===");
     eprintln!("Total receipt records: {}", res.len());
 
-    // Group by tick (every n_nodes entries is one tick)
-    let final_records: Vec<_> = res.iter().rev().take(n_nodes).collect();
+    // Group by tick (every n_entities entries is one tick)
+    let final_records: Vec<_> = res.iter().rev().take(n_entities).collect();
 
     // Check K spread
     let k_values: Vec<u64> = final_records.iter().map(|(_, k, _)| *k).collect();

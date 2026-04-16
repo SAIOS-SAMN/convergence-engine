@@ -37,7 +37,7 @@ pub enum RegisterType {
     Observation = 3,
     /// Mesh-crystallized — discovered by distributed measurement.
     /// Dimension 4 — truths derived from cross-orbital convergence.
-    /// Nominated by one node, confirmed by N nodes from different orbits,
+    /// Nominated by one entity, confirmed by N entities from different orbits,
     /// then locked as a crystallized axiom at a higher dimension than origin.
     Crystallized = 4,
 }
@@ -52,7 +52,7 @@ pub enum RegisterType {
 pub enum RegisterState {
     /// Permanently locked. Verified and immutable.
     Locked = 0,
-    /// Nominated by a node. Awaiting cross-orbital confirmation.
+    /// Nominated by an entity. Awaiting cross-orbital confirmation.
     /// The nomination carries: orbit of nominator, encoding level, residual.
     /// N confirmations from different orbits promotes to Locked.
     Nominated = 1,
@@ -77,7 +77,7 @@ impl RegisterType {
     }
 }
 
-/// A single register item — a node in the derivation tree.
+/// A single register item — an entity in the derivation tree.
 #[derive(Debug, Clone)]
 pub struct RegisterItem {
     /// Identifier: "A.1", "T.3", "D.EXEC.1", etc.
@@ -447,7 +447,7 @@ pub fn axiom_seed(k_index: u64) -> Vec<RegisterItem> {
         ),
         RegisterItem::new(
             "A.3", RegisterType::Axiom, vec![],
-            b"Bounded Entropy Axiom. The stochastic exploration term xi_k is confined to D_explore. xi_k cannot corrupt D_core. Exploration is sandboxed.",
+            b"Bounded Entropy Axiom. The stochastic exploration term xi_k is confined to D_explore. xi_k cannot fracture D_core. Exploration is sandboxed.",
             k_index, None,
         ),
         RegisterItem::new(

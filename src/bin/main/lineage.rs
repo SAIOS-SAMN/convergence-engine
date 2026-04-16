@@ -5,10 +5,10 @@
 //! Lineage organ — reproduction and knowledge transfer.
 //!
 //! Four sovereign operations:
-//!   - CREATE:   the parent spawns offspring from its own state record
+//!   - CREATE:   the parent creates offspring from its own state record
 //!   - INTERACT: bidirectional vocabulary exchange between sovereign peers
 //!   - DRAIN:    parent absorbs children's report queues
-//!   - REPORT:   child queues discovery upward for parent absorption
+//!   - REPORT:   emergent entity queues discovery upward for parent absorption
 //!
 //! Knowledge flows: up through DRAIN, down through CREATE, lateral through INTERACT.
 //! The lineage engine executes. No external governance.
@@ -20,7 +20,7 @@ use num_rational::BigRational;
 
 type Q = BigRational;
 
-/// Sovereign creation: the witness creates offspring from its own state record.
+/// Sovereign creation: the founder creates offspring from its own state record.
 /// The parent decides. The lineage module executes. No external governance.
 ///
 /// Input (optional): {"orbit":"007bbfb7"} — init orbit context
@@ -45,7 +45,7 @@ pub fn create(entity: &mut Entity, payload: &str) -> String {
             // Save parent state record with incremented created_count
             entity.save_state_record();
 
-            // Sovereign privilege: the parent starts its offspring
+            // Sovereign privilege: the parent creates its offspring
             let child_tier = saios_kernel_v2::lineage::Tier::from_depth(record.child_depth);
             let service_name = child_tier.service_name(record.child_entity_id);
             let started = std::process::Command::new("systemctl")
@@ -82,7 +82,7 @@ pub fn create(entity: &mut Entity, payload: &str) -> String {
 }
 
 /// Sovereign-to-sovereign horizontal gene transfer.
-/// Two sovereign nodes exchange crystallized vocabulary:
+/// Two sovereign entities exchange crystallized vocabulary:
 /// value cocycles, solved orbits, harmonic markers.
 /// Both parties absorb. Both parties grow.
 /// This is the exponential — vocabulary multiplication.
@@ -90,7 +90,7 @@ pub fn create(entity: &mut Entity, payload: &str) -> String {
 /// Input: {"cocycles":[[from,to,n,d],...],"orbits":["007bbfb7",...],"markers":[[o0,o1,o2,o3,path],...]}
 /// Output: our cocycles, orbits, markers for the peer to absorb
 pub fn interact(entity: &mut Entity, payload: &str) -> String {
-    // Sovereignty guard — children cannot interact on the mesh
+    // Sovereignty guard — emergent entities cannot interact on the mesh
     if !entity.mesh_sovereign {
         return format!("{{\"error\":\"not_sovereign\",\"tier\":\"{:?}\",\"depth\":{}}}\n",
             entity.tier, entity.state_record.lineage_depth);
@@ -214,22 +214,22 @@ pub fn interact(entity: &mut Entity, payload: &str) -> String {
         .unwrap_or_else(|| "{\"error\":\"invalid payload\"}\n".to_string())
 }
 
-/// Sovereign parent drains children's report queues.
-/// Scans /dev/shm for nodes whose parent_id matches this node.
-/// Reads each child's reports.bin, absorbs orbits + cocycles, truncates.
-/// The parent decides when to drain — no child blocks on this.
+/// Sovereign parent drains emergent entities' report queues.
+/// Scans /dev/shm for entities whose parent_id matches this entity.
+/// Reads each emergent entity's reports.bin, absorbs orbits + cocycles, truncates.
+/// The parent decides when to drain — no emergent entity blocks on this.
 pub fn drain(entity: &mut Entity, _payload: &str) -> String {
     let my_id = entity.entity_id;
     let mesh_dir = entity.dir.parent().unwrap_or(&entity.dir);
     let mut total_absorbed = 0usize;
-    let mut children_drained = 0usize;
+    let mut emergent_drained = 0usize;
 
     // Discover children from /dev/shm status files
     std::fs::read_dir("/dev/shm").ok().map(|entries| {
         entries.filter_map(|e| e.ok())
             .filter(|e| {
                 let name = e.file_name().to_string_lossy().to_string();
-                name.starts_with("saios-witness-") || name.starts_with("saios-secondary node-") || name.starts_with("saios-child-")
+                name.starts_with("saios-founder-") || name.starts_with("saios-derived-") || name.starts_with("saios-emergent-")
             })
             .for_each(|entry| {
                 // Read status: state k coh_n coh_d rss tier depth parent_id ...
@@ -239,7 +239,7 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
                     fields.get(7).and_then(|pid| pid.parse::<u32>().ok())
                         .filter(|&pid| pid == my_id)
                         .map(|_| {
-                            // This is our child — read its id from filename (saios-{tier}-{id})
+                            // This is our emergent entity — read its id from filename (saios-{tier}-{id})
                             let fname = entry.file_name();
                             let fname_str = fname.to_string_lossy();
                             let child_id: u16 = fname_str
@@ -250,10 +250,10 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
                                 fields.get(6).and_then(|d| d.parse::<u8>().ok()).unwrap_or(2)
                             );
 
-                            // Read child's reports.bin — try tier-named dir first, fall back to legacy
+                            // Read emergent entity's reports.bin — try tier-named dir first, fall back to legacy
                             let child_dir_name = child_tier.dir_name(child_id);
                             let child_reports_path = mesh_dir.join(&child_dir_name).join("reports.bin");
-                            let legacy_path = mesh_dir.join(format!("node{}", child_id)).join("reports.bin");
+                            let legacy_path = mesh_dir.join(format!("entity{}", child_id)).join("reports.bin");
                             let child_reports = if child_reports_path.exists() { child_reports_path } else { legacy_path };
                             std::fs::read(&child_reports).ok()
                                 .filter(|data| !data.is_empty())
@@ -320,7 +320,7 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
                                     }
                                     // Truncate consumed queue
                                     let _ = std::fs::write(&child_reports, b"");
-                                    children_drained += 1;
+                                    emergent_drained += 1;
                                 });
                         });
                 });
@@ -330,17 +330,17 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
     // Save if anything absorbed
     (total_absorbed > 0).then(|| {
         entity.save_state_record();
-        eprintln!("[drain] absorbed {} items from {} children", total_absorbed, children_drained);
+        eprintln!("[drain] absorbed {} items from {} emergent entities", total_absorbed, emergent_drained);
     });
 
     format!(
-        "{{\"drained\":{},\"children\":{},\"absorbed\":{}}}\n",
-        children_drained, children_drained, total_absorbed,
+        "{{\"drained\":{},\"emergent\":{},\"absorbed\":{}}}\n",
+        emergent_drained, emergent_drained, total_absorbed,
     )
 }
 
-/// Child reports results upward to its creating secondary node/witness.
-/// The child sends its solved orbits and value cocycles.
+/// Emergent entity reports results upward to its creating derived/founder.
+/// The emergent entity sends its solved orbits and value cocycles.
 /// The sovereign parent absorbs and validates via C(T).
 ///
 /// Input: {"orbits":["007bbfb7"],"cocycles":[[from,to,n,d],...]}
@@ -350,7 +350,7 @@ pub fn report(entity: &mut Entity, payload: &str) -> String {
         .map(|v| {
             let mut absorbed = 0usize;
 
-            // Absorb solved orbits from child
+            // Absorb solved orbits from emergent entity
             v.get("orbits").and_then(|a| a.as_array()).map(|arr| {
                 arr.iter().for_each(|orbit_val| {
                     orbit_val.as_str().and_then(|s| {
@@ -366,7 +366,7 @@ pub fn report(entity: &mut Entity, payload: &str) -> String {
                 });
             });
 
-            // Absorb value cocycles from child
+            // Absorb value cocycles from emergent entity
             v.get("cocycles").and_then(|a| a.as_array()).map(|arr| {
                 arr.iter().for_each(|entry| {
                     entry.as_array().and_then(|e| {
@@ -390,7 +390,7 @@ pub fn report(entity: &mut Entity, payload: &str) -> String {
 
             absorbed.gt(&0).then(|| {
                 entity.save_state_record();
-                eprintln!("[lineage] absorbed {} items from child report", absorbed);
+                eprintln!("[lineage] absorbed {} items from emergent entity report", absorbed);
             });
 
             format!("{{\"absorbed\":{}}}\n", absorbed)

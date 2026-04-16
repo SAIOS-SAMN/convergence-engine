@@ -152,7 +152,7 @@ mod tests {
         let result = evaluate_ingress(&uaid, &chain, &sig, &different_mesh_rcf);
         assert!(matches!(result,
             IngressResult::CredentialRejected(_) | IngressResult::OrbitMismatch),
-            "Must reject orbit mismatch: {:?}", result);
+            "Must diverge on orbit mismatch: {:?}", result);
     }
 
     #[test]

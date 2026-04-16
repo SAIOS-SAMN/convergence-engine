@@ -27,7 +27,7 @@ use saios_kernel_v2::sluice_log::SluiceLog;
 
 type Q = BigRational;
 
-/// Witness state visible to the observer — written to /dev/shm (RAM-backed).
+/// Entity state visible to the observer — written to /dev/shm (RAM-backed).
 /// 128 bytes fixed. Memory write, not disk I/O. The observer reads without sockets.
 pub struct WorldStatus {
     pub path: PathBuf,
@@ -39,9 +39,9 @@ impl WorldStatus {
         WorldStatus { path }
     }
 
-    /// Remove legacy /dev/shm/saios-node-{id} if it exists (migration).
+    /// Remove legacy /dev/shm/saios-entity-{id} if it exists (migration).
     pub fn cleanup_legacy(entity_id: u32) {
-        let legacy = PathBuf::from(format!("/dev/shm/saios-node-{}", entity_id));
+        let legacy = PathBuf::from(format!("/dev/shm/saios-entity-{}", entity_id));
         let _ = fs::remove_file(&legacy);
     }
 
@@ -217,7 +217,7 @@ pub struct Entity {
     /// Entity ID (numeric).
     pub entity_id: u32,
 
-    /// Entity tier (witness, secondary node, child).
+    /// Entity tier (founder, derived, emergent).
     pub tier: Tier,
 
     /// Sovereignty flag — can this entity write to the mesh?
@@ -262,7 +262,7 @@ impl Entity {
     /// coboundary_reduce before every save — the torsion's H^1 representative.
     /// Scan membrane for crystallized torsion markers (94% threshold).
     /// Scan membrane for crystallized value cocycles (94% threshold).
-    /// LAST_WITNESS backup before overwrite — the state record is eternal.
+    /// LAST_WITNESS backup before superseding — the state record is eternal.
     pub fn save_state_record(&mut self) {
         self.state_record.evolved = coboundary_reduce(&self.delta);
         self.state_record.knowledge = self.knowledge.encode_public();
@@ -295,7 +295,7 @@ impl Entity {
             }
         }
 
-        // THE LAST ENTITY PROTOCOL: state record backup before overwrite.
+        // THE LAST ENTITY PROTOCOL: state record backup before superseding.
         let path = self.dir.join("state_record.bin");
         let backup = self.dir.join("state_record.bin.bak");
         path.exists().then(|| { let _ = fs::copy(&path, &backup); });
@@ -310,6 +310,7 @@ impl Entity {
     ///
     /// When RSS exceeds 80% of max_rss_kb: save everything, condense, release heap.
     /// Returns true if the entity must exit (critical threshold exceeded).
+    /// NOTE: "LAST_WITNESS" is a named protocol — kept as-is per CCL.
     pub fn last_witness_protocol(&mut self) -> bool {
         let rss = get_rss_kb();
         let threshold = self.max_rss_kb * 4 / 5; // 80% of max
@@ -343,19 +344,19 @@ impl Entity {
         let rss_after = get_rss_kb();
         eprintln!("[LAST_ENTITY] post-condensation RSS: {}KB (was {}KB)", rss_after, rss);
 
-        // Critical threshold: 4GB. Above this, the OS will OOM-kill us.
+        // Critical threshold: 4GB. Above this, the OS will OOM-halt us.
         const CRITICAL_KB: u64 = 4 * 1024 * 1024;
         let must_exit = rss_after > CRITICAL_KB;
         must_exit.then(|| {
-            eprintln!("[LAST_ENTITY] RSS {}KB exceeds critical 4GB — graceful exit to prevent OOM-kill", rss_after);
+            eprintln!("[LAST_ENTITY] RSS {}KB exceeds critical 4GB — graceful exit to prevent OOM-halt", rss_after);
         });
         must_exit
     }
 
     /// Write agent state record to disk.
     pub fn write_agent_state(&mut self) {
-        let record = AgentStateRecord::from_node_state(
-            &self.to_witness_state(),
+        let record = AgentStateRecord::from_entity_state(
+            &self.to_entity_state(),
             &self.origin_rcf,
             self.chain.len() as u32,
             self.prev_coherence_q1616,
@@ -369,7 +370,7 @@ impl Entity {
     }
 
     /// Create a EntityState view for compatibility with existing code.
-    pub fn to_witness_state(&self) -> EntityState {
+    pub fn to_entity_state(&self) -> EntityState {
         EntityState {
             entity_id: self.entity_id,
             k_index: self.k_index,
@@ -383,7 +384,7 @@ impl Entity {
     }
 
     /// Sync entity state back from a EntityState after execute_k_step.
-    pub fn sync_from_witness_state(&mut self, ws: &EntityState) {
+    pub fn sync_from_entity_state(&mut self, ws: &EntityState) {
         self.delta = ws.delta_k.clone();
         self.delta_bar = ws.delta_bar.clone();
         self.k_index = ws.k_index;
@@ -395,9 +396,9 @@ impl Entity {
 
     /// Execute a K-step through the kernel, bridging Entity ↔ EntityState.
     pub fn execute_k_step(&mut self) -> Result<KStepOutput, SaiosError> {
-        let mut ws = self.to_witness_state();
+        let mut ws = self.to_entity_state();
         let result = self.kernel.execute_k_step(&mut ws);
-        self.sync_from_witness_state(&ws);
+        self.sync_from_entity_state(&ws);
         result
     }
 

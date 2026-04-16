@@ -241,7 +241,7 @@ mod tests {
 
         let receipt = test_receipt();
         let mut frame = frame_receipt(&receipt);
-        frame[FRAME_SIZE - 1] ^= 0xFF; // corrupt checksum
+        frame[FRAME_SIZE - 1] ^= 0xFF; // fracture checksum
 
         let send_handle = thread::spawn(move || {
             let mut stream = TcpStream::connect(addr).unwrap();

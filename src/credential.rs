@@ -4,7 +4,7 @@
 //
 //! V.SAMN.1 Algebraic Reentry Credential.
 //!
-//! A reentry claim is valid iff the node presents a receipt chain of
+//! A reentry claim is valid iff the entity presents a receipt chain of
 //! length >= K_COOL where every receipt passes chain verification and
 //! all rcf_identity values match the mesh's current orbit class.
 //!
@@ -25,7 +25,7 @@ pub enum CredentialResult {
     Valid,
     /// Chain too short.
     InsufficientDepth { got: usize, need: usize },
-    /// Chain hash integrity broken at the given index.
+    /// Chain hash integrity fractured at the given index.
     ChainBreak { index: usize },
     /// RCF identity at the given index doesn't match mesh orbit.
     OrbitMismatch { index: usize, expected: [u8; 32], got: [u8; 32] },
@@ -150,7 +150,7 @@ mod tests {
     fn test_chain_break_detected() {
         let rcf = [0x42; 32];
         let mut chain = build_valid_chain(&rcf, 12);
-        // Corrupt receipt 5's stored hash — verify_hash() will detect mismatch
+        // Fracture receipt 5's stored hash — verify_hash() will detect mismatch
         chain[5].receipt_hash[0] ^= 0xFF;
         match verify_credential(&chain, &rcf) {
             CredentialResult::ChainBreak { index: 5 } => {} // hash verification fails here
@@ -162,7 +162,7 @@ mod tests {
     fn test_k_not_monotonic() {
         let rcf = [0x42; 32];
         let mut chain = build_valid_chain(&rcf, 12);
-        // Force a K-index regression — but also fix the hash so it doesn't
+        // Apply a K-index regression — but also fix the hash so it doesn't
         // fail on hash verification first. We need to rebuild the receipt.
         // Simpler: just swap two receipts' k_index values.
         chain[8].k_index = chain[7].k_index; // duplicate K = not strictly monotonic

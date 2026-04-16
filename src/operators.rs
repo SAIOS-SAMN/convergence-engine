@@ -358,7 +358,7 @@ fn invert_rational_matrix(mat: &[Vec<Q>], n: usize) -> Option<Vec<Vec<Q>>> {
 
 // ─── Production Operator Set ───────────────────────────────────────────
 
-/// Build the production operator set for a 3×3 mesh node.
+/// Build the production operator set for a 3×3 mesh entity.
 /// Three structurally distinct operators acting on orthogonal subspaces.
 /// All ids > 0 (no α=0 privilege in compute_all_omegas).
 pub fn production_operators_3x3() -> Vec<Operator> {

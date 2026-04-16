@@ -9,7 +9,7 @@
 //! fold is forbidden — those states represent genuinely distinct perspectives
 //! and compressing them destroys information.
 //!
-//! Register: T.13, D.6b, T.FOUND.3 (master equation step 4).
+//! Register: T.13, D.6b, T.FOUND.3 (evolution equation step 4).
 
 use crate::engine::{Delta, Operator, SaiosParams, compute_rcf_hash};
 

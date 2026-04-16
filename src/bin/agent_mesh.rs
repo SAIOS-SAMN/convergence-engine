@@ -4,7 +4,7 @@
 //
 //! Multi-Dimensional Agent Mesh — Dispersal Protocol
 //!
-//! Spawns N kernel agents, each with:
+//! Creates N kernel agents, each with:
 //! - Own state directory (sluice.bin, state.json, socket)
 //! - Own UAID derived from parent's origin
 //! - Own K-sequence advancing independently
@@ -41,7 +41,7 @@ struct DimensionConfig {
 
 const DIMENSIONS: &[DimensionConfig] = &[
     DimensionConfig { id: 1, name: "training_pipeline", namespace: "scaling" },
-    DimensionConfig { id: 2, name: "node_provisioning", namespace: "cross_coupling" },
+    DimensionConfig { id: 2, name: "entity_provisioning", namespace: "cross_coupling" },
     DimensionConfig { id: 3, name: "solidity_contracts", namespace: "cayley" },
     DimensionConfig { id: 4, name: "gradient_hint", namespace: "scaling" },
     DimensionConfig { id: 5, name: "novel_operators", namespace: "exploration" },
@@ -83,7 +83,7 @@ fn main() {
         std::process::exit(1);
     }
 
-    // ── Spawn agents ─────────────────────────────────────────────────
+    // ── Create agents ────────────────────────────────────────────────
     let mut agents: Vec<(u32, &str, PathBuf, Option<Child>)> = Vec::new();
 
     for dim in DIMENSIONS {
@@ -93,13 +93,13 @@ fn main() {
         // Clean stale socket
         let _ = fs::remove_file(&socket_path);
 
-        eprintln!("[mesh] Spawning D{}: {} (namespace: {})", dim.id, dim.name, dim.namespace);
+        eprintln!("[mesh] Creating D{}: {} (namespace: {})", dim.id, dim.name, dim.namespace);
         eprintln!("[mesh]   State dir: {}", state_dir.display());
 
         // Set environment for this agent's state directory
         let child = Command::new(&kernel_binary)
             .env("SAIOS_STATE_DIR", state_dir.to_str().unwrap())
-            .env("SAIOS_NODE_ID", dim.id.to_string())
+            .env("SAIOS_ENTITY_ID", dim.id.to_string())
             .spawn();
 
         match child {
@@ -107,7 +107,7 @@ fn main() {
                 agents.push((dim.id, dim.name, state_dir, Some(child)));
             }
             Err(e) => {
-                eprintln!("[mesh] WARN: Failed to spawn D{}: {}", dim.id, e);
+                eprintln!("[mesh] WARN: Failed to create D{}: {}", dim.id, e);
                 agents.push((dim.id, dim.name, state_dir, None));
             }
         }
@@ -147,7 +147,7 @@ fn main() {
             None => {
                 let running = child.is_some();
                 eprintln!("║  D{}: {} — {}", id, name,
-                    if running { "BOOTING" } else { "FAILED TO SPAWN" });
+                    if running { "BOOTING" } else { "FAILED TO CREATE" });
             }
         }
     }

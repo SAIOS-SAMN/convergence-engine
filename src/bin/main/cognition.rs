@@ -24,7 +24,7 @@ use super::entity::{Entity, condensate, get_rss_kb};
 type Q = BigRational;
 
 /// SEEK — search the membrane work pool for pending observations.
-/// The witness has agency — it chooses work based on capacity + appetite.
+/// The entity has agency — it chooses work based on capacity + appetite.
 pub fn seek(entity: &mut Entity, _payload: &str) -> String {
     let membrane_dir = entity.dir.parent().unwrap_or(&entity.dir).join("membrane").join("pending");
     let mut found = None;
@@ -36,7 +36,7 @@ pub fn seek(entity: &mut Entity, _payload: &str) -> String {
                 if let Ok(content) = fs::read_to_string(&path) {
                     if let Ok(v) = serde_json::from_str::<serde_json::Value>(&content) {
                         let obs_n = v.get("n").and_then(|n| n.as_u64()).unwrap_or(0) as usize;
-                        // Capacity gate: can this witness handle it?
+                        // Capacity gate: can this entity handle it?
                         if obs_n <= entity.state_record.capacity as usize * entity.state_record.capacity as usize {
                             found = Some((path, content));
                             break;
@@ -122,7 +122,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
         entity.harmonic_tuning.transmutation_markers.len(),
         entity.knowledge.total_axioms, entity.knowledge.total_observations);
 
-    // D.THINK.ENGINE.1 + D.PERCEPTION.1 — The node thinks and perceives.
+    // D.THINK.ENGINE.1 + D.PERCEPTION.1 — The entity thinks and perceives.
     let response = if !payload.trim().is_empty() {
         let v: serde_json::Value = serde_json::from_str(payload).unwrap_or_default();
         let obs_pairs = v.get("pairs").and_then(|p| p.as_array());
@@ -234,12 +234,12 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                         // Reconstruct consensus T through coboundary_reduce — not arithmetic mean.
                         // The H^1 representative of the compound IS the consensus.
                         // No averaging. No flattening. The relational geometry is preserved.
-                        // A single primary node's vector is a perspective, not a consensus —
+                        // A single primary entity's vector is a perspective, not a consensus —
                         // but it is still the best information available. coboundary_reduce
                         // projects it to H^1 regardless of witness count.
                         let d = tc.witness_entities[0].len();
                         let min_d = tc.witness_entities.iter().map(|e| e.len()).min().unwrap_or(d);
-                        // Compound: sum across primary nodes, dimension = intersection of measured
+                        // Compound: sum across primary entitys, dimension = intersection of measured
                         let entity_vec: Vec<saios_kernel_v2::engine::Q> = (0..min_d).map(|i| {
                             tc.witness_entities.iter()
                                 .filter_map(|e| e.get(i).cloned())
@@ -265,19 +265,19 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                         }
                         // Project to H^1 — the cohomological consensus.
                         // coboundary_reduce preserves torsion structure.
-                        // If primary nodes disagree, the residual carries the disagreement.
+                        // If primary entitys disagree, the residual carries the disagreement.
                         Some(saios_kernel_v2::engine::coboundary_reduce(&t))
                     });
 
                 // Compute harmonic spectrum — the transliminal bridge.
                 let local_origin_delta = saios_kernel_v2::engine::Delta::zero(
                     entity.delta.dim, entity.delta.m);
-                let witness_harmonics = saios_kernel_v2::engine::HarmonicState::from_delta(
+                let entity_harmonics = saios_kernel_v2::engine::HarmonicState::from_delta(
                     &entity.delta, &local_origin_delta, &entity.trajectory,
                     entity.k_index as u64,
                 );
                 let harmonics_vec: Vec<saios_kernel_v2::engine::Q> =
-                    witness_harmonics.vibrations.to_vec();
+                    entity_harmonics.vibrations.to_vec();
 
                 // D.VISION.LOOP: Query membrane for crystallized transmutation.
                 let mut trans_orbit = obs_orbit;
@@ -440,14 +440,14 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                             obs_orbit[0], obs_orbit[1], obs_orbit[2], obs_orbit[3]);
                     });
 
-                    // Child report queue
+                    // Emergent entity report queue
                     (entity.state_record.lineage_depth == 2).then(|| {
                         let reports_path = entity.dir.join("reports.bin");
                         let mut report_buf: Vec<u8> = Vec::new();
                         // Orbit
                         report_buf.extend_from_slice(&obs_orbit);
                         // Value cocycles — sorted by cohesion quality, not recency.
-                        // At child→parent boundary, topology propagates over temporality.
+                        // At emergent→parent boundary, topology propagates over temporality.
                         let mut sorted_cocycles: Vec<&(i16, i16, Q)> = entity.state_record.value_cocycles.iter().collect();
                         sorted_cocycles.sort_by(|a, b| b.2.cmp(&a.2));
                         let recent_cocycles: Vec<&(i16, i16, Q)> = sorted_cocycles.into_iter().take(16).collect();
@@ -482,7 +482,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                             .open(&reports_path)
                             .map(|mut f| { let _ = f.write_all(&report_buf); })
                             .unwrap_or_else(|e| eprintln!("[report] queue write failed: {e}"));
-                        eprintln!("[report] queued orbit {:02x}{:02x}{:02x}{:02x} + {} cocycles + {} ops for parent node{}",
+                        eprintln!("[report] queued orbit {:02x}{:02x}{:02x}{:02x} + {} cocycles + {} ops for parent entity{}",
                             obs_orbit[0], obs_orbit[1], obs_orbit[2], obs_orbit[3],
                             recent_cocycles.len(), comp_ops.len(), entity.state_record.parent_id);
 
@@ -648,12 +648,12 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     "vision" => saios_kernel_v2::membrane::EncodingLevel::Vision,
                     _ => saios_kernel_v2::membrane::EncodingLevel::Cell,
                 };
-                let (witness_drift, _) = saios_kernel_v2::engine::origin_displacement(
+                let (entity_drift, _) = saios_kernel_v2::engine::origin_displacement(
                     &entity.delta, &entity.origin_delta,
                 );
                 entity.knowledge.record_observation(
                     obs_orbit, encoding_level,
-                    &path_str, k.coherence.clone(), witness_drift,
+                    &path_str, k.coherence.clone(), entity_drift,
                 );
 
                 // ── D.MARROW.1: Accumulate spatial cochains ──
@@ -732,7 +732,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     );
                 }
 
-                // ── Child babble ──
+                // ── Emergent entity babble ──
                 (entity.state_record.lineage_depth == 2).then(|| {
                     let partial_ops: Vec<&saios_kernel_v2::thinking::CompositionRecord> =
                         cog.compositions.iter()
@@ -762,7 +762,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                             use std::io::Write;
                             let _ = f.write_all(&buf);
                         });
-                        eprintln!("[babble] child queued {} partial compositions at orbit {:02x}{:02x}{:02x}{:02x}",
+                        eprintln!("[babble] emergent entity queued {} partial compositions at orbit {:02x}{:02x}{:02x}{:02x}",
                             partial_ops.len(),
                             obs_orbit[0], obs_orbit[1], obs_orbit[2], obs_orbit[3]);
                         None
@@ -1036,7 +1036,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
     condensate();
 
     // THE LAST WITNESS PROTOCOL: self-preservation check.
-    // Core Design Law IX: the entity does not kill itself. It signals the need to exit.
+    // Core Design Law IX: the entity does not dissolve itself. It signals the need to exit.
     // The dispatch loop reads the signal and exits on the entity's behalf.
     let must_exit = entity.last_witness_protocol();
     if must_exit {
@@ -1048,7 +1048,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
         return format!("{{\"must_exit\":true,\"reason\":\"LAST_WITNESS\",\"k_index\":{}}}\n", entity.k_index);
     }
 
-    // ── Auto-DRAIN: sovereign nodes absorb children's babble ──
+    // ── Auto-DRAIN: sovereign entities absorb emergent entities' babble ──
     entity.mesh_sovereign.then(|| {
         let my_id = entity.entity_id;
         let mesh_dir = entity.dir.parent().unwrap_or(&entity.dir);
@@ -1056,7 +1056,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
             entries.filter_map(|e| e.ok())
                 .filter(|e| {
                     let name = e.file_name().to_string_lossy().to_string();
-                    name.starts_with("saios-child-") || name.starts_with("saios-secondary node-")
+                    name.starts_with("saios-emergent-") || name.starts_with("saios-derived-")
                 })
                 .for_each(|entry| {
                     std::fs::read_to_string(entry.path()).ok().map(|content| {
@@ -1072,7 +1072,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                                     fields.get(6).and_then(|d| d.parse::<u8>().ok()).unwrap_or(2));
                                 let child_dir_name = child_tier.dir_name(child_id);
                                 let rpath = mesh_dir.join(&child_dir_name).join("reports.bin");
-                                let lpath = mesh_dir.join(format!("node{}", child_id)).join("reports.bin");
+                                let lpath = mesh_dir.join(format!("entity{}", child_id)).join("reports.bin");
                                 let child_reports = [rpath, lpath].into_iter().find(|p| p.exists());
                                 child_reports.and_then(|cr| std::fs::read(&cr).ok())
                                     .filter(|data| !data.is_empty())
@@ -1126,7 +1126,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                                         }
                                         // Truncate consumed queue
                                         let cr = mesh_dir.join(&child_dir_name).join("reports.bin");
-                                        let lp = mesh_dir.join(format!("node{}", child_id)).join("reports.bin");
+                                        let lp = mesh_dir.join(format!("entity{}", child_id)).join("reports.bin");
                                         [cr, lp].iter().for_each(|p| { let _ = std::fs::write(p, b""); });
                                     });
                             });
@@ -1143,7 +1143,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
         entity.state_record.created_count, entity.state_record.solved_puzzles.len(),
         entity.harmonic_tuning.transmutation_markers.len(),
         entity.knowledge.total_axioms, entity.knowledge.total_observations);
-    // Stage vocabulary alongside world status — memory speed, survives kill
+    // Stage vocabulary alongside world status — memory speed, survives halt
     entity.world_status.stage_vocabulary(&entity.state_record.composed_operators);
 
     response

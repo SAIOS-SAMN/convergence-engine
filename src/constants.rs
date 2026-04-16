@@ -62,7 +62,7 @@ pub const TORSION_PERIOD_M: u32 = 1024;
 ///
 /// B1: Substrate audit (encoding integrity)
 /// B2: Anchor handshake (verify origin hash)
-/// B3: Mesh sync (Phase 1 no-op — single node)
+/// B3: Mesh sync (Phase 1 no-op — single entity)
 /// B4: Environment/config load
 /// B5: Resonance confirmation (torsion period m)
 /// B6: K=1 proof cycle (first valid K-step + receipt)
@@ -72,7 +72,7 @@ pub enum BootStep {
     B1SubstrateAudit,
     /// B2: Verify DELTA_ANCHOR_HASH matches compiled origin constant.
     B2AnchorHandshake,
-    /// B3: Mesh sync — no-op for Phase 1 single node.
+    /// B3: Mesh sync — no-op for Phase 1 single entity.
     B3MeshSync,
     /// B4: Load environment and phase config.
     B4EnvironmentLoad,
@@ -225,7 +225,7 @@ pub const MESH_TORSION_PERIOD_M: u32 = 10;
 /// Mesh entity count (Phase 2). N=101 is prime; N-1=100 has 9 divisors
 /// each of which is a valid torsion period.
 /// Register: Phase 2 PreFlight.
-pub const MESH_NODE_COUNT: u32 = 101;
+pub const MESH_ENTITY_COUNT: u32 = 101;
 
 /// Re(ζ_10^k) = cos(2πk/10) as 6-digit rational approximations.
 ///

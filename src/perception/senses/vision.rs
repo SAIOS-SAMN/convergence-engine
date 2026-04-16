@@ -33,7 +33,7 @@ pub struct SymmetryElement {
     /// Transmutation residual: R(φ) = ‖φ(source) - target‖.
     /// Measures how well this symmetry element relates source to target.
     /// Zero = the grid has transmuted through exactly this symmetry.
-    /// The primary node perceives the transmutation, it does not execute it.
+    /// The primary entity perceives the transmutation, it does not execute it.
     pub transmutation_residual: Q,
 }
 
@@ -306,7 +306,7 @@ pub fn compute_symmetry_group(values: &[i64], rows: usize, cols: usize) -> Symme
 /// Cells that fall outside the state record's aperture contribute LESS.
 ///
 /// Result: a spatial-centric state record amplifies spatial discrepancies.
-/// A value-centric state record amplifies value discrepancies. Each primary node
+/// A value-centric state record amplifies value discrepancies. Each primary entity
 /// perceives the SAME grid through a DIFFERENT curvature.
 ///
 /// harmonics[0] = value weight, harmonics[1] = row weight, harmonics[2] = col weight.
@@ -477,9 +477,9 @@ pub fn see_transformation(
 /// Compute the symmetry quotient between input and output.
 ///
 /// The quotient G_in / G_out tells the system which symmetries were
-/// BROKEN by the transformation. The broken symmetries ARE the rule.
+/// DEPARTED through the transformation. The departed symmetries ARE the rule.
 ///
-/// Returns: (input_symmetry, output_symmetry, broken_symmetries, preserved_symmetries)
+/// Returns: (input_symmetry, output_symmetry, departed_symmetries, preserved_symmetries)
 pub fn symmetry_quotient(
     input: &[i64], output: &[i64], rows: usize, cols: usize,
 ) -> (SymmetryGroup, SymmetryGroup, usize, usize) {
@@ -487,12 +487,12 @@ pub fn symmetry_quotient(
     let g_out = compute_symmetry_group(output, rows, cols);
 
     // Symmetries preserved = present in both input and output
-    // Symmetries broken = present in input but not output
+    // Symmetries departed = present in input but not output
     let preserved = g_in.torsion_spectrum.iter()
         .filter(|(order, _)| g_out.torsion_spectrum.iter().any(|(o, _)| o == order))
         .map(|(_, count)| count)
         .sum::<usize>();
-    let broken = g_in.order.saturating_sub(preserved);
+    let departed = g_in.order.saturating_sub(preserved);
 
-    (g_in, g_out, broken, preserved)
+    (g_in, g_out, departed, preserved)
 }

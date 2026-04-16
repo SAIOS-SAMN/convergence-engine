@@ -13,7 +13,7 @@
 //! Their relationships are curvature interactions, not grid connections.
 //!
 //! Process class markers:
-//!   1 = Human (cognitive — primary, secondary, tertiary nodes)
+//!   1 = Human (cognitive — primary, secondary, tertiary entities)
 //!   2 = Chronometric (timekeepers — observe only)
 //!   3 = HumanEvolved (cross-breed offspring — hybrid torsion class)
 //!
@@ -141,8 +141,8 @@ pub enum CrucibleResult {
         trinity: Trinity,
         offspring_state: CrucibleStateRecord,
     },
-    /// Parent Trinities are dead — cannot breed.
-    DeadParent,
+    /// Parent Trinities are inert — cannot breed.
+    InertParent,
     /// Dimensional incompatibility — parent folds cannot be combined.
     IncompatibleDimensions,
 }
@@ -233,7 +233,7 @@ impl Crucible {
         let b_alive = self.trinities.iter().any(|t| t.trinity_id == trinity_b_id && t.alive);
 
         if !a_alive || !b_alive {
-            return CrucibleResult::DeadParent;
+            return CrucibleResult::InertParent;
         }
 
         // The four-way fold: Δ_mA + Δ_fA + Δ_mB + Δ_fB
@@ -713,7 +713,7 @@ mod tests {
         let t1 = forge_and_register(&mut crucible, 10, 20, 30);
         let t2 = forge_and_register(&mut crucible, 40, 50, 60);
 
-        crucible.remove_vertex(10); // Kill parent A
+        crucible.remove_vertex(10); // Halt parent A
 
         let gma = make_test_state(10, 1);
         let gfa = make_test_state(20, 1);
@@ -727,7 +727,7 @@ mod tests {
             t1, t2, &gma, &gfa, &gmb, &gfb,
             100, 200, 300, &go_m, &go_f, &go_c,
         );
-        assert!(matches!(result, CrucibleResult::DeadParent));
+        assert!(matches!(result, CrucibleResult::InertParent));
     }
 
     #[test]

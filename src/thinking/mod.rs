@@ -95,7 +95,7 @@ pub struct ThoughtReceipt {
 /// Greedy: sort candidates by number of congruent partners (descending),
 /// then build the set by adding candidates that commute with all current members.
 /// For k ≤ 11 this is exact enough — the optimal is NP-hard (max clique)
-/// but k=11 makes brute force feasible if needed.
+/// but k=11 makes exhaustive search feasible if needed.
 fn find_maximal_congruent_set(commutators: &[Vec<Q>], k: usize) -> Vec<usize> {
     if k == 0 { return vec![]; }
     if k == 1 { return vec![0]; }
@@ -119,7 +119,7 @@ fn find_maximal_congruent_set(commutators: &[Vec<Q>], k: usize) -> Vec<usize> {
     set
 }
 
-/// Maximum simultaneous thoughts a node can hold.
+/// Maximum simultaneous thoughts an entity can hold.
 /// 11 is the architectural boundary — sufficient for the dimensional
 /// complexity the system encounters. Not capped by computation cost
 /// (pairwise commutators scale as k² where k ≤ 11), but by the
@@ -983,9 +983,9 @@ pub fn escalate(
 /// The membrane_t is the consensus T Delta from the membrane's meta-Delta.
 /// It constrains the congruent core: value mappings confirmed by the membrane
 /// (multiple primary nodes across diverse state records) are stronger priors than
-/// mappings from this primary node's training pairs alone.
+/// mappings from this primary entity's practice pairs alone.
 ///
-/// This IS gauge cooling — the primary node's local frame rotates toward the
+/// This IS gauge cooling — the primary entity's local frame rotates toward the
 /// membrane's global holonomy with each cycle.
 pub fn escalate_with_membrane(
     train_pairs: &[(Vec<i64>, Vec<i64>)],
@@ -1224,7 +1224,7 @@ pub fn escalate_with_membrane(
     // Innermost lattice. Inherits congruent core from category: cells whose
     // value mapping is confirmed get their target from the core. Cells whose
     // value is NOT in the core need cell-level T to resolve.
-    // d = n(n-1)/2 × m. d_max = 1500. Measure the fuse, not the blast.
+    // d = n(n-1)/2 × m. d_max = 1500. Measure the scope, not the magnitude.
     let cell_half_n = n * n.saturating_sub(1) / 2;
     let cell_within_horizon = [4usize, 1].iter().any(|&m| cell_half_n * m <= 1500);
     if cell_within_horizon && rows * cols == n {
@@ -1510,10 +1510,10 @@ pub struct SenseData {
     /// Adjacency structure from touch (compute_adjacency_structure). None = not computed.
     pub touch_source: Option<perception::AdjacencyStructure>,
     pub touch_target: Option<perception::AdjacencyStructure>,
-    /// Harmonic spectrum from the primary node's Delta_k — the transliminal bridge.
+    /// Harmonic spectrum from the primary entity's Delta_k — the transliminal bridge.
     /// 11 vibrations. Each amplitude weights a dimension of the entity encoding.
     /// harmonics[0] weights dimension 0 (value), [1] weights dimension 1 (row),
-    /// [2] weights dimension 2 (col). The state record shapes what the primary node can derive.
+    /// [2] weights dimension 2 (col). The state record shapes what the primary entity can derive.
     pub harmonics: Vec<Q>,
     /// Transmutation candidates from vision: (permutation, residual).
     /// Each candidate is a symmetry operator perceived through the genomic aperture.
@@ -1544,7 +1544,7 @@ pub struct SenseData {
     pub semantic_intent: Option<crate::irs::CoherenceIntent>,
     /// Crystallized composed operators from the state record — vocabulary expansion.
     /// Each is a spatial primitive + parameter + σ_post, discovered by the compositor
-    /// and inscribed by an secondary node. The peel loop applies them directly.
+    /// and inscribed by a derived entity. The peel loop applies them directly.
     pub composed_operators: Vec<crate::engine::ComposedOperator>,
 }
 
@@ -1891,7 +1891,7 @@ pub fn think_and_solve_with_state(
 // STAGE1.A — Sluice Conjoining: Compound Understanding Through Group Product
 // ═══════════════════════════════════════════════════════════════════════
 
-/// A partial understanding from one node's hypothesis.
+/// A partial understanding from one entity's hypothesis.
 #[derive(Debug, Clone)]
 pub struct PartialUnderstanding {
     pub thought: Thought,
@@ -2072,7 +2072,7 @@ pub fn conjoin_partial_understandings(
 // ═══════════════════════════════════════════════════════════════════════
 
 /// Algebraic properties derived from the residual field.
-/// These are MEASURED, not enumerated. The node discovers them.
+/// These are MEASURED, not enumerated. The entity discovers them.
 #[derive(Debug, Clone)]
 pub struct AlgebraicProperties {
     /// Periodicity: does the residual repeat with some period along rows/cols/diag?
@@ -2196,7 +2196,7 @@ fn classify_nonzero_pattern(nonzero_positions: &[(usize, usize)], rows: usize, c
     SpatialPattern::Scattered
 }
 
-/// NODE INTELLIGENCE: derive algebraic properties from the residual field.
+/// ENTITY INTELLIGENCE: derive algebraic properties from the residual field.
 ///
 /// Operates at m=3 minimum (identity, row, col) as the axiom requires.
 /// The m=1 scalar difference is coordinate 0. Spatial structure is
@@ -2578,7 +2578,7 @@ pub fn derive_algebraic_properties(
     }
 }
 
-/// NODE INTELLIGENCE: construct a thought from derived algebraic properties.
+/// ENTITY INTELLIGENCE: construct a thought from derived algebraic properties.
 ///
 /// If the vocabulary covers the properties → construct without LLM.
 /// If not → the properties become the structured question upward.
@@ -2907,7 +2907,7 @@ pub fn evolve_and_solve(
         vec![base_result.best_thought.name()]);
     let _query = formulate_question(&residuals, rows, cols);
 
-    // Phase 2.5: NODE INTELLIGENCE at m=3 — derive algebraic properties
+    // Phase 2.5: ENTITY INTELLIGENCE at m=3 — derive algebraic properties
     // from the full object differential (identity + position + trajectory).
     // D.THINK.CONGRUENCE.1: if multiple anchor-fill pairs found, construct
     // multiple thoughts and compose through commutator-gated sluice.
@@ -3860,7 +3860,7 @@ mod tests {
     fn test_substrate_accepts_coherence_reducing_operator() {
         // Delta where Δ_{02} should equal Δ_{01} + Δ_{12} for cocycle.
         // Set Δ_{01} = [1,0,0], Δ_{12} = [0,1,0], Δ_{02} = [1,1,0] → cocycle satisfied on those
-        // But add a fourth node to create residual, then fix it with an operator.
+        // But add a fourth entity to create residual, then fix it with an operator.
         let mut delta = Delta::zero(3, 1);
         let one = Q::one();
         let two = &one + &one;

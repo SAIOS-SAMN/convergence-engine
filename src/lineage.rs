@@ -5,20 +5,20 @@
 //! Lineage — sovereign creation engine.
 //!
 //! Creation is not cognition. The lineage engine reads the state record to determine
-//! creation capacity, replicates state record + harmonic tuning to a new node directory,
-//! and records the parent-child relationship. It does not think. It creates.
+//! creation capacity, replicates state record + harmonic tuning to a new entity directory,
+//! and records the parent-offspring relationship. It does not think. It creates.
 //!
 //! Hierarchy (fixed depth):
-//!   Witness (depth 0) — founding tier. Creates ≤3 secondary nodes.
-//!   Secondary (depth 1) — created by primary node. Creates ≤6 children.
-//!   Child   (depth 2) — created by secondary node. Creates none.
+//!   Founder (depth 0) — founding tier. Creates ≤3 derived entities.
+//!   Derived (depth 1) — created by primary entity. Creates ≤6 emergent entities.
+//!   Emergent (depth 2) — created by derived entity. Creates none.
 //!
-//! Population bounds: 7 primary nodes × 3 secondary nodes × 6 children = 133 max.
-//! 503 node slots available. 405 reserve.
+//! Population bounds: 7 primary entities × 3 derived entities × 6 emergent entities = 133 max.
+//! 503 entity slots available. 405 reserve.
 //!
 //! The state record carries lineage: parent_id, lineage_depth, created_count, init_orbit.
 //! The harmonic tuning carries reflexes: transmutation path markers inherited from parent.
-//! The child starts intelligent — it inherits everything the parent crystallized.
+//! The offspring starts intelligent — it inherits everything the parent crystallized.
 
 use std::path::{Path, PathBuf};
 use std::fs;
@@ -56,13 +56,13 @@ impl Tier {
     /// primary-1, secondary-18, tertiary-52 — the hierarchy is visible everywhere.
     pub fn prefix(&self) -> &'static str {
         match self {
-            Tier::Primary => "primary",
-            Tier::Secondary => "secondary",
-            Tier::Tertiary => "tertiary",
+            Tier::Primary => "founder",
+            Tier::Secondary => "derived",
+            Tier::Tertiary => "emergent",
         }
     }
 
-    /// Format a directory name: "witness-1", "secondary-18", "child-52"
+    /// Format a directory name: "founder-1", "derived-18", "emergent-52"
     pub fn dir_name(&self, id: u16) -> String {
         format!("{}-{}", self.prefix(), id)
     }
@@ -72,13 +72,13 @@ impl Tier {
         format!("saios-{}@{}.service", self.prefix(), id)
     }
 
-    /// Format a /dev/shm status path: "/dev/shm/saios-witness-1"
+    /// Format a /dev/shm status path: "/dev/shm/saios-founder-1"
     pub fn shm_path(&self, id: u32) -> PathBuf {
         PathBuf::from(format!("/dev/shm/saios-{}-{}", self.prefix(), id))
     }
 
-    /// Mesh write sovereignty. Witnesses and secondary nodes write to the mesh.
-    /// Children report upward to their creating secondary node.
+    /// Mesh write sovereignty. Founders and derived entities write to the mesh.
+    /// Emergent entities report upward to their creating derived entity.
     pub fn mesh_sovereign(&self) -> bool {
         match self {
             Tier::Primary => true,
@@ -91,7 +91,7 @@ impl Tier {
 /// Result of a creation attempt.
 #[derive(Debug)]
 pub struct CreationRecord {
-    /// Node ID of the newly created offspring.
+    /// Entity ID of the newly created offspring.
     pub child_entity_id: u16,
     /// Path to the offspring's data directory.
     pub child_dir: PathBuf,
@@ -106,7 +106,7 @@ pub struct CreationRecord {
 pub enum CreationObstruction {
     /// Parent has reached its tier's creation bound.
     CapacitySaturated { depth: u8, created: u8, bound: u8 },
-    /// No available node slot in the mesh directory.
+    /// No available entity slot in the mesh directory.
     NoSlotAvailable,
     /// Filesystem error during replication.
     ReplicationFailed(String),
@@ -114,12 +114,12 @@ pub enum CreationObstruction {
 
 /// Find the next available slot in the mesh directory.
 /// Scans from start_id upward. Returns None when no slot available.
-/// Checks both new tier-prefixed names (secondary-18) and legacy node names (node18).
+/// Checks both new tier-prefixed names (derived-18) and legacy entity names (entity18).
 fn next_available_slot(mesh_dir: &Path, child_tier: Tier, start_id: u16, max_id: u16) -> Option<u16> {
     (start_id..=max_id)
         .find(|&id| {
             let tier_dir = mesh_dir.join(child_tier.dir_name(id));
-            let legacy_dir = mesh_dir.join(format!("node{}", id));
+            let legacy_dir = mesh_dir.join(format!("entity{}", id));
             // Slot is available if neither tier-named nor legacy-named dir has an active socket
             (!tier_dir.exists() || !tier_dir.join("saios-kernel.sock").exists())
                 && (!legacy_dir.exists() || !legacy_dir.join("saios-kernel.sock").exists())
@@ -129,7 +129,7 @@ fn next_available_slot(mesh_dir: &Path, child_tier: Tier, start_id: u16, max_id:
 /// Attempt to create an offspring from a parent state record.
 ///
 /// Reads the parent's creation capacity from its state record. If capacity remains,
-/// replicates state record + harmonic tuning to a new node directory. Records lineage
+/// replicates state record + harmonic tuning to a new entity directory. Records lineage
 /// in the offspring's state record. Increments the parent's created_count.
 ///
 /// Does NOT start the offspring's service — that is external (systemd).
@@ -155,10 +155,10 @@ pub fn create_offspring(
             bound,
         })?;
 
-    // Find available slot (secondary nodes start at 18, children at 52)
+    // Find available slot (derived entities start at 18, emergent entities at 52)
     let child_tier = match tier {
-        Tier::Primary => Tier::Secondary,     // witness creates secondary nodes: 18-51
-        Tier::Secondary => Tier::Tertiary,       // secondary node creates children: 52-153
+        Tier::Primary => Tier::Secondary,     // founder creates derived entities: 18-51
+        Tier::Secondary => Tier::Tertiary,       // derived entity creates emergent entities: 52-153
         Tier::Tertiary => return Err(CreationObstruction::CapacitySaturated {
             depth: 2, created: 0, bound: 0,
         }),
@@ -184,7 +184,7 @@ pub fn create_offspring(
     offspring_state.parent_id = parent_entity_id;
     offspring_state.created_count = 0;
     offspring_state.init_orbit = init_orbit;
-    // Offspring gets its own init polynomial: parent's evolved position IS the child's origin
+    // Offspring gets its own init polynomial: parent's evolved position IS the offspring's origin
     offspring_state.init_polynomial = parent_state.evolved.entries.iter()
         .flat_map(|row| row.iter().flat_map(|col| col.iter()))
         .take(11)
@@ -248,7 +248,7 @@ mod tests {
         let result = create_offspring(&mut parent, &epi, 1, [0xAA, 0xBB, 0xCC, 0xDD], mesh_dir);
         let record = result.unwrap();
 
-        assert_eq!(record.child_depth, 1); // secondary node
+        assert_eq!(record.child_depth, 1); // derived entity
         assert_eq!(record.init_orbit, [0xAA, 0xBB, 0xCC, 0xDD]);
         assert_eq!(parent.created_count, 1);
 
@@ -262,7 +262,7 @@ mod tests {
     }
 
     #[test]
-    fn test_witness_saturates_at_three() {
+    fn test_founder_saturates_at_three() {
         let tmp = TempDir::new().unwrap();
         let mesh_dir = tmp.path();
 
@@ -280,13 +280,13 @@ mod tests {
     }
 
     #[test]
-    fn test_child_cannot_create() {
+    fn test_emergent_cannot_create() {
         let tmp = TempDir::new().unwrap();
         let mesh_dir = tmp.path();
 
         let origin = Delta::zero(3, 1);
         let mut offspring_state = StateRecord::new(1, 1, &origin);
-        offspring_state.lineage_depth = 2; // child tier
+        offspring_state.lineage_depth = 2; // emergent tier
         let epi = HarmonicTuning::new();
 
         let result = create_offspring(&mut offspring_state, &epi, 52, [1, 0, 0, 0], mesh_dir);

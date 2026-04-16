@@ -698,7 +698,7 @@ pub fn peel_manifold_with_senses(
         }
 
         // ── Genomic composed operators: vocabulary expansion ──
-        // Each composed operator was discovered by the compositor, inscribed by an secondary node,
+        // Each composed operator was discovered by the compositor, inscribed by a derived entity,
         // and inherited through lineage. The peel loop applies them directly — no recursive
         // composition needed. The spatial remap + σ_post fires in one pass.
         // The alphabet stays fixed. The words grow with every orbit.
@@ -1575,7 +1575,7 @@ pub fn peel_manifold_with_senses(
                     let new_p: Vec<_> = intermediate_pairs.iter()
                         .map(|(inp, out)| (apply_composed(inp), out.clone())).collect();
                     let new_t = intermediate_test.as_ref().map(|t| apply_composed(t));
-                    // Streaming: score immediately, keep best, discard rest
+                    // Streaming: score immediately, keep best, release rest
                     let cand = GeneratorCandidate { pairs: new_p, test: new_t, source: GeneratorSource::Evolved };
                     let score = combined_score(&cand.pairs);
                     if score < recursive_best_score {

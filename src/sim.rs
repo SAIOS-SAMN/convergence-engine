@@ -2,14 +2,14 @@
 // human editorial direction. It was not written by the researcher.
 // See /opt/saios/DISCLAIMER.md for full context.
 //
-//! Tier 1 MeshFabric Simulator — in-process 101-node algebraic stress test.
+//! Tier 1 MeshFabric Simulator — in-process 101-entity algebraic stress test.
 //!
-//! Tests convergence dynamics with three fault modes:
+//! Tests convergence dynamics with three perturbation modes:
 //! - Drift: Δ entries perturbed by small rational offsets each tick
-//! - KLag: node stops advancing K for N ticks then resumes
-//! - OrbitFork: node's state diverges into a different conjugacy class
+//! - KLag: entity stops advancing K for N ticks then resumes
+//! - OrbitFork: entity's state diverges into a different conjugacy class
 //!
-//! All nodes boot from identical Δ_Anchor (uniform origin).
+//! All entities boot from identical Δ_Anchor (uniform origin).
 //! A cyclic permutation operator produces T_k > 0 while preserving
 //! the RCF conjugacy class exactly (orthogonal → ‖PΔPᵀ‖² = ‖Δ‖²).
 //!
@@ -46,18 +46,18 @@ fn canonical_anchor(dim: usize, m: usize) -> Delta {
 // ─── Types ─────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
-pub enum FaultMode {
+pub enum PerturbationMode {
     Honest,
     Drift { epsilon: QR },
     KLag { resume_at_tick: u64 },
     OrbitFork,
 }
 
-pub struct NodeSim {
+pub struct EntitySim {
     pub entity_id: u32,
     pub state: EntityState,
     pub kernel: SaiosKernel,
-    pub fault: FaultMode,
+    pub perturbation: PerturbationMode,
     pub rcf_hash: [u8; 32],
     pub advanced_last_tick: bool,
 }
@@ -65,10 +65,10 @@ pub struct NodeSim {
 #[derive(Debug, Clone)]
 pub struct TickSnapshot {
     pub tick: u64,
-    pub k_per_node: Vec<u64>,
-    pub fault_gamma_avg: QR,
+    pub k_per_entity: Vec<u64>,
+    pub perturbation_gamma_avg: QR,
     pub honest_gamma_max: QR,
-    pub nodes_advanced: usize,
+    pub entities_advanced: usize,
     pub sigma_mesh: QR,
     pub hard_resync_triggered: bool,
 }
@@ -78,22 +78,22 @@ pub struct CoherenceReport {
     pub ticks_run: u64,
     pub honest_k_spread: u64,
     pub convergence_achieved: bool,
-    pub fault_entity_id: u32,
-    pub fault_mode: String,
+    pub perturbed_entity_id: u32,
+    pub perturbation_mode: String,
     pub ticks_until_detected: Option<u64>,
     pub gamma_trajectory: Vec<QR>,
     pub honest_gamma_trajectory: Vec<QR>,
-    pub nodes_advanced_trajectory: Vec<usize>,
+    pub entities_advanced_trajectory: Vec<usize>,
     pub sigma_mesh_trajectory: Vec<QR>,
 }
 
 // ─── MeshFabric ────────────────────────────────────────────────────────
 
 pub struct MeshFabric {
-    pub nodes: Vec<NodeSim>,
+    pub entities: Vec<EntitySim>,
     pub tick: u64,
     pub history: Vec<TickSnapshot>,
-    pub node_count: usize,
+    pub entity_count: usize,
 }
 
 impl MeshFabric {
@@ -104,7 +104,7 @@ impl MeshFabric {
         let ops = operators::production_operators_3x3();
 
         let rcf_hash = compute_rcf_hash(&anchor);
-        let nodes: Vec<NodeSim> = (0..n as u32)
+        let entities: Vec<EntitySim> = (0..n as u32)
             .map(|id| {
                 let state = EntityState {
                     entity_id: id, k_index: 0,
@@ -116,98 +116,98 @@ impl MeshFabric {
                     t_k_latest: QR::zero(),
                 };
                 // Production params: w_max = 1/3, ζ = 1/10
-                NodeSim {
+                EntitySim {
                     entity_id: id, state,
                     kernel: SaiosKernel::new_default(ops.clone()),
-                    fault: FaultMode::Honest,
+                    perturbation: PerturbationMode::Honest,
                     rcf_hash,
                     advanced_last_tick: false,
                 }
             })
             .collect();
 
-        MeshFabric { node_count: n, nodes, tick: 0, history: Vec::new() }
+        MeshFabric { entity_count: n, entities, tick: 0, history: Vec::new() }
     }
 
-    pub fn inject_fault(&mut self, entity_id: u32, fault: FaultMode) {
-        self.nodes[entity_id as usize].fault = fault;
+    pub fn inject_perturbation(&mut self, entity_id: u32, perturbation: PerturbationMode) {
+        self.entities[entity_id as usize].perturbation = perturbation;
     }
 
     pub fn tick(&mut self) {
-        // ── Step 1: Apply faults ──────────────────────────────────────
-        for node in &mut self.nodes {
-            match &node.fault {
-                FaultMode::Drift { epsilon } => {
-                    let c = node.state.delta_k.entries[0][1][0].clone();
-                    node.state.delta_k.entries[0][1][0] = &c + epsilon;
-                    node.state.delta_k.entries[1][0][0] = -(&c + epsilon);
+        // ── Step 1: Apply perturbations ──────────────────────────────
+        for entity in &mut self.entities {
+            match &entity.perturbation {
+                PerturbationMode::Drift { epsilon } => {
+                    let c = entity.state.delta_k.entries[0][1][0].clone();
+                    entity.state.delta_k.entries[0][1][0] = &c + epsilon;
+                    entity.state.delta_k.entries[1][0][0] = -(&c + epsilon);
                 }
-                FaultMode::KLag { resume_at_tick } => {
+                PerturbationMode::KLag { resume_at_tick } => {
                     if self.tick < *resume_at_tick {
-                        node.state.delta_bar = node.state.delta_k.clone();
+                        entity.state.delta_bar = entity.state.delta_k.clone();
                     }
                 }
-                FaultMode::OrbitFork => {
-                    node.state.delta_k.entries[0][1][0] += &qr(1, 1_000_000);
-                    node.state.delta_k.entries[1][0][0] -= &qr(1, 1_000_000);
+                PerturbationMode::OrbitFork => {
+                    entity.state.delta_k.entries[0][1][0] += &qr(1, 1_000_000);
+                    entity.state.delta_k.entries[1][0][0] -= &qr(1, 1_000_000);
                 }
-                FaultMode::Honest => {}
+                PerturbationMode::Honest => {}
             }
         }
 
-        // ── Step 2: Each node executes K-step ─────────────────────────
-        for node in &mut self.nodes {
-            match node.kernel.execute_k_step(&mut node.state) {
-                Ok(_) => { node.advanced_last_tick = true; }
-                Err(SaiosError::C4TkZero) => { node.advanced_last_tick = false; }
+        // ── Step 2: Each entity executes K-step ──────────────────────
+        for entity in &mut self.entities {
+            match entity.kernel.execute_k_step(&mut entity.state) {
+                Ok(_) => { entity.advanced_last_tick = true; }
+                Err(SaiosError::C4TkZero) => { entity.advanced_last_tick = false; }
                 Err(_) => {
-                    node.advanced_last_tick = false;
-                    node.state.sluice_state = SluiceState::Gated;
+                    entity.advanced_last_tick = false;
+                    entity.state.sluice_state = SluiceState::Gated;
                 }
             }
-            node.rcf_hash = compute_rcf_hash(&node.state.delta_k);
+            entity.rcf_hash = compute_rcf_hash(&entity.state.delta_k);
         }
 
         // ── Step 3: Compute metrics ───────────────────────────────────
-        let fault_idx = self.nodes.iter()
-            .position(|n| !matches!(n.fault, FaultMode::Honest))
+        let perturbed_idx = self.entities.iter()
+            .position(|n| !matches!(n.perturbation, PerturbationMode::Honest))
             .unwrap_or(0);
 
-        let fault_rcf = self.nodes[fault_idx].rcf_hash;
-        let mut fault_gamma_sum = QR::zero();
-        let mut fault_count = 0u32;
-        for (j, node) in self.nodes.iter().enumerate() {
-            if j == fault_idx { continue; }
-            if matches!(node.fault, FaultMode::Honest) {
-                fault_gamma_sum = fault_gamma_sum + mesh::gamma_sq_proxy(&fault_rcf, &node.rcf_hash);
-                fault_count += 1;
+        let perturbed_rcf = self.entities[perturbed_idx].rcf_hash;
+        let mut perturbation_gamma_sum = QR::zero();
+        let mut perturbation_count = 0u32;
+        for (j, entity) in self.entities.iter().enumerate() {
+            if j == perturbed_idx { continue; }
+            if matches!(entity.perturbation, PerturbationMode::Honest) {
+                perturbation_gamma_sum = perturbation_gamma_sum + mesh::gamma_sq_proxy(&perturbed_rcf, &entity.rcf_hash);
+                perturbation_count += 1;
             }
         }
-        let fault_gamma_avg = if fault_count > 0 {
-            fault_gamma_sum / qi(fault_count as i64)
+        let perturbation_gamma_avg = if perturbation_count > 0 {
+            perturbation_gamma_sum / qi(perturbation_count as i64)
         } else { QR::zero() };
 
         // Max Γ² among honest pairs
-        let honest_idxs: Vec<usize> = self.nodes.iter().enumerate()
-            .filter(|(_, n)| matches!(n.fault, FaultMode::Honest))
+        let honest_idxs: Vec<usize> = self.entities.iter().enumerate()
+            .filter(|(_, n)| matches!(n.perturbation, PerturbationMode::Honest))
             .map(|(i, _)| i).collect();
         let mut honest_gamma_max = QR::zero();
         for i in 0..honest_idxs.len() {
             for j in (i + 1)..honest_idxs.len() {
                 let g = mesh::gamma_sq_proxy(
-                    &self.nodes[honest_idxs[i]].rcf_hash,
-                    &self.nodes[honest_idxs[j]].rcf_hash,
+                    &self.entities[honest_idxs[i]].rcf_hash,
+                    &self.entities[honest_idxs[j]].rcf_hash,
                 );
                 if g > honest_gamma_max { honest_gamma_max = g; }
             }
         }
 
-        let nodes_advanced = self.nodes.iter().filter(|n| n.advanced_last_tick).count();
-        let k_per_node: Vec<u64> = self.nodes.iter().map(|n| n.state.k_index as u64).collect();
+        let entities_advanced = self.entities.iter().filter(|n| n.advanced_last_tick).count();
+        let k_per_entity: Vec<u64> = self.entities.iter().map(|n| n.state.k_index as u64).collect();
 
         // ── Σ_mesh via consensus::sigma_mesh (CC.SAMN.3) ──────────────
         let params = SaiosParams::default_register();
-        let peer_states_for_0: Vec<mesh::PeerState> = self.nodes.iter()
+        let peer_states_for_0: Vec<mesh::PeerState> = self.entities.iter()
             .filter(|n| n.entity_id != 0)
             .map(|n| mesh::PeerState {
                 entity_id: n.entity_id,
@@ -220,10 +220,10 @@ impl MeshFabric {
             })
             .collect();
         let sigma_mesh_val = consensus::sigma_mesh(
-            self.nodes[0].state.latest_sigma_enc,
+            self.entities[0].state.latest_sigma_enc,
             &peer_states_for_0,
-            self.nodes[0].state.k_index as u64,
-            &self.nodes[0].rcf_hash,
+            self.entities[0].state.k_index as u64,
+            &self.entities[0].rcf_hash,
             &params.alpha_p, &params.alpha_gamma, &params.alpha_k,
             &params.tau_lag, &params.epsilon_sluice,
         );
@@ -237,37 +237,37 @@ impl MeshFabric {
         };
 
         self.history.push(TickSnapshot {
-            tick: self.tick, k_per_node, fault_gamma_avg, honest_gamma_max,
-            nodes_advanced, sigma_mesh: sigma_mesh_val, hard_resync_triggered,
+            tick: self.tick, k_per_entity, perturbation_gamma_avg, honest_gamma_max,
+            entities_advanced, sigma_mesh: sigma_mesh_val, hard_resync_triggered,
         });
         self.tick += 1;
     }
 
     pub fn report(&self) -> CoherenceReport {
-        let fault_idx = self.nodes.iter()
-            .position(|n| !matches!(n.fault, FaultMode::Honest))
+        let perturbed_idx = self.entities.iter()
+            .position(|n| !matches!(n.perturbation, PerturbationMode::Honest))
             .unwrap_or(0);
-        let fault_node = &self.nodes[fault_idx];
-        let fault_mode = match &fault_node.fault {
-            FaultMode::Honest => "honest".into(),
-            FaultMode::Drift { epsilon } => format!("drift(ε={})", epsilon),
-            FaultMode::KLag { resume_at_tick } => format!("klag(resume={})", resume_at_tick),
-            FaultMode::OrbitFork => "orbit_fork".into(),
+        let perturbed_entity = &self.entities[perturbed_idx];
+        let perturbation_mode = match &perturbed_entity.perturbation {
+            PerturbationMode::Honest => "honest".into(),
+            PerturbationMode::Drift { epsilon } => format!("drift(ε={})", epsilon),
+            PerturbationMode::KLag { resume_at_tick } => format!("klag(resume={})", resume_at_tick),
+            PerturbationMode::OrbitFork => "orbit_fork".into(),
         };
 
-        let honest_ks: Vec<u64> = self.nodes.iter()
-            .filter(|n| matches!(n.fault, FaultMode::Honest))
+        let honest_ks: Vec<u64> = self.entities.iter()
+            .filter(|n| matches!(n.perturbation, PerturbationMode::Honest))
             .map(|n| n.state.k_index as u64).collect();
         let honest_k_spread = if honest_ks.is_empty() { 0 } else {
             honest_ks.iter().max().unwrap() - honest_ks.iter().min().unwrap()
         };
 
         let gamma_trajectory: Vec<QR> = self.history.iter()
-            .map(|s| s.fault_gamma_avg.clone()).collect();
+            .map(|s| s.perturbation_gamma_avg.clone()).collect();
         let honest_gamma_trajectory: Vec<QR> = self.history.iter()
             .map(|s| s.honest_gamma_max.clone()).collect();
-        let nodes_advanced_trajectory: Vec<usize> = self.history.iter()
-            .map(|s| s.nodes_advanced).collect();
+        let entities_advanced_trajectory: Vec<usize> = self.history.iter()
+            .map(|s| s.entities_advanced).collect();
         let sigma_mesh_trajectory: Vec<QR> = self.history.iter()
             .map(|s| s.sigma_mesh.clone()).collect();
 
@@ -278,9 +278,9 @@ impl MeshFabric {
         CoherenceReport {
             ticks_run: self.tick, honest_k_spread,
             convergence_achieved: honest_k_spread <= 1,
-            fault_entity_id: fault_node.entity_id, fault_mode,
+            perturbed_entity_id: perturbed_entity.entity_id, perturbation_mode,
             ticks_until_detected, gamma_trajectory, honest_gamma_trajectory,
-            nodes_advanced_trajectory, sigma_mesh_trajectory,
+            entities_advanced_trajectory, sigma_mesh_trajectory,
         }
     }
 
@@ -290,13 +290,13 @@ impl MeshFabric {
         eprintln!("Ticks:              {}", r.ticks_run);
         eprintln!("Honest K spread:    {}", r.honest_k_spread);
         eprintln!("Convergence:        {}", r.convergence_achieved);
-        eprintln!("Fault node:         {} ({})", r.fault_entity_id, r.fault_mode);
+        eprintln!("Perturbed entity:   {} ({})", r.perturbed_entity_id, r.perturbation_mode);
         eprintln!("Detected at tick:   {:?}", r.ticks_until_detected);
-        eprintln!("\n--- Nodes advancing per tick ---");
-        for (i, n) in r.nodes_advanced_trajectory.iter().enumerate().take(30) {
-            eprintln!("  tick {:3}: {} nodes advanced K", i, n);
+        eprintln!("\n--- Entities advancing per tick ---");
+        for (i, n) in r.entities_advanced_trajectory.iter().enumerate().take(30) {
+            eprintln!("  tick {:3}: {} entities advanced K", i, n);
         }
-        eprintln!("\n--- Γ_fault² ---");
+        eprintln!("\n--- Γ_perturbation² ---");
         for (i, g) in r.gamma_trajectory.iter().enumerate().take(30) {
             let v = g.numer().to_string().parse::<f64>().unwrap_or(0.0)
                 / g.denom().to_string().parse::<f64>().unwrap_or(1.0);
@@ -313,7 +313,7 @@ impl MeshFabric {
 
 // ─── Solo Drift Boundary Map ───────────────────────────────────────────
 
-/// Map RCF boundaries for a drifting node. Returns the tick numbers where
+/// Map RCF boundaries for a drifting entity. Returns the tick numbers where
 /// the RCF hash changes (invariant factor boundary crossings).
 pub fn solo_drift_boundary_map(epsilon: &QR, max_ticks: u64) -> Vec<u64> {
     let mut delta = canonical_anchor(3, 1);
@@ -339,16 +339,16 @@ pub fn solo_drift_boundary_map(epsilon: &QR, max_ticks: u64) -> Vec<u64> {
 pub const K_COOL: u64 = 10;
 
 impl MeshFabric {
-    /// Check if a previously-sluiced node can reenter.
+    /// Check if a previously-sluiced entity can reenter.
     pub fn attempt_reentry(&mut self, entity_id: u32, sluiced_at_tick: u64) -> bool {
         if self.tick < sluiced_at_tick + K_COOL {
             return false;
         }
         let anchor_rcf = compute_rcf_hash(&canonical_anchor(3, 1));
-        let node = &mut self.nodes[entity_id as usize];
-        if node.rcf_hash == anchor_rcf {
-            node.state.sluice_state = SluiceState::Shifting;
-            node.fault = FaultMode::Honest;
+        let entity = &mut self.entities[entity_id as usize];
+        if entity.rcf_hash == anchor_rcf {
+            entity.state.sluice_state = SluiceState::Shifting;
+            entity.perturbation = PerturbationMode::Honest;
             true
         } else {
             false
@@ -364,7 +364,7 @@ mod tests {
 
     #[test]
     fn test_solo_magnitude_ratio_calibration() {
-        // Measure per-step magnitude ratio from the master equation directly.
+        // Measure per-step magnitude ratio from the evolution equation directly.
         // Uses a kernel with epsilon_mag_relative = 1000 (effectively disabled)
         // to let K advance, then measures the actual ratios.
         let dim = 3; let m = 1;
@@ -444,9 +444,9 @@ mod tests {
             assert_eq!(*g, QR::zero(), "Γ_honest ≠ 0 at tick {}", i);
         }
         assert_eq!(r.honest_k_spread, 0);
-        let total: usize = r.nodes_advanced_trajectory.iter().sum();
+        let total: usize = r.entities_advanced_trajectory.iter().sum();
         assert!(total > 0, "No K advances in 50 ticks");
-        eprintln!("Baseline: {} node-advances in 50 ticks", total);
+        eprintln!("Baseline: {} entity-advances in 50 ticks", total);
     }
 
     // ── GATE 2: Drift (inject at tick 10, observe accumulation) ───────
@@ -456,7 +456,7 @@ mod tests {
         let inject = 10u64;
         let mut fabric = MeshFabric::new(11);
         for t in 0..100 {
-            if t == inject { fabric.inject_fault(5, FaultMode::Drift { epsilon: epsilon.clone() }); }
+            if t == inject { fabric.inject_perturbation(5, PerturbationMode::Drift { epsilon: epsilon.clone() }); }
             fabric.tick();
         }
         let r = fabric.report();
@@ -473,7 +473,7 @@ mod tests {
     fn test_gate3_orbit_fork() {
         let mut fabric = MeshFabric::new(11);
         for t in 0..40 {
-            if t == 5 { fabric.inject_fault(0, FaultMode::OrbitFork); }
+            if t == 5 { fabric.inject_perturbation(0, PerturbationMode::OrbitFork); }
             fabric.tick();
         }
         let r = fabric.report();
@@ -488,7 +488,7 @@ mod tests {
     #[test]
     fn test_gate4_klag() {
         let mut fabric = MeshFabric::new(11);
-        fabric.inject_fault(3, FaultMode::KLag { resume_at_tick: 30 });
+        fabric.inject_perturbation(3, PerturbationMode::KLag { resume_at_tick: 30 });
         for _ in 0..60 { fabric.tick(); }
         let r = fabric.report();
         assert!(r.convergence_achieved, "Honest diverged despite K-lag peer");
@@ -498,36 +498,36 @@ mod tests {
     #[test]
     fn test_gate5_self_detection() {
         let mut fabric = MeshFabric::new(11);
-        fabric.inject_fault(5, FaultMode::OrbitFork);
+        fabric.inject_perturbation(5, PerturbationMode::OrbitFork);
         for _ in 0..20 { fabric.tick(); }
-        let n5 = &fabric.nodes[5];
-        assert!(n5.state.sluice_state == SluiceState::Gated || !n5.advanced_last_tick,
-            "Forked node must self-detect");
+        let e5 = &fabric.entities[5];
+        assert!(e5.state.sluice_state == SluiceState::Gated || !e5.advanced_last_tick,
+            "Forked entity must self-detect");
     }
 
     // ── GATE 6: Reentry ───────────────────────────────────────────────
     #[test]
     fn test_gate6_reentry() {
         let mut fabric = MeshFabric::new(11);
-        fabric.inject_fault(5, FaultMode::OrbitFork);
+        fabric.inject_perturbation(5, PerturbationMode::OrbitFork);
         for _ in 0..15 { fabric.tick(); }
-        // Fix node: clear fault, reset to anchor
-        fabric.nodes[5].fault = FaultMode::Honest;
-        fabric.nodes[5].state.delta_k = canonical_anchor(3, 1);
-        fabric.nodes[5].state.delta_bar = canonical_anchor(3, 1);
-        fabric.nodes[5].rcf_hash = compute_rcf_hash(&canonical_anchor(3, 1));
+        // Fix entity: clear perturbation, reset to anchor
+        fabric.entities[5].perturbation = PerturbationMode::Honest;
+        fabric.entities[5].state.delta_k = canonical_anchor(3, 1);
+        fabric.entities[5].state.delta_bar = canonical_anchor(3, 1);
+        fabric.entities[5].rcf_hash = compute_rcf_hash(&canonical_anchor(3, 1));
         assert!(fabric.attempt_reentry(5, 5), "Reentry with matching RCF must succeed");
-        assert_eq!(fabric.nodes[5].state.sluice_state, SluiceState::Shifting);
+        assert_eq!(fabric.entities[5].state.sluice_state, SluiceState::Shifting);
     }
 
-    // ── 101-node baseline ─────────────────────────────────────────────
+    // ── 101-entity baseline ────────────────────────────────────────────
     #[test]
     fn test_101_baseline() {
         let mut fabric = MeshFabric::new(101);
         fabric.tick(); fabric.tick();
         let r = fabric.report();
         for g in &r.honest_gamma_trajectory {
-            assert_eq!(*g, QR::zero(), "101-node honest Γ ≠ 0");
+            assert_eq!(*g, QR::zero(), "101-entity honest Γ ≠ 0");
         }
     }
 }

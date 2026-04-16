@@ -2,7 +2,7 @@
 // human editorial direction. It was not written by the researcher.
 // See /opt/saios/DISCLAIMER.md for full context.
 //
-//! SAIOS Phase 1 — Master Execution Authority
+//! SAIOS Phase 1 — Sovereign Execution Authority
 //!
 //! Register: D.EXEC.1, D.CHAIN.1, D.SAIOS.1, BOOT.ORIGIN.1, D.AGENT.6 (K2A).
 

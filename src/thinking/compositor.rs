@@ -9,7 +9,7 @@
 //!
 //! The vocabulary has three tiers:
 //! 1. Base alphabet: irreducible algebraic generators (spatial + value)
-//! 2. Observation-derived: AbsoluteTarget, CellChange from training data
+//! 2. Observation-derived: AbsoluteTarget, CellChange from practice data
 //! 3. Genomic words: ComposedOperators promoted to depth-1 as Thought::Genomic
 //!
 //! The alphabet stays fixed. The words grow. Core Design Law 8.
@@ -128,7 +128,7 @@ pub fn thought_vocabulary_with_state(
     }
 
     // ── Tier 3: Genomic words — promoted to depth 1 ──
-    // Each composed operator was earned through C(T) = 0 across training pairs.
+    // Each composed operator was earned through C(T) = 0 across practice pairs.
     // They enter the compositor as first-class generators alongside Identity
     // and Rotate90. A depth-6 composition starting from a genomic operator
     // is effectively depth 9+ from the original alphabet.

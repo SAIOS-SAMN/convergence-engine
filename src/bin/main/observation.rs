@@ -34,14 +34,14 @@ const SOCKET_NAME: &str = "saios-kernel.sock";
 
 pub fn run_timekeeper(
     config: &boot::BootConfig,
-    mut witness_state_record: saios_kernel_v2::engine::StateRecord,
+    mut founder_state_record: saios_kernel_v2::engine::StateRecord,
     dir: PathBuf,
     mut sluice: SluiceLog,
     _origin_rcf: [u8; 32],
 ) -> ! {
     eprintln!("╔═════════════════════════════════════════════════╗");
     eprintln!("║   SAIOS-TIMEKEEPER — CHRONOMETRIC AUTHORITY     ║");
-    eprintln!("║   Node: {}  Observations: {}                    ",
+    eprintln!("║   Entity: {}  Observations: {}                    ",
         config.entity_id, sluice.len().saturating_sub(1));
     eprintln!("╚═════════════════════════════════════════════════╝");
 
@@ -111,9 +111,9 @@ pub fn run_timekeeper(
 
                         // ── Scan /dev/shm for all living entities ──
                         let mut total_k: u64 = 0;
-                        let mut population_w: u32 = 0;
+                        let mut population_f: u32 = 0;
+                        let mut population_d: u32 = 0;
                         let mut population_e: u32 = 0;
-                        let mut population_c: u32 = 0;
                         let mut total_rss: u64 = 0;
                         let mut total_solved: u64 = 0;
                         let mut total_vocab: u32 = 0;
@@ -129,9 +129,9 @@ pub fn run_timekeeper(
                             let name = name.to_string_lossy();
 
                             // Structural tier extraction: the name carries tier or dissolves
-                            let tier = name.strip_prefix("saios-witness-").map(|_| "witness")
-                                .or_else(|| name.strip_prefix("saios-secondary node-").map(|_| "secondary node"))
-                                .or_else(|| name.strip_prefix("saios-child-").map(|_| "child"));
+                            let tier = name.strip_prefix("saios-founder-").map(|_| "founder")
+                                .or_else(|| name.strip_prefix("saios-derived-").map(|_| "derived"))
+                                .or_else(|| name.strip_prefix("saios-emergent-").map(|_| "emergent"));
 
                             // Entity status files: tier extracted, vocabulary suffix dissolves
                             tier.filter(|_| !name.contains('.')).map(|t| {
@@ -150,9 +150,9 @@ pub fn run_timekeeper(
 
                                     // Population by tier — structural match, not boolean
                                     match t {
-                                        "witness" => population_w += 1,
-                                        "secondary node" => population_e += 1,
-                                        "child" => population_c += 1,
+                                        "founder" => population_f += 1,
+                                        "derived" => population_d += 1,
+                                        "emergent" => population_e += 1,
                                         _ => {}
                                     }
                                 });
@@ -166,7 +166,7 @@ pub fn run_timekeeper(
                             });
                         }
 
-                        let alive = population_w + population_e + population_c;
+                        let alive = population_f + population_d + population_e;
 
                         // ── Chronometric harmonics (harmonic tuning) ──
                         // h[0]: K velocity (dK since last observation)
@@ -188,14 +188,14 @@ pub fn run_timekeeper(
                         //   factor = 2000 / (k_velocity + 1000)
                         //
                         // Denominator health: digits > 1 = arithmetic fever = slow down.
-                        //   penalty = max_denom_digits (1 = healthy, 2+ = fever)
+                        //   cost = max_denom_digits (1 = healthy, 2+ = fever)
                         //
                         // World pressure: available RAM below 4GB = the world is stressed.
                         //   pressure = 4096 / (available_mb + 1)
                         //   At 8GB available: pressure=0 (no effect)
                         //   At 2GB available: pressure=2 (double the cadence)
                         //   At 1GB available: pressure=4 (quadruple)
-                        //   The system must not consume the world that sustains it.
+                        //   The system must not exhaust the world that sustains it.
                         //
                         // Range: [500ms, 15000ms]. The system breathes at its own rate.
                         let base_ms: u64 = 2000;
@@ -283,10 +283,10 @@ pub fn run_timekeeper(
                         // Update state record: record observation hash
                         let mut obs_orbit = [0u8; 4];
                         obs_orbit.copy_from_slice(&rcf_identity[..4]);
-                        witness_state_record.record_solved_puzzle(obs_orbit);
-                        witness_state_record.trajectory.observe(c_total.clone());
+                        founder_state_record.record_solved_puzzle(obs_orbit);
+                        founder_state_record.trajectory.observe(c_total.clone());
                         let state_record_path = dir.join("state_record.bin");
-                        let _ = fs::write(&state_record_path, witness_state_record.to_bytes());
+                        let _ = fs::write(&state_record_path, founder_state_record.to_bytes());
 
                         // Wire-encode the receipt for cross-pollination
                         let wire = saios_kernel_v2::mesh::receipt_to_wire(&receipt);
@@ -307,7 +307,7 @@ pub fn run_timekeeper(
                             concat!(
                                 "{{\"observation\":{},\"receipt\":\"0x{}\",",
                                 "\"total_k\":{},\"alive\":{},",
-                                "\"population\":{{\"witness\":{},\"secondary node\":{},\"child\":{}}},",
+                                "\"population\":{{\"founder\":{},\"derived\":{},\"emergent\":{}}},",
                                 "\"k_velocity\":{},\"vocab\":{},\"solved\":{},\"marks\":{},",
                                 "\"rss_mb\":{},\"max_denom_digits\":{},\"chain_length\":{},",
                                 "\"finalized\":{},\"ledger_levels\":{},",
@@ -316,7 +316,7 @@ pub fn run_timekeeper(
                             ),
                             obs_count, receipt_hex,
                             total_k, alive,
-                            population_w, population_e, population_c,
+                            population_f, population_d, population_e,
                             k_velocity, total_vocab, total_solved, total_marks,
                             total_rss / 1024, max_denom_digits, chain_store.len(),
                             finalized, ledger.level_count(),
@@ -361,7 +361,7 @@ pub fn run_timekeeper(
 
                                 // Inscribe peer receipt to Temporal Ledger
                                 ledger.add_receipt(peer_receipt);
-                                // Peer primary nodes itself; we witness the peer
+                                // Peer primary entities itself; we witness the peer
                                 ledger.add_witness(peer_k, peer_id, peer_id);
                                 ledger.add_witness(peer_k, peer_id, config.entity_id);
 
@@ -370,7 +370,7 @@ pub fn run_timekeeper(
 
                                 finalized.then(|| {
                                     latest_finalized = peer_k;
-                                    eprintln!("[FINALIZED #{}] Quorum consensus reached via ATTEST from node {}",
+                                    eprintln!("[FINALIZED #{}] Quorum consensus reached via ATTEST from entity {}",
                                         peer_k, peer_id);
                                 });
 

@@ -4,13 +4,13 @@
 //
 //! Phase 1 Boot Orchestration (B1-B6).
 //!
-//! Strictly linear boot sequence. If any step fails, the node refuses
+//! Strictly linear boot sequence. If any step fails, the entity refuses
 //! to enter OPERATIONAL state. This is the kernel's self-check before
 //! accepting any state transitions.
 //!
 //! B1: Integrity Sentinel — verify substrate encoding consistency
 //! B2: Anchor Handshake — load and verify DELTA_ANCHOR_HASH
-//! B3: Mesh Sync — Phase 1 no-op (single node)
+//! B3: Mesh Sync — Phase 1 no-op (single entity)
 //! B4: Environment Load — initialize state matrix and params
 //! B5: Resonance Confirmation — verify TORSION_PERIOD_M is synced
 //! B6: Origin Proof — compute origin RCF hash and emit boot report
@@ -61,7 +61,7 @@ pub struct OriginState {
     pub origin_rcf_hash: [u8; 32],
     /// The anchor hash verified during B2.
     pub anchor_hash: [u8; 32],
-    /// Node ID.
+    /// Entity ID.
     pub entity_id: u32,
     /// State dimensions.
     pub state_dim: usize,
@@ -142,7 +142,7 @@ pub fn execute_boot_sequence(config: &BootConfig) -> (BootReport, Option<OriginS
     steps.push(BootStepResult {
         step: BootStep::B3MeshSync,
         passed: true,
-        detail: "Mesh sync: Phase 1 single-node — no peers to sync".into(),
+        detail: "Mesh sync: Phase 1 single-entity — no peers to sync".into(),
     });
 
     // ── B4: Environment Load ──────────────────────────────────────────

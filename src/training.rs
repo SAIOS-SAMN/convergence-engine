@@ -2,9 +2,9 @@
 // human editorial direction. It was not written by the researcher.
 // See /opt/saios/DISCLAIMER.md for full context.
 //
-//! Binary training record store — fixed 128-byte records.
+//! Binary practice record store — fixed 128-byte records.
 //!
-//! Replaces JSONL for operational training data. Zero-copy reads via
+//! Replaces JSONL for operational practice data. Zero-copy reads via
 //! direct byte offset. O(1) random access. Memory-mappable.
 //!
 //! JSONL remains as human-readable export only.
@@ -65,7 +65,7 @@ impl From<u8> for FailureCode {
     }
 }
 
-/// A single 128-byte training record.
+/// A single 128-byte practice record.
 #[derive(Debug, Clone)]
 pub struct TrainingRecord {
     pub k_index: u64,           // [0..8]
@@ -139,7 +139,7 @@ impl TrainingRecord {
     }
 }
 
-/// Binary training data store — append-only, fixed-size records.
+/// Binary practice data store — append-only, fixed-size records.
 pub struct TrainingStore {
     file: File,
     _path: PathBuf,

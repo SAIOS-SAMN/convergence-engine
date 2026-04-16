@@ -12,7 +12,7 @@
 //!   Physics   — argmin_O C(Π_G(Δ_k + ε·e_O)). Gradient descent. (sampler.rs)
 //!   Legal     — vetted parameter envelope from governance constants.
 //!   Strategic — modal rcf_identity prefix from recent receipt chain.
-//!   Security  — negative gradient of failure patterns from training records.
+//!   Security  — negative gradient of failure patterns from practice records.
 //!
 //! Resolution: vector summation with exact rational weights summing to 1.
 //! Entropy: H = 1 - (w_winner / w_total) — exact rational.
@@ -209,7 +209,7 @@ pub fn strategic_echelon(recent_rcf_hashes: &[[u8; 32]]) -> EchelonHint {
 }
 
 /// Security echelon: negative gradient of failure patterns.
-/// Scans training records for orbit regions with high failure rates
+/// Scans practice records for orbit regions with high failure rates
 /// and produces an orbit target that avoids those regions.
 pub fn security_echelon(
     recent_records: &[TrainingRecord],
@@ -351,7 +351,7 @@ pub struct ConfigSpaceOperator {
 /// Physics: does test count increase? (more tests = more coherence coverage)
 /// Legal: are changed modules in the register? (no unregistered changes)
 /// Strategic: does version align with phase register? (trajectory coherence)
-/// Security: are new modules adding attack surface? (dependency risk)
+/// Security: are new modules adding exposure surface? (dependency risk)
 ///
 /// Returns MdcResult with echelon hints and entropy.
 pub fn evaluate_upgrade(
@@ -384,7 +384,7 @@ pub fn evaluate_upgrade(
     // Strategic echelon: version tag alignment (simple heuristic)
     let strategic_conf = Q::new(BigInt::from(7), BigInt::from(10));
 
-    // Security echelon: new files = potential new attack surface
+    // Security echelon: new files = potential new exposure surface
     let new_modules = op.modules_changed.len();
     let security_conf = if new_modules <= 2 {
         Q::new(BigInt::from(9), BigInt::from(10))

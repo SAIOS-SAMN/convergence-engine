@@ -160,7 +160,7 @@ pub fn verify_anchor(
     epsilon_sluice: &Q,
 ) -> bool {
     if peers.is_empty() {
-        return true; // Single-node
+        return true; // Single-entity
     }
 
     let mut matching_weight = Q::one(); // Self always matches

@@ -2,11 +2,11 @@
 // human editorial direction. It was not written by the researcher.
 // See /opt/saios/DISCLAIMER.md for full context.
 //
-//! SAIOS MeshFabric Simulator — 101-node finality gate.
+//! SAIOS MeshFabric Simulator — 101-entity finality gate.
 
 use num_bigint::BigInt;
 use num_rational::BigRational;
-use saios_kernel_v2::sim::{FaultMode, MeshFabric};
+use saios_kernel_v2::sim::{PerturbationMode, MeshFabric};
 
 fn qr(n: i64, d: i64) -> BigRational {
     BigRational::new(BigInt::from(n), BigInt::from(d))
@@ -15,19 +15,19 @@ fn qr(n: i64, d: i64) -> BigRational {
 fn main() {
     eprintln!("╔══════════════════════════════════════════════════════╗");
     eprintln!("║  SAIOS MESHFABRIC — PHASE 2.0 FINALITY GATE         ║");
-    eprintln!("║  101-node algebraic coherence stress test             ║");
+    eprintln!("║  101-entity algebraic coherence stress test            ║");
     eprintln!("╚══════════════════════════════════════════════════════╝");
 
-    // ── Scenario 1: Baseline (no faults) ──────────────────────────────
-    eprintln!("\n=== SCENARIO 1: BASELINE (no faults) ===");
+    // ── Scenario 1: Baseline (no perturbations) ───────────────────────
+    eprintln!("\n=== SCENARIO 1: BASELINE (no perturbations) ===");
     {
         let mut fabric = MeshFabric::new(101);
         for _ in 0..50 { fabric.tick(); }
         fabric.print_report();
         let r = fabric.report();
-        let total: usize = r.nodes_advanced_trajectory.iter().sum();
+        let total: usize = r.entities_advanced_trajectory.iter().sum();
         eprintln!("  K advances beyond tick 11: {}", total > 11 * 101);
-        eprintln!("  Total node-advances: {}", total);
+        eprintln!("  Total entity-advances: {}", total);
         eprintln!("  Honest K spread: {}", r.honest_k_spread);
         assert_eq!(r.honest_k_spread, 0, "GATE FAIL: honest K spread ≠ 0");
         assert!(total > 0, "GATE FAIL: no K advances");
@@ -40,7 +40,7 @@ fn main() {
         let mut fabric = MeshFabric::new(101);
         for t in 0..100u64 {
             if t == 10 {
-                fabric.inject_fault(42, FaultMode::Drift { epsilon: qr(1, 100) });
+                fabric.inject_perturbation(42, PerturbationMode::Drift { epsilon: qr(1, 100) });
             }
             fabric.tick();
         }
@@ -58,7 +58,7 @@ fn main() {
     {
         let mut fabric = MeshFabric::new(101);
         for t in 0..50u64 {
-            if t == 5 { fabric.inject_fault(0, FaultMode::OrbitFork); }
+            if t == 5 { fabric.inject_perturbation(0, PerturbationMode::OrbitFork); }
             fabric.tick();
         }
         fabric.print_report();
@@ -73,7 +73,7 @@ fn main() {
     eprintln!("\n=== SCENARIO 4: K-LAG (resume at tick 30) ===");
     {
         let mut fabric = MeshFabric::new(101);
-        fabric.inject_fault(7, FaultMode::KLag { resume_at_tick: 30 });
+        fabric.inject_perturbation(7, PerturbationMode::KLag { resume_at_tick: 30 });
         for _ in 0..60 { fabric.tick(); }
         let r = fabric.report();
         eprintln!("  Honest K spread: {}", r.honest_k_spread);

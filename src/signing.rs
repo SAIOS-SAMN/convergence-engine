@@ -33,7 +33,7 @@ pub fn public_key(signing_key: &SigningKey) -> VerifyingKey {
     signing_key.verifying_key()
 }
 
-/// Sign a receipt hash (32 bytes) with the node's Ed25519 key.
+/// Sign a receipt hash (32 bytes) with the entity's Ed25519 key.
 /// Returns a 64-byte signature.
 pub fn sign_receipt(signing_key: &SigningKey, receipt_hash: &[u8; 32]) -> [u8; 64] {
     let sig: Signature = signing_key.sign(receipt_hash);
@@ -94,7 +94,7 @@ mod tests {
         let receipt_hash = [0xCC; 32];
         let sig = sign_receipt(&sk1, &receipt_hash);
         assert!(!verify_receipt_signature(&pk2, &receipt_hash, &sig),
-            "Wrong key must reject");
+            "Wrong key must not verify");
     }
 
     #[test]
@@ -106,7 +106,7 @@ mod tests {
         let mut tampered = receipt_hash;
         tampered[0] ^= 0xFF;
         assert!(!verify_receipt_signature(&pk, &tampered, &sig),
-            "Tampered hash must reject");
+            "Tampered hash must not verify");
     }
 
     #[test]

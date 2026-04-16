@@ -4,7 +4,7 @@
 //
 //! D.SAMPLER.1 — SAIOS-native algebraic operator sampler.
 //!
-//! Gradient-directed operator emission from binary training data.
+//! Gradient-directed operator emission from binary practice data.
 //! Zero neural inference. CPU-speed proposals. Self-reinforcing loop.
 //!
 //! Architecture:
@@ -160,7 +160,7 @@ pub struct EpsilonTable {
 }
 
 impl EpsilonTable {
-    /// Build the table from a binary training data file.
+    /// Build the table from a binary practice data file.
     pub fn from_binary_file(path: &Path) -> io::Result<Self> {
         let mut file = File::open(path)?;
         let len = file.metadata()?.len();
@@ -184,7 +184,7 @@ impl EpsilonTable {
         Ok(table)
     }
 
-    /// Index a single training record into the lookup table.
+    /// Index a single practice record into the lookup table.
     fn index_record(&mut self, rec: &TrainingRecord) {
         let key = LookupKey::from_record(rec);
 
@@ -523,7 +523,7 @@ pub struct AlgebraicSampler {
 }
 
 impl AlgebraicSampler {
-    /// Create a sampler from a binary training data file.
+    /// Create a sampler from a binary practice data file.
     pub fn from_file(path: &Path) -> io::Result<Self> {
         let table = EpsilonTable::from_binary_file(path)?;
         Ok(Self {
@@ -649,12 +649,12 @@ impl AlgebraicSampler {
                 Q::new(BigInt::from(1000i64), BigInt::from(1)),
             crate::irs::SamplerModeHint::BasinHop =>
                 Q::zero(),
-            _ => Q::zero(), // Default: no velocity override, use actual
+            _ => Q::zero(), // Default: no velocity adjustment, use actual
         };
 
         // Build the S matrix with constraint modulation.
         // direction_lock boosts the (r, s) entry by adding a bias term.
-        // max_epsilon scales the total — applied as default_step override.
+        // max_epsilon scales the total — applied as default_step adjustment.
         let (grad_row, grad_col, grad_eps) = gradient_hint(delta);
 
         // Direction preference: if locked, the locked direction gets a boost.

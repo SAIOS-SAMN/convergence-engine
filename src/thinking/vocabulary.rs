@@ -42,7 +42,7 @@ pub enum Thought {
     /// cell of a specific anchor color.
     DistanceFromColor(i64),
     /// For each cell of anchor_color, set cells at measured offsets to fill_color.
-    /// The offsets are DERIVED from training data — the exact (dr, dc) displacement
+    /// The offsets are DERIVED from practice data — the exact (dr, dc) displacement
     /// vectors from anchor to filled cells. Not a named pattern. The measurement.
     AdjacencyFill { anchor_color: i64, fill_color: i64, offsets: Vec<(i32, i32)> },
     /// Absolute target: output[cell] = targets[cell] regardless of input.
@@ -52,7 +52,7 @@ pub enum Thought {
     /// This is a FUNCTION of the input — different inputs produce different outputs.
     DiagonalSeedTile,
     /// Genomic operator: a composed operator from the state record, promoted to depth-1.
-    /// These are EARNED words — proven by C(T) = 0 across training pairs.
+    /// These are EARNED words — proven by C(T) = 0 across practice pairs.
     /// Core Design Law 8: the alphabet stays fixed, the words grow.
     /// The words enter the compositor as first-class generators.
     Genomic { opcode: u8, parameter: i64, sigma: Vec<(i16, i16)> },
@@ -256,7 +256,7 @@ impl Thought {
                 for r in 0..rows {
                     for c in 0..cols {
                         if values[r * cols + c] != *anchor_color { continue; }
-                        // Fill at MEASURED offsets — derived from training data
+                        // Fill at MEASURED offsets — derived from practice data
                         for &(dr, dc) in offsets {
                             let nr = r as i32 + dr;
                             let nc = c as i32 + dc;
@@ -509,7 +509,7 @@ pub fn cell_vocabulary() -> Vec<Thought> {
     vocab
 }
 
-/// Measure how well a thought explains a training pair.
+/// Measure how well a thought explains a practice pair.
 ///
 /// D.SCORE.COHESION.2 — Cohesion-aware scoring for the compositor.
 /// Primary: category-level cocycle residual in Z (relational coherence).

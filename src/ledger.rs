@@ -12,7 +12,7 @@
 //   (5) k_index > last_k_index             — monotonicity (D.EXEC.1)
 //
 // Violation of any condition: the receipt is NOT written. The K-step is NOT recorded.
-// The node transitions to GATED sluice state and emits no receipt.
+// The entity transitions to GATED sluice state and emits no receipt.
 // This is not an error in the fault sense — it is the system working correctly.
 
 //! Phase 2 Ledger — Append-only receipt chain with BLAKE3 hashing.
@@ -524,7 +524,7 @@ impl ReceiptChain {
 
 // ─── Discontinuity State Reset ─────────────────────────────────────────
 
-/// Apply discontinuity reset rules to node state fields.
+/// Apply discontinuity reset rules to entity state fields.
 ///
 /// K continues (never resets — monotonic across all restarts).
 /// Δ_k reloads from DB (unchanged here — caller handles persistence).

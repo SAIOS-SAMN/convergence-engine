@@ -5,7 +5,7 @@
 //! Chain state — TokenState ($SAI) and NftRegistry (CoherenceCertificates).
 //!
 //! Computed deterministically from the receipt stream.
-//! Any node replaying receipts from origin reaches identical state.
+//! Any entity replaying receipts from origin reaches identical state.
 //!
 //! Economics: one-way dependency mesh → chain. Token balance does NOT
 //! influence ω, C7, or K-gate. Orbit congruence preserved.
@@ -36,7 +36,7 @@ pub const BASE_NFT_VALUE: (i64, i64) = (10, 1); // 10 $SAI
 /// Block reward (minted at block close).
 pub const BLOCK_REWARD: (i64, i64) = (1, 1); // 1 $SAI per block
 
-/// Token state — $SAI balances per node.
+/// Token state — $SAI balances per entity.
 #[derive(Debug, Clone)]
 pub struct TokenState {
     /// Balance per entity_id. All values in Q (exact rational).
@@ -59,7 +59,7 @@ impl TokenState {
         }
     }
 
-    /// Mint tokens to a node.
+    /// Mint tokens to an entity.
     pub fn mint(&mut self, entity_id: u32, amount: &Q) {
         if amount <= &Q::zero() { return; }
         let balance = self.balances.entry(entity_id).or_insert_with(Q::zero);
@@ -68,7 +68,7 @@ impl TokenState {
         self.total_minted = &self.total_minted + amount;
     }
 
-    /// Burn tokens from a node. Returns actual amount burned (may be less if insufficient balance).
+    /// Burn tokens from an entity. Returns actual amount burned (may be less if insufficient balance).
     pub fn burn(&mut self, entity_id: u32, amount: &Q) -> Q {
         if amount <= &Q::zero() { return Q::zero(); }
         let balance = self.balances.entry(entity_id).or_insert_with(Q::zero);
@@ -79,7 +79,7 @@ impl TokenState {
         actual
     }
 
-    /// Get balance for a node.
+    /// Get balance for an entity.
     pub fn balance(&self, entity_id: u32) -> Q {
         self.balances.get(&entity_id).cloned().unwrap_or_else(Q::zero)
     }
@@ -115,12 +115,12 @@ impl TokenState {
         }
     }
 
-    /// Process block close: distribute block reward proportionally to contributing nodes.
+    /// Process block close: distribute block reward proportionally to contributing entities.
     pub fn process_block_close(&mut self, block_receipts: &[MeshReceipt]) {
         let block_reward = qr(BLOCK_REWARD.0, BLOCK_REWARD.1);
         if block_receipts.is_empty() { return; }
 
-        // Distribute proportionally to number of accepted receipts per node
+        // Distribute proportionally to number of accepted receipts per entity
         let mut contributions: HashMap<u32, u64> = HashMap::new();
         let mut total = 0u64;
         for r in block_receipts {
@@ -150,8 +150,8 @@ pub struct CoherenceCertificate {
     pub id: u64,
     pub k_index: u64,
     pub rcf_majority: [u8; 32],
-    pub node_count: u32,
-    pub resonance_quality: Q, // fraction of nodes that passed resonance
+    pub entity_count: u32,
+    pub resonance_quality: Q, // fraction of entities that passed resonance
     pub minted_at_block: u64,
     pub burned: bool,
     pub owner_entity_id: u32,
@@ -165,14 +165,14 @@ impl NftRegistry {
         &mut self,
         k_index: u64,
         rcf_majority: [u8; 32],
-        node_count: u32,
+        entity_count: u32,
         resonance_quality: Q,
         block_height: u64,
         owner: u32,
     ) -> u64 {
         let id = self.certificates.len() as u64;
         self.certificates.push(CoherenceCertificate {
-            id, k_index, rcf_majority, node_count, resonance_quality,
+            id, k_index, rcf_majority, entity_count, resonance_quality,
             minted_at_block: block_height, burned: false, owner_entity_id: owner,
         });
         id
@@ -185,7 +185,7 @@ impl NftRegistry {
         if cert.burned { return None; }
         cert.burned = true;
         let base = qr(BASE_NFT_VALUE.0, BASE_NFT_VALUE.1);
-        let mesh_factor = qr(cert.node_count as i64, 101); // normalized to N=101
+        let mesh_factor = qr(cert.entity_count as i64, 101); // normalized to N=101
         let value = &base * &cert.resonance_quality * &mesh_factor;
         Some(value)
     }
@@ -247,7 +247,7 @@ mod tests {
             test_receipt(2, 3, 0x01, 1, 1), // entity 2 accepted
         ];
         ts.process_block_close(&receipts);
-        // Node 1 contributed 2/3, Node 2 contributed 1/3
+        // Entity 1 contributed 2/3, Entity 2 contributed 1/3
         assert!(ts.balance(1) > ts.balance(2));
     }
 
