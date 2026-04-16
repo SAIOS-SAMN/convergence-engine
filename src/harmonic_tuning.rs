@@ -4,7 +4,7 @@
 //
 //! Epistate record — volatile harmonic perturbation.
 //!
-//! The harmonic tuning is 11 Q values that perturb the primary node's harmonic spectrum.
+//! The harmonic tuning is 11 Q values that perturb the entity's harmonic spectrum.
 //! Not a Delta. Not a list. A tuning of the aperture.
 //!
 //! H_total = H_core + H_tuning
@@ -64,19 +64,19 @@ impl TransmutationPath {
     }
 }
 
-/// The harmonic tuning: 11 harmonic perturbations that tune the primary node's aperture,
+/// The harmonic tuning: 11 harmonic perturbations that tune the entity's aperture,
 /// plus transmutation path markers that encode which perception path solved
 /// each orbit. The markers are pointers — the kernel holds the definitions.
 #[derive(Debug, Clone)]
 pub struct HarmonicTuning {
     /// 11 Q values — one per harmonic dimension.
-    /// These ADD to the primary node's core harmonics before entering perception.
+    /// These ADD to the entity's core harmonics before entering perception.
     pub perturbation: [Q; 11],
     /// Observation count per dimension — tracks how many measurements
     /// contributed to each harmonic, for running average convergence.
     pub counts: [u32; 11],
     /// Transmutation path markers: (orbit_prefix, path_type).
-    /// When the witness encounters an orbit with a marker, the harmonic tuning
+    /// When the entity encounters an orbit with a marker, the harmonic tuning
     /// activates the stored path directly. C(T) validates on first use.
     /// If the path doesn't produce coherence, the marker dissolves.
     /// Max 64 markers — bounded to prevent genome bloat.
@@ -174,7 +174,7 @@ impl HarmonicTuning {
         self.counts[dim] += 1;
     }
 
-    /// Export as 11 Q values to add to the primary node's harmonics.
+    /// Export as 11 Q values to add to the entity's harmonics.
     pub fn as_harmonic_bias(&self) -> [Q; 11] {
         self.perturbation.clone()
     }

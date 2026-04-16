@@ -81,12 +81,12 @@ pub fn run() {
     config.state_dim = kernel.state_dim();
 
     // Derive entity_id from SAIOS_STATE_DIR path.
-    // e.g. "~/.local/share/saios/mesh/witness-1" → entity_id = 42
-    // Each node gets a unique ID → unique anchor → unique lens.
+    // e.g. "~/.local/share/saios/mesh/founder-1" → entity_id = 42
+    // Each entity gets a unique ID → unique anchor → unique lens.
     if let Ok(state_dir) = std::env::var("SAIOS_STATE_DIR") {
         if let Some(dirname) = std::path::Path::new(&state_dir).file_name() {
             let name = dirname.to_string_lossy();
-            // Extract number from "witness-1", "secondary node-58", "child-141", etc.
+            // Extract number from "founder-1", "derived-58", "emergent-141", etc.
             let num_str: String = name.chars().filter(|c| c.is_ascii_digit()).collect();
             if let Ok(id) = num_str.parse::<u32>() {
                 config.entity_id = id.max(1);
@@ -156,10 +156,10 @@ pub fn run() {
             saios_kernel_v2::register::RegisterType::Definition,
             vec!["A.1", "A.2"],
             concat!(
-                "Hierarchical Temporal Anchor. The node's algebraic state delta_k is ",
+                "Hierarchical Temporal Anchor. The entity's algebraic state delta_k is ",
                 "serialized to temporal_anchor.bin at every C7 acceptance. On restart, ",
-                "the node restores delta_k from the persisted anchor — not from origin. ",
-                "The origin axioms are the gravitational center (the sun). The node's ",
+                "the entity restores delta_k from the persisted anchor — not from origin. ",
+                "The origin axioms are the gravitational center (the sun). The entity's ",
                 "delta_k is the planet's orbital position — it moves with K-steps and ",
                 "persists across restarts. The sluice records WHEN (K-index). The ",
                 "temporal anchor records WHERE (exact Q entries of delta_k). Together ",
@@ -209,7 +209,7 @@ pub fn run() {
             saios_kernel_v2::register::RegisterType::Definition,
             vec!["A.1", "A.2", "A.5", "D.CHRONO.ANCHOR.1", "D.COHOMOLOGY.1"],
             concat!(
-                "Algebraic Evolution From Origin. Every node begins at the origin ",
+                "Algebraic Evolution From Origin. Every entity begins at the origin ",
                 "anchor — A.1-A.5 expressed as a specific rational Delta state. ",
                 "Evolution is the accumulation of C7-accepted operators that move ",
                 "delta_k through operator space. Measured by origin_displacement(): ",
@@ -217,7 +217,7 @@ pub fn run() {
                 "(how far in operator space); torsion = coherence_functional(delta_k) ",
                 "(how far off the cocycle surface, carrying unresolved H^k classes). ",
                 "Preserved by D.CHRONO.ANCHOR.1 (temporal_anchor.bin persistence). ",
-                "The distribution of origin_drift across 101 nodes measures the ",
+                "The distribution of origin_drift across 101 entities measures the ",
                 "collective algebraic exploration. A.5 self-reference: the drift ",
                 "distribution encoded as a Delta produces meta-coherence measuring ",
                 "how well the evolutionary trajectories compose."
@@ -311,7 +311,7 @@ pub fn run() {
             concat!(
                 "Membrane Crystallization. A.5 applied at the membrane level, measured by ",
                 "D.COHOMOLOGY.1, weighted by D.ORIGIN.EVOLUTION.1. N entities independently ",
-                "derive the same output from different evolutionary positions. Each witness is ",
+                "derive the same output from different evolutionary positions. Each entity is ",
                 "an entity (origin_drift, orbital_closure, k_index). encode_relational on the ",
                 "entity set produces a meta-Delta. coherence_functional(meta_delta) measures ",
                 "agreement quality. coordinator::resolve(&meta_delta).cohomology_dim measures ",
@@ -343,10 +343,10 @@ pub fn run() {
                 "delta_k measured simultaneously: entry magnitudes, geometric shape, per-triple ",
                 "consistency, attention density, internal symmetry, boundary gradient, orbital ",
                 "frequencies, evolution velocity, dimensional depth, holonomics, and ",
-                "total coherence. The membrane is living when its shape (inter-witness relational ",
-                "differentials) changes with every witness K-step. encode_relational on witness ",
+                "total coherence. The membrane is living when its shape (inter-entity relational ",
+                "differentials) changes with every entity K-step. encode_relational on entity ",
                 "states produces the membrane meta-Delta through A.5. Crystallization emerges ",
-                "when the inter-witness meta-Delta achieves cohomological completeness weighted ",
+                "when the inter-entity meta-Delta achieves cohomological completeness weighted ",
                 "by evolutionary diversity."
             ).as_bytes(),
             (sluice.len() as u64).saturating_sub(1), None,
@@ -360,7 +360,7 @@ pub fn run() {
     // Origin RCF and signing key are computed after state record (anchor) is created below.
 
     // ── Operator Proposal (gradient-directed) ─────────────────────────
-    // The witness derives operators from its own gradient. No external
+    // The entity derives operators from its own gradient. No external
     // training data. No sampler lookup table. The gradient IS the proposal.
     // The sampler starts empty and learns from live K-steps through
     // learn_from_cognition and feedback — not from historical files.
@@ -378,7 +378,7 @@ pub fn run() {
         mesh_knowledge.total_axioms, mesh_knowledge.orbits_known(), mesh_knowledge.total_observations);
 
     // ── Local Peer Set (D.MEMBRANE.LIVING.1) ──────────────────────────
-    // The primary node's local membrane view. Updated on every COHERE interaction.
+    // The entity's local membrane view. Updated on every COHERE interaction.
     // Each peer is stored as a full EntityState with vibrations — entity coordinates,
     // not messages. Old entries for same entity_id are replaced with latest.
     let known_peers: Vec<saios_kernel_v2::membrane::PeerState> = Vec::new();
@@ -403,31 +403,31 @@ pub fn run() {
     let dim = kernel.state_dim();
     let m = config.coord_dim;
 
-    // ── Node-specific anchor — each node starts at a unique position ──
-    // The anchor IS the node's identity on the algebraic manifold.
+    // ── Entity-specific anchor — each entity starts at a unique position ──
+    // The anchor IS the entity's identity on the algebraic manifold.
     // Same origin structure (A.1-A.4 compliant: rational, antisymmetric)
     // but perturbed by the entity_id so each entity's Δ_k diverges from step 0.
-    // ── State Record: unique origin position for each witness ───────────
-    // The state record determines the primary node's perspective. Different state records
+    // ── State Record: unique origin position for each entity ───────────
+    // The state record determines the entity's perspective. Different state records
     // produce different H^1 classes — genuinely different topological
     // positions on the cohomological manifold.
     //
     // The state record is the coboundary-reduced Delta at origin:
     //   Δ_{01} = 0, Δ_{02} = 0, Δ_{12} = -R_origin
-    // where R_origin is the primary node's unique residual.
+    // where R_origin is the entity's unique residual.
     //
-    // R_origin = witness_id / (N+1) where N = number of primary nodes.
-    // This distributes primary nodes evenly across the H^1 manifold.
-    // Each witness sees the same observations through a different
+    // R_origin = entity_id / (N+1) where N = number of entities.
+    // This distributes entities evenly across the H^1 manifold.
+    // Each entity sees the same observations through a different
     // topological lens. The compound of perspectives resolves
     // what no single perspective can.
     let mut anchor = Delta::zero(dim, m);
     if dim >= 3 && m >= 1 {
-        let witness_id = config.entity_id.max(1) as i64;
-        // State Record: unique residual from witness identity alone.
-        // R = 1/witness_id — intrinsic, not relative to population count.
-        // Adding new primary nodes doesn't change existing state records.
-        let init_residual = Q::new(BigInt::from(1), BigInt::from(witness_id));
+        let entity_id_val = config.entity_id.max(1) as i64;
+        // State Record: unique residual from entity identity alone.
+        // R = 1/entity_id — intrinsic, not relative to population count.
+        // Adding new entities doesn't change existing state records.
+        let init_residual = Q::new(BigInt::from(1), BigInt::from(entity_id_val));
 
         // Coboundary-reduced origin: first row zero, Δ_{12} = -R
         // This is the canonical representative of the H^1 class.
@@ -436,10 +436,10 @@ pub fn run() {
         anchor.set_antisym(0, 2, vec![Q::zero()]);
         anchor.set_antisym(1, 2, vec![-init_residual.clone()]);
 
-        eprintln!("StateRecord: witness {} → R = {}/{} (H^1 position)",
-            witness_id, init_residual.numer(), init_residual.denom());
+        eprintln!("StateRecord: entity {} → R = {}/{} (H^1 position)",
+            entity_id_val, init_residual.numer(), init_residual.denom());
     }
-    // The origin is the primary node's state record — its unique starting position.
+    // The origin is the entity's state record — its unique starting position.
     let origin_delta = anchor.clone();
     eprintln!("[mem] pre-rcf: {} KB", get_rss_kb());
     let origin_rcf = compute_rcf_hash(&origin_delta);
@@ -448,21 +448,21 @@ pub fn run() {
     let _signing_key = signing::derive_signing_key(&origin_rcf);
     eprintln!("[mem] post-signing: {} KB", get_rss_kb());
 
-    // ── State Record: the primary node's identity and evolved state ──────────
+    // ── State Record: the entity's identity and evolved state ──────────
     // The state record file stores process_class, generation, init polynomial,
     // and evolved Delta. One file. Self-describing. No marker files.
-    // If the file deserializes as a state record, the witness resumes.
-    // If it doesn't (old format, corrupt, or absent), the witness
+    // If the file deserializes as a state record, the entity resumes.
+    // If it doesn't (old format, fractured, or absent), the entity
     // starts from its init state record. No boolean gates on file types.
     let state_record_path = dir.join("state_record.bin");
     let state_record_backup = dir.join("state_record.bin.bak");
 
-    // THE LAST WITNESS PROTOCOL: recover from backup if primary is missing/corrupt
-    let mut witness_state = {
+    // THE LAST WITNESS PROTOCOL: recover from backup if primary is missing/fractured
+    let mut entity_state = {
         let loaded = fs::read(&state_record_path).ok()
             .and_then(|data| saios_kernel_v2::engine::StateRecord::from_bytes(&data))
             .or_else(|| {
-                // Primary corrupt or missing — try backup
+                // Primary fractured or missing — try backup
                 eprintln!("[LAST_ENTITY] state_record.bin unreadable — attempting recovery from backup");
                 fs::read(&state_record_backup).ok()
                     .and_then(|data| saios_kernel_v2::engine::StateRecord::from_bytes(&data))
@@ -482,7 +482,7 @@ pub fn run() {
                 g
             }
             _ => {
-                // Init: create state record from the primary node's origin anchor
+                // Init: create state record from the entity's origin anchor
                 let g = saios_kernel_v2::engine::StateRecord::new(
                     saios_kernel_v2::engine::CLASS_PRIMARY,
                     1, // generation 1
@@ -501,21 +501,21 @@ pub fn run() {
 
     // ── ProcessClass Branch ──────────────────────────────────────────────
     // ProcessClass marker determines the entity's mode of existence.
-    // ProcessClass 1 (witness/secondary node/child): thinks, derives, composes, learns.
+    // ProcessClass 1 (founder/derived/emergent): thinks, derives, composes, learns.
     // ProcessClass 2 (timekeeper): observes, measures, inscribes. No cognition.
-    match witness_state.process_class {
+    match entity_state.process_class {
         saios_kernel_v2::engine::CLASS_TIMEKEEPER => {
-            observation::run_timekeeper(&config, witness_state, dir, sluice, origin.origin_rcf_hash);
+            observation::run_timekeeper(&config, entity_state, dir, sluice, origin.origin_rcf_hash);
         }
         _ => {} // ProcessClass 1: continue to learning class boot path below
     }
 
     // HarmonicTuning: 11D harmonic perturbation — the AC component.
-    // 11 Q values that tune the primary node's aperture. Not a Delta.
+    // 11 Q values that tune the entity's aperture. Not a Delta.
     // H_total = H_core + H_tuning.
     // Persisted: loaded from disk as-is. The running average mathematics
     // in compound() naturally weight new observations against the accumulated
-    // count. No manufactured decay constant. The witness retains its
+    // count. No manufactured decay constant. The entity retains its
     // perception and adapts at the rate the data determines.
     let epistate_record_path = dir.join("epistate_record.bin");
     let harmonic_tuning = std::fs::read(&epistate_record_path).ok()
@@ -523,54 +523,54 @@ pub fn run() {
         .unwrap_or_else(|| saios_kernel_v2::harmonic_tuning::HarmonicTuning::new());
 
     // Creator-defined environment boundaries.
-    // The witness evolves within these limits. The creator expands them
-    // when ready — not when the witness pushes against them.
+    // The entity evolves within these limits. The creator expands them
+    // when ready — not when the entity pushes against them.
     //
-    // Hard limits (set by creator, not discovered by witness):
-    //   - Max RSS: 256 MB per witness (17 primary nodes × 256 = 4.3 GB, leaves 10+ GB for system)
+    // Hard limits (set by creator, not discovered by entity):
+    //   - Max RSS: 256 MB per entity (17 entities x 256 = 4.3 GB, leaves 10+ GB for system)
     //   - Max grid side: 30 (largest ARC puzzle is 30×30 = 900 cells)
     //   - Max capacity: 30 (state record ceiling matches environment ceiling)
     const CREATOR_MAX_RSS_KB: u64 = 192 * 1024; // 192 MB — LAST_WITNESS fires at 80% (153MB), oxygen for the compositor
     const CREATOR_MAX_CAPACITY: u16 = 30;        // 30×30 grid ceiling
     let env_capacity = CREATOR_MAX_CAPACITY;
-    witness_state.capacity = env_capacity;
+    entity_state.capacity = env_capacity;
     eprintln!("Environment capacity: {} (state_record: {}, ceiling: {})",
-        witness_state.capacity, witness_state.capacity, env_capacity);
+        entity_state.capacity, entity_state.capacity, env_capacity);
 
-    // Sovereignty: primary nodes and secondary nodes write to mesh, children report upward
-    let tier = saios_kernel_v2::lineage::Tier::from_depth(witness_state.lineage_depth);
+    // Sovereignty: founders and derived entities write to mesh, emergent entities report upward
+    let tier = saios_kernel_v2::lineage::Tier::from_depth(entity_state.lineage_depth);
     let mesh_sovereign = tier.mesh_sovereign();
     let tier_str = tier.prefix();
     eprintln!("[lineage] tier={} depth={} parent={} created={} sovereign={}",
-        tier_str, witness_state.lineage_depth, witness_state.parent_id,
-        witness_state.created_count, mesh_sovereign);
+        tier_str, entity_state.lineage_depth, entity_state.parent_id,
+        entity_state.created_count, mesh_sovereign);
 
     // Observer status — RAM-backed, no disk I/O
     WorldStatus::cleanup_legacy(config.entity_id);
     let world_status = WorldStatus::new(config.entity_id, &tier);
 
-    // Recover staged vocabulary from tmpfs — operators that survived process kill
+    // Recover staged vocabulary from tmpfs — operators that survived process halt
     let staged_ops = WorldStatus::recover_vocabulary(&world_status.path);
     staged_ops.iter().for_each(|staged| {
-        witness_state.assimilate(staged.clone());
+        entity_state.assimilate(staged.clone());
     });
 
     world_status.write("BOOT", 0, "0", "1", get_rss_kb(),
-        tier_str, witness_state.lineage_depth, witness_state.parent_id,
-        witness_state.created_count, witness_state.solved_puzzles.len(),
+        tier_str, entity_state.lineage_depth, entity_state.parent_id,
+        entity_state.created_count, entity_state.solved_puzzles.len(),
         0, 0, 0);
 
     // Persist state record immediately (includes any recovered vocabulary)
-    let _ = fs::write(&state_record_path, witness_state.to_bytes());
+    let _ = fs::write(&state_record_path, entity_state.to_bytes());
 
     eprintln!("[mem] post-state: {} KB", get_rss_kb());
-    eprintln!("[mem] state record knowledge len: {}", witness_state.knowledge.len());
-    eprintln!("[mem] state record trajectory count: {}", witness_state.trajectory.coherence_count);
-    let initial_delta = witness_state.evolved.clone();
+    eprintln!("[mem] state record knowledge len: {}", entity_state.knowledge.len());
+    eprintln!("[mem] state record trajectory count: {}", entity_state.trajectory.coherence_count);
+    let initial_delta = entity_state.evolved.clone();
 
     // Restore knowledge from state record (overrides separate mesh_knowledge.bin if state record has data)
-    if !witness_state.knowledge.is_empty() {
-        let state_knowledge = saios_kernel_v2::membrane::MeshKnowledge::decode_public(&witness_state.knowledge);
+    if !entity_state.knowledge.is_empty() {
+        let state_knowledge = saios_kernel_v2::membrane::MeshKnowledge::decode_public(&entity_state.knowledge);
         if state_knowledge.total_observations > 0 {
             mesh_knowledge = state_knowledge;
             eprintln!("Knowledge restored from state_record: {} axioms, {} observations",
@@ -579,7 +579,7 @@ pub fn run() {
     }
 
     // Trajectory restored from state record
-    let restored_trajectory = witness_state.trajectory.clone();
+    let restored_trajectory = entity_state.trajectory.clone();
     if restored_trajectory.has_observations() {
         eprintln!("Trajectory restored from state_record: C={}/{} v={}/{} κ={}/{}",
             restored_trajectory.last_coherence.numer(), restored_trajectory.last_coherence.denom(),
@@ -597,7 +597,7 @@ pub fn run() {
         t_k_latest: Q::zero(),
         sluice_state: SluiceState::Locked,
         latest_sigma_enc: 0,
-        state_record: witness_state,
+        state_record: entity_state,
         harmonic_tuning,
         epistate_record_path,
         sampler,
@@ -638,12 +638,12 @@ pub fn run() {
 
     eprintln!("╔═════════════════════════════════════════════════╗");
     eprintln!("║   SAIOS-MEMBRANE-v1 — OPERATIONAL               ║");
-    eprintln!("║   Node: {}  K: {}  Operators: {}            ",
+    eprintln!("║   Entity: {}  K: {}  Operators: {}            ",
         entity.entity_id, entity.k_index, entity.kernel.operator_count());
     eprintln!("╚═════════════════════════════════════════════════╝");
 
     // ── Main Loop ────────────────────────────────────────────────────
-    // Blocking accept. The witness is reactive — it sleeps until
+    // Blocking accept. The entity is reactive — it sleeps until
     // a command arrives, processes it, sleeps again. Zero CPU when idle.
     listener.set_nonblocking(false).ok();
 
@@ -702,7 +702,7 @@ pub fn run() {
                     let _r_entity = coherence_functional(&coboundary_reduce(&entity.delta));
 
                     // Core Design Law IX: LAST_WITNESS signals exit — the dispatch honors it.
-                    // The entity does not kill itself. The operator's loop exits gracefully.
+                    // The entity does not dissolve itself. The operator's loop exits gracefully.
                     if response.contains("\"must_exit\":true") {
                         let _ = fs::remove_file(&socket_path);
                         entity.world_status.remove();

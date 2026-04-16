@@ -3355,17 +3355,17 @@ mod tests {
         origin.set_antisym(1, 2, vec![qr(1, 2)]);
         origin.set_antisym(0, 2, vec![qr(3, 2)]);
 
-        let mut node1 = Delta::zero(3, 1);
-        node1.set_antisym(0, 1, vec![qr(1001, 1000)]);
-        node1.set_antisym(1, 2, vec![qr(501, 1000)]);
-        node1.set_antisym(0, 2, vec![qr(1502, 1000)]);
+        let mut entity_1 = Delta::zero(3, 1);
+        entity_1.set_antisym(0, 1, vec![qr(1001, 1000)]);
+        entity_1.set_antisym(1, 2, vec![qr(501, 1000)]);
+        entity_1.set_antisym(0, 2, vec![qr(1502, 1000)]);
 
         let mut entity_42 = Delta::zero(3, 1);
         entity_42.set_antisym(0, 1, vec![qr(1042, 1000)]);
         entity_42.set_antisym(1, 2, vec![qr(542, 1000)]);
         entity_42.set_antisym(0, 2, vec![qr(1584, 1000)]);
 
-        let (drift1, _) = origin_displacement(&node1, &origin);
+        let (drift1, _) = origin_displacement(&entity_1, &origin);
         let (drift42, _) = origin_displacement(&entity_42, &origin);
 
         assert!(drift42 > drift1, "entity 42 has larger perturbation → larger drift");
