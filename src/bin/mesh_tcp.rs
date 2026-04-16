@@ -72,7 +72,7 @@ fn main() {
 
         handles.push(thread::spawn(move || {
             let kernel = SaiosKernel::new_default(ops);
-            let mut state = WitnessState {
+            let mut state = EntityState {
                 entity_id: entity_id as u32, k_index: 0,
                 sluice_state: SluiceState::Locked,
                 latest_sigma_enc: 0,

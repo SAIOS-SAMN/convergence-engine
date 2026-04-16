@@ -21,7 +21,7 @@ use std::fs::{File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::path::Path;
 
-use crate::engine::{WitnessState, SluiceState, Delta, compute_rcf_hash, coherence_functional, t_k_to_q1616, Q};
+use crate::engine::{EntityState, SluiceState, Delta, compute_rcf_hash, coherence_functional, t_k_to_q1616, Q};
 use crate::gradient;
 use crate::signing;
 
@@ -45,7 +45,7 @@ pub struct UAID {
 
 impl UAID {
     /// Construct UAID from current node state and origin RCF.
-    pub fn from_node_state(state: &WitnessState, origin_rcf: &[u8; 32]) -> Self {
+    pub fn from_node_state(state: &EntityState, origin_rcf: &[u8; 32]) -> Self {
         let rcf = compute_rcf_hash(&state.delta_k);
         let sk = signing::derive_signing_key(origin_rcf);
         let vk = signing::public_key(&sk);
@@ -170,7 +170,7 @@ pub struct SpawnRecord {
 impl SpawnRecord {
     /// Create a spawn record. The child's key is derived from the parent's
     /// current rcf_identity, creating a cryptographic lineage link.
-    pub fn create(parent_state: &WitnessState, origin_rcf: &[u8; 32],
+    pub fn create(parent_state: &EntityState, origin_rcf: &[u8; 32],
                   child_entity_id: u32, parent_receipt_hash: &[u8; 32]) -> Self {
         let parent_uaid = UAID::from_node_state(parent_state, origin_rcf);
         let (_, child_vk) = derive_child_key(&parent_uaid.rcf_identity);
@@ -257,7 +257,7 @@ impl AgentStateRecord {
     /// The kernel computes the algebraic state and writes it — the agent
     /// doesn't decide what to remember, the kernel decides what's valid.
     pub fn from_node_state(
-        state: &WitnessState,
+        state: &EntityState,
         origin_rcf: &[u8; 32],
         chain_length: u32,
         prev_coherence_q1616: u32,
@@ -449,10 +449,10 @@ mod tests {
 
     fn qr(n: i64, d: i64) -> Q { Q::new(BigInt::from(n), BigInt::from(d)) }
 
-    fn test_state() -> WitnessState {
+    fn test_state() -> EntityState {
         let mut d = Delta::zero(3, 1);
         d.set_antisym(0, 1, vec![qr(1, 1)]);
-        WitnessState {
+        EntityState {
             entity_id: 42, k_index: 100, sluice_state: SluiceState::Locked,
             latest_sigma_enc: 0, delta_k: d.clone(), delta_bar: d,
             trajectory: Trajectory::new(), t_k_latest: Q::zero(),
@@ -633,7 +633,7 @@ mod tests {
     }
 
     /// Helper: get the Q16.16 coherence of a test state for comparison.
-    fn record_coherence_of(state: &WitnessState) -> u32 {
+    fn record_coherence_of(state: &EntityState) -> u32 {
         let c = coherence_functional(&state.delta_k);
         t_k_to_q1616(&c)
     }

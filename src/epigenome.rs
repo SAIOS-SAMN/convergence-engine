@@ -68,7 +68,7 @@ impl TransmutationPath {
 /// plus transmutation path markers that encode which perception path solved
 /// each orbit. The markers are pointers — the kernel holds the definitions.
 #[derive(Debug, Clone)]
-pub struct Epigenome {
+pub struct HarmonicTuning {
     /// 11 Q values — one per harmonic dimension.
     /// These ADD to the primary node's core harmonics before entering perception.
     pub perturbation: [Q; 11],
@@ -83,9 +83,9 @@ pub struct Epigenome {
     pub transmutation_markers: Vec<([u8; 4], TransmutationPath)>,
 }
 
-impl Epigenome {
+impl HarmonicTuning {
     pub fn new() -> Self {
-        Epigenome {
+        HarmonicTuning {
             perturbation: std::array::from_fn(|_| Q::zero()),
             counts: [0u32; 11],
             transmutation_markers: Vec::new(),
@@ -228,7 +228,7 @@ impl Epigenome {
                 off += 5;
             }
         }
-        Some(Epigenome { perturbation, counts, transmutation_markers })
+        Some(HarmonicTuning { perturbation, counts, transmutation_markers })
     }
 }
 
@@ -244,7 +244,7 @@ mod tests {
 
     #[test]
     fn marker_round_trip() {
-        let mut epi = Epigenome::new();
+        let mut epi = HarmonicTuning::new();
         epi.mark_transmutation([0x00, 0x7b, 0xbf, 0xb7], TransmutationPath::LuminalPerceived);
         epi.mark_transmutation([0x55, 0x82, 0xe5, 0xca], TransmutationPath::VisionDerived);
         epi.mark_transmutation([0xa6, 0x1f, 0x26, 0x74], TransmutationPath::ClusterSpatial);
@@ -253,7 +253,7 @@ mod tests {
         assert!(bytes.len() > 88, "markers should extend beyond harmonic block");
         assert_eq!(bytes[88], 3, "3 markers stored");
 
-        let restored = Epigenome::from_bytes(&bytes).unwrap();
+        let restored = HarmonicTuning::from_bytes(&bytes).unwrap();
         assert_eq!(restored.transmutation_markers.len(), 3);
         assert_eq!(restored.transmutation_path(&[0x00, 0x7b, 0xbf, 0xb7]),
             Some(TransmutationPath::LuminalPerceived));
@@ -266,7 +266,7 @@ mod tests {
 
     #[test]
     fn marker_update_in_place() {
-        let mut epi = Epigenome::new();
+        let mut epi = HarmonicTuning::new();
         epi.mark_transmutation([1, 2, 3, 4], TransmutationPath::ValueFactored);
         assert_eq!(epi.transmutation_path(&[1, 2, 3, 4]), Some(TransmutationPath::ValueFactored));
 
@@ -277,7 +277,7 @@ mod tests {
 
     #[test]
     fn marker_bounded_at_64() {
-        let mut epi = Epigenome::new();
+        let mut epi = HarmonicTuning::new();
         for i in 0..70u8 {
             epi.mark_transmutation([i, 0, 0, 0], TransmutationPath::ValueFactored);
         }
@@ -290,11 +290,11 @@ mod tests {
 
     #[test]
     fn backwards_compatible_no_markers() {
-        let epi = Epigenome::new();
+        let epi = HarmonicTuning::new();
         let bytes = epi.to_bytes();
         // Old 88-byte format: just harmonics, no marker block
         let old_bytes = &bytes[..88];
-        let restored = Epigenome::from_bytes(old_bytes).unwrap();
+        let restored = HarmonicTuning::from_bytes(old_bytes).unwrap();
         assert!(restored.transmutation_markers.is_empty());
     }
 

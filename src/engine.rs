@@ -41,7 +41,7 @@ pub type QMatrix = Vec<Vec<Q>>;
 ///
 /// Variant names encode the D.EXEC.1 check that failed, enabling precise
 /// failure diagnosis at the caller. The sluice state returned with each
-/// error is the state to record in WitnessState per D.SAIOS.1.
+/// error is the state to record in EntityState per D.SAIOS.1.
 #[allow(missing_docs)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum SaiosError {
@@ -2580,7 +2580,7 @@ impl Trajectory {
 ///
 /// Persisted to saios-db at each K-step. Used for continuity.
 #[derive(Debug, Clone)]
-pub struct WitnessState {
+pub struct EntityState {
     /// Entity identifier. Max 16,777,215 (uint24). Register: CC.CHAIN.NODE.1.
     pub entity_id: u32,
     /// Current K-step index. Strictly monotone. Register: I10, D.EXEC.1.
@@ -2600,7 +2600,7 @@ pub struct WitnessState {
     pub t_k_latest: Q,
 }
 
-impl WitnessState {
+impl EntityState {
     /// Compute Q0.32 fixed-point encoding of Σ_global ∈ [0,1].
     /// Register: D.CHAIN.1-ENC-v2, U.CHAIN.3.
     pub fn compute_sigma_enc(&self) -> u32 {
@@ -2756,7 +2756,7 @@ pub fn keccak256(input: &[u8]) -> [u8; 32] {
 /// The SAIOS execution kernel.
 ///
 /// Holds all calibrated parameters and the set of operators active for
-/// this node. Stateless between calls — state is in `WitnessState`.
+/// this node. Stateless between calls — state is in `EntityState`.
 pub struct SaiosKernel {
     /// Calibrated governance parameters. Register: D.CHAIN.4.
     pub params: SaiosParams,
@@ -2806,7 +2806,7 @@ impl SaiosKernel {
     /// appropriate state per D.SAIOS.1.
     pub fn execute_k_step(
         &self,
-        state: &mut WitnessState,
+        state: &mut EntityState,
     ) -> Result<KStepOutput, SaiosError> {
         let p = &self.params;
 
@@ -2988,7 +2988,7 @@ impl SaiosKernel {
 
     /// C1: Integrity Sentinel. |R_i| ≤ δ/2 for all encoded coordinates.
     /// Register: D.5.1-DIM. Failure → CORRUPTED.
-    fn check_c1_integrity_sentinel(&self, state: &mut WitnessState) -> Result<(), SaiosError> {
+    fn check_c1_integrity_sentinel(&self, state: &mut EntityState) -> Result<(), SaiosError> {
         if let Some(encoded) = &state.delta_k.encoded {
             for i in 0..state.delta_k.dim {
                 for j in 0..state.delta_k.dim {
@@ -3007,7 +3007,7 @@ impl SaiosKernel {
     }
 
     /// C2: K_S window constraint. Register: D.EXEC.1 C2.
-    fn check_c2_ks_window(&self, state: &mut WitnessState) -> Result<(), SaiosError> {
+    fn check_c2_ks_window(&self, state: &mut EntityState) -> Result<(), SaiosError> {
         // K_S = current K-step / total elapsed steps (simplified for initial deployment)
         // K_S_min = 1 / (10 · τ_lag)
         let k_s_min = Q::one() / (Q::from_integer(BigInt::from(10)) * &self.params.tau_lag);
@@ -3027,7 +3027,7 @@ impl SaiosKernel {
     }
 
     /// C3: W_max ≤ 1/3 for all operator weights. Register: D.EXEC.1 C3.
-    fn check_c3_w_max(&self, state: &WitnessState) -> Result<(), SaiosError> {
+    fn check_c3_w_max(&self, state: &EntityState) -> Result<(), SaiosError> {
         if self.operators.is_empty() { return Ok(()); }
         let gamma_k = compute_gamma_k(&state.delta_k);
         let omegas = self.compute_all_omegas(&gamma_k);
@@ -3054,7 +3054,7 @@ impl SaiosKernel {
     /// `|φ(R_j)| < ε_sluice`, where φ(R_j) = R_j / δ.
     ///
     /// Register: D.EXEC.1 C5, T.SAMN.11, constants::TORSION_PERIOD_M.
-    pub fn check_c5_resonance(&self, state: &WitnessState) -> Result<(), SaiosError> {
+    pub fn check_c5_resonance(&self, state: &EntityState) -> Result<(), SaiosError> {
         if state.k_index % constants::TORSION_PERIOD_M != 0 {
             return Ok(());
         }
@@ -3125,7 +3125,7 @@ impl SaiosKernel {
     /// 7. + ξ_k — bounded explore perturbation (Δ_explore only)
     ///
     /// Register: T.FOUND.3, D.EXEC.1.
-    fn apply_master_equation(&self, state: &WitnessState) -> Result<Delta, SaiosError> {
+    fn apply_master_equation(&self, state: &EntityState) -> Result<Delta, SaiosError> {
         let delta_k = &state.delta_k;
         let p = &self.params;
 

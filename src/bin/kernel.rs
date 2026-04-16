@@ -42,7 +42,7 @@ mod tests {
         }
     }
 
-    fn encoded_state_for_resonance(r_remainder: Q, m: usize) -> WitnessState {
+    fn encoded_state_for_resonance(r_remainder: Q, m: usize) -> EntityState {
         let mut delta = Delta::zero(2, m);
         delta.set_antisym(0, 1, vec![q(1, 1); m]);
         let encoded = vec![
@@ -56,7 +56,7 @@ mod tests {
             ],
         ];
         delta.encoded = Some(encoded);
-        WitnessState {
+        EntityState {
             entity_id: 1,
             k_index: 0,
             sluice_state: SluiceState::Locked,
@@ -222,7 +222,7 @@ mod tests {
         delta.set_antisym(0, 1, vec![q(3,2)]);
         // Cohomological operating level: state must be reduced
         let delta = saios_kernel_v2::engine::coboundary_reduce(&delta);
-        let mut state = WitnessState {
+        let mut state = EntityState {
             entity_id: 1, k_index: 0, sluice_state: SluiceState::Locked,
             latest_sigma_enc: 0, delta_k: delta.clone(), delta_bar: delta,
             trajectory: Trajectory::new(), t_k_latest: Q::zero(),

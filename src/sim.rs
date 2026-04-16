@@ -55,7 +55,7 @@ pub enum FaultMode {
 
 pub struct NodeSim {
     pub entity_id: u32,
-    pub state: WitnessState,
+    pub state: EntityState,
     pub kernel: SaiosKernel,
     pub fault: FaultMode,
     pub rcf_hash: [u8; 32],
@@ -106,7 +106,7 @@ impl MeshFabric {
         let rcf_hash = compute_rcf_hash(&anchor);
         let nodes: Vec<NodeSim> = (0..n as u32)
             .map(|id| {
-                let state = WitnessState {
+                let state = EntityState {
                     entity_id: id, k_index: 0,
                     sluice_state: SluiceState::Locked,
                     latest_sigma_enc: 0,
@@ -373,7 +373,7 @@ mod tests {
         let mut params = SaiosParams::default_register();
         params.epsilon_mag_relative = qr(1000, 1); // effectively disabled
         let kernel = SaiosKernel::new(params, ops);
-        let mut state = WitnessState {
+        let mut state = EntityState {
             entity_id: 0, k_index: 0, sluice_state: SluiceState::Locked,
             latest_sigma_enc: 0, delta_k: anchor.clone(), delta_bar: anchor,
             trajectory: Trajectory::new(), t_k_latest: QR::zero(),

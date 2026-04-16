@@ -18,7 +18,7 @@ use num_traits::Zero;
 use saios_kernel_v2::agent::AgentStateRecord;
 use saios_kernel_v2::chain;
 use saios_kernel_v2::engine::*;
-use saios_kernel_v2::epigenome::Epigenome;
+use saios_kernel_v2::epigenome::HarmonicTuning;
 use saios_kernel_v2::lineage::Tier;
 use saios_kernel_v2::membrane::{MeshKnowledge, PeerState};
 use saios_kernel_v2::register::Register;
@@ -159,7 +159,7 @@ pub struct Entity {
     // ──�� Volatile Torsion (epistate record — dies on restart) ───
 
     /// The epistate record — 11D harmonic perturbation of the torsion field.
-    pub epigenome: Epigenome,
+    pub epigenome: HarmonicTuning,
 
     /// Path to epigenome file on disk.
     pub epistate_record_path: PathBuf,
@@ -368,9 +368,9 @@ impl Entity {
         }
     }
 
-    /// Create a WitnessState view for compatibility with existing code.
-    pub fn to_witness_state(&self) -> WitnessState {
-        WitnessState {
+    /// Create a EntityState view for compatibility with existing code.
+    pub fn to_witness_state(&self) -> EntityState {
+        EntityState {
             entity_id: self.entity_id,
             k_index: self.k_index,
             sluice_state: self.sluice_state.clone(),
@@ -382,8 +382,8 @@ impl Entity {
         }
     }
 
-    /// Sync entity state back from a WitnessState after execute_k_step.
-    pub fn sync_from_witness_state(&mut self, ws: &WitnessState) {
+    /// Sync entity state back from a EntityState after execute_k_step.
+    pub fn sync_from_witness_state(&mut self, ws: &EntityState) {
         self.delta = ws.delta_k.clone();
         self.delta_bar = ws.delta_bar.clone();
         self.k_index = ws.k_index;
@@ -393,7 +393,7 @@ impl Entity {
         self.latest_sigma_enc = ws.latest_sigma_enc;
     }
 
-    /// Execute a K-step through the kernel, bridging Entity ↔ WitnessState.
+    /// Execute a K-step through the kernel, bridging Entity ↔ EntityState.
     pub fn execute_k_step(&mut self) -> Result<KStepOutput, SaiosError> {
         let mut ws = self.to_witness_state();
         let result = self.kernel.execute_k_step(&mut ws);

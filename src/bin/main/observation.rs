@@ -60,8 +60,8 @@ pub fn run_timekeeper(
     // Epistate record — chronometric harmonics (K velocity, population, vocab rate, denom health)
     let epistate_record_path = dir.join("epistate_record.bin");
     let mut epigenome = std::fs::read(&epistate_record_path).ok()
-        .and_then(|data| saios_kernel_v2::epigenome::Epigenome::from_bytes(&data))
-        .unwrap_or_else(|| saios_kernel_v2::epigenome::Epigenome::new());
+        .and_then(|data| saios_kernel_v2::epigenome::HarmonicTuning::from_bytes(&data))
+        .unwrap_or_else(|| saios_kernel_v2::epigenome::HarmonicTuning::new());
 
     // World status — the timekeeper is visible to the observer
     let shm_path = PathBuf::from(format!("/dev/shm/saios-timekeeper-{}", config.entity_id));

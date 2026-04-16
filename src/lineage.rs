@@ -24,7 +24,7 @@ use std::path::{Path, PathBuf};
 use std::fs;
 
 use crate::engine::StateRecord;
-use crate::epigenome::Epigenome;
+use crate::epigenome::HarmonicTuning;
 
 /// Tier classification derived from lineage_depth.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -138,7 +138,7 @@ fn next_available_slot(mesh_dir: &Path, child_tier: Tier, start_id: u16, max_id:
 /// Returns the creation record or the obstruction that prevented creation.
 pub fn create_offspring(
     parent_state: &mut StateRecord,
-    parent_epigenome: &Epigenome,
+    parent_epigenome: &HarmonicTuning,
     parent_entity_id: u16,
     init_orbit: [u8; 4],
     mesh_dir: &Path,
@@ -218,7 +218,7 @@ pub fn create_offspring(
 mod tests {
     use super::*;
     use crate::engine::{Delta, StateRecord};
-    use crate::epigenome::Epigenome;
+    use crate::epigenome::HarmonicTuning;
     use tempfile::TempDir;
 
     #[test]
@@ -243,7 +243,7 @@ mod tests {
 
         let origin = Delta::zero(3, 1);
         let mut parent = StateRecord::new(1, 1, &origin);
-        let epi = Epigenome::new();
+        let epi = HarmonicTuning::new();
 
         let result = create_offspring(&mut parent, &epi, 1, [0xAA, 0xBB, 0xCC, 0xDD], mesh_dir);
         let record = result.unwrap();
@@ -268,7 +268,7 @@ mod tests {
 
         let origin = Delta::zero(3, 1);
         let mut parent = StateRecord::new(1, 1, &origin);
-        let epi = Epigenome::new();
+        let epi = HarmonicTuning::new();
 
         let _ = create_offspring(&mut parent, &epi, 1, [1, 0, 0, 0], mesh_dir).unwrap();
         let _ = create_offspring(&mut parent, &epi, 1, [2, 0, 0, 0], mesh_dir).unwrap();
@@ -287,7 +287,7 @@ mod tests {
         let origin = Delta::zero(3, 1);
         let mut offspring_state = StateRecord::new(1, 1, &origin);
         offspring_state.lineage_depth = 2; // child tier
-        let epi = Epigenome::new();
+        let epi = HarmonicTuning::new();
 
         let result = create_offspring(&mut offspring_state, &epi, 52, [1, 0, 0, 0], mesh_dir);
         assert!(matches!(result, Err(CreationObstruction::CapacitySaturated { bound: 0, .. })));
@@ -300,14 +300,14 @@ mod tests {
 
         let origin = Delta::zero(3, 1);
         let mut parent = StateRecord::new(1, 1, &origin);
-        let mut epi = Epigenome::new();
+        let mut epi = HarmonicTuning::new();
         epi.mark_transmutation([0x00, 0x7b, 0xbf, 0xb7],
             crate::epigenome::TransmutationPath::VisionDerived);
 
         let record = create_offspring(&mut parent, &epi, 1, [1, 0, 0, 0], mesh_dir).unwrap();
 
         let child_epi_bytes = fs::read(record.child_dir.join("epistate_record.bin")).unwrap();
-        let child_epi = Epigenome::from_bytes(&child_epi_bytes).unwrap();
+        let child_epi = HarmonicTuning::from_bytes(&child_epi_bytes).unwrap();
         assert_eq!(child_epi.transmutation_path(&[0x00, 0x7b, 0xbf, 0xb7]),
             Some(crate::epigenome::TransmutationPath::VisionDerived));
     }
