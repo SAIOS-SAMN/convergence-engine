@@ -835,6 +835,14 @@ impl MeshKnowledge {
         });
 
         if let Some(tc) = existing {
+            // Eviction cap: the membrane holds a window of recent observations,
+            // not all observations ever. Oldest entry yields when the window is full.
+            // 32 observers bounds the meta-Delta to 32×32 — O(n²) stays manageable.
+            const MAX_OBSERVERS: usize = 32;
+            (tc.observing_entities.len() >= MAX_OBSERVERS).then(|| {
+                tc.observing_entities.remove(0);
+            });
+
             // Add this observer as a new entity
             tc.observing_entities.push(entity);
             tc.count += 1;
