@@ -234,7 +234,9 @@ pub fn absorb(entity: &mut Entity, _payload: &str) -> String {
     let mut children_absorbed = 0usize;
     // Absorb at OUR capacity, not the child's. The compound is at our dimension.
     let absorb_cocycle_limit = (entity.state_record.capacity as usize / 10).max(3);
-    let absorb_ops_limit = (entity.state_record.capacity as usize / 10).max(1);
+    // Vocabulary flows UP fully — don't cap operators. assimilate() handles
+    // dedup and eviction at the state record level (32 max).
+    let absorb_ops_limit = 32usize;
 
     // Discover children from /dev/shm status files
     std::fs::read_dir("/dev/shm").ok().map(|entries| {
