@@ -176,8 +176,13 @@ pub fn thought_vocabulary_with_state(
     // Complexity: O(V * N) per depth level, not O(V^D).
     // With ~36 generators (reduced base + genomic words) at depth 6:
     // 6 × 36 × 5 = 1,080 evaluations. Far below the metabolic horizon.
-    const TOP_N: usize = 5;
-    const MAX_DEPTH: u32 = 6;
+    // Scale TOP_N with vocabulary size to maintain search coverage.
+    // Small vocab (3-10): TOP_N=5, depth 6 → ~1000 evals (near exhaustive).
+    // Large vocab (100+): TOP_N=10, depth 4 → ~4000 evals (bounded but broader).
+    // Budget: ~4000 evaluations maximum — the metabolic horizon.
+    let vocab_size = extended_vocab.len();
+    let top_n: usize = (vocab_size / 10).clamp(5, 15);
+    let max_depth: u32 = (8u32.saturating_sub(vocab_size as u32 / 30)).clamp(3, 6);
 
     // Score all single thoughts as depth-1 candidates
     let mut candidates: Vec<(u64, Thought)> = extended_vocab.iter().map(|t| {
@@ -185,10 +190,10 @@ pub fn thought_vocabulary_with_state(
         (d, t.clone())
     }).collect();
     candidates.sort_by_key(|(d, _)| *d);
-    candidates.truncate(TOP_N);
+    candidates.truncate(top_n);
 
     // Iterative deepening: depth 2, 3, 4, 5, 6 up to MAX_DEPTH
-    for depth in 2..=MAX_DEPTH {
+    for depth in 2..=max_depth {
         let mut next_candidates: Vec<(u64, Thought)> = Vec::new();
 
         // Compose each top candidate from previous depth with each vocab entry
@@ -223,7 +228,7 @@ pub fn thought_vocabulary_with_state(
 
         // Select top N for next depth — the residual carriers
         next_candidates.sort_by_key(|(d, _)| *d);
-        next_candidates.truncate(TOP_N);
+        next_candidates.truncate(top_n);
 
         // If no candidate improved over previous depth's best, the manifold
         // is exhausted at this vocabulary. No plateau breakthrough possible.
