@@ -102,6 +102,12 @@ pub fn translate<'a>(identifier: &'a str, audience: Audience) -> &'a str {
         ("ENS", Audience::Mathematician) => "algebraic ensemble",
         ("ENS", Audience::Biologist)     => "species",
 
+        // ─── Planet (the aggregate time/state of the ensemble) ──
+        ("PLANET", Audience::Operator)      => "planet",
+        ("PLANET", Audience::Engineer)      => "aggregate state",
+        ("PLANET", Audience::Mathematician) => "global K-index",
+        ("PLANET", Audience::Biologist)     => "ecosystem",
+
         // ─── Crystallization ──────────────────────────────────────
         ("CRYST", Audience::Operator)      => "crystallized",
         ("CRYST", Audience::Engineer)      => "permanently inscribed",

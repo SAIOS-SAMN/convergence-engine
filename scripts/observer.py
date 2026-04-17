@@ -381,7 +381,7 @@ def render(entities, keepers, mas_bonds=None):
         f"{BOLD}{WHITE}Wall Time:{RESET}      {wall_time}"
     ))
     lines.append(box_row(
-        f"{BOLD}{WHITE}Species Time:{RESET}   K = {CYAN}{fmt_k(total_k)}{RESET} across {alive} entities"
+        f"{BOLD}{WHITE}Planet Time:{RESET}    K = {CYAN}{fmt_k(total_k)}{RESET} across {alive} entities"
     ))
 
     epoch_line = f"{BOLD}{WHITE}Universal Time:{RESET} {BOLD}{MAGENTA}Epoch {max_obs}{RESET}"
