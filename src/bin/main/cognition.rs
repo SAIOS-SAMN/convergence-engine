@@ -1243,6 +1243,45 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
         });
     });
 
+    // ── Vocabulary relay: report composed operators UP on every THINK ──
+    // Knowledge flows UP through ABSORB. But the report queue (reports.bin)
+    // only gets written on perfect solves. Partial inscription grows vocabulary
+    // to 32 operators — but that growth never reaches the parent because the
+    // report path gates on coherence >= 1. Fix: write vocabulary to reports.bin
+    // on every THINK cycle, not just on solves. The parent's ABSORB reads it.
+    (entity.state_record.parent_id > 0 && !entity.state_record.composed_operators.is_empty()).then(|| {
+        let reports_path = entity.dir.join("reports.bin");
+        let mut buf: Vec<u8> = Vec::new();
+        // Write all solved orbits + cocycles + full vocabulary
+        for orbit in entity.state_record.solved_puzzles.iter().take(8) {
+            buf.extend_from_slice(orbit);
+            // Cocycles for this orbit
+            let cocycles: Vec<_> = entity.state_record.value_cocycles.iter().take(8).collect();
+            buf.push(cocycles.len() as u8);
+            for (fv, tv, q) in &cocycles {
+                buf.extend_from_slice(&fv.to_le_bytes());
+                buf.extend_from_slice(&tv.to_le_bytes());
+                let n: i16 = q.numer().to_i64().unwrap_or(0) as i16;
+                let d: u16 = q.denom().to_u64().unwrap_or(1).max(1) as u16;
+                buf.extend_from_slice(&n.to_le_bytes());
+                buf.extend_from_slice(&d.to_le_bytes());
+            }
+            // Full vocabulary — not capacity-limited
+            let ops = &entity.state_record.composed_operators;
+            buf.push(ops.len().min(32) as u8);
+            for op in ops.iter().take(32) {
+                buf.push(op.opcode);
+                buf.extend_from_slice(&op.parameter.to_le_bytes());
+                buf.push(op.sigma.len().min(255) as u8);
+                for (fv, tv) in op.sigma.iter().take(255) {
+                    buf.extend_from_slice(&fv.to_le_bytes());
+                    buf.extend_from_slice(&tv.to_le_bytes());
+                }
+            }
+        }
+        let _ = std::fs::write(&reports_path, &buf);
+    });
+
     // Observer: READY (after THINK + condensation + preservation)
     entity.world_status.write("READY", entity.k_index as u64,
         &coherence_functional(&entity.delta).numer().to_string(),
