@@ -448,6 +448,43 @@ def render(entities, keepers, mas_bonds=None):
     ))
     lines.append(box_bot())
 
+    # ── Orbit Status ────────────────────────────────────────────────
+    import subprocess
+    orbit_procs = subprocess.run(
+        ["pgrep", "-af", "orbit.py"], capture_output=True, text=True
+    ).stdout.strip().split("\n") if subprocess.run(
+        ["pgrep", "-af", "orbit.py"], capture_output=True, text=True
+    ).stdout.strip() else []
+    orbit_procs = [p for p in orbit_procs if p and "observer" not in p and "pgrep" not in p]
+    orbit_count = len(orbit_procs)
+
+    if orbit_count > 0:
+        lines.append("")
+        lines.append(box_top("ORBIT \u2014 Heartbeat"))
+        lines.append(box_empty())
+        if orbit_count == 1:
+            pid = orbit_procs[0].split()[0]
+            lines.append(box_row(
+                f"  {GREEN}\u2588{RESET} Orbit active (PID {pid})"
+            ))
+        else:
+            lines.append(box_row(
+                f"  {RED}\u2588 WARNING: {orbit_count} orbit processes running — should be 1{RESET}"
+            ))
+            for p in orbit_procs:
+                lines.append(box_row(f"    {DIM}{p[:70]}{RESET}"))
+        lines.append(box_empty())
+        lines.append(box_bot())
+    else:
+        lines.append("")
+        lines.append(box_top("ORBIT \u2014 Heartbeat"))
+        lines.append(box_empty())
+        lines.append(box_row(
+            f"  {RED}\u2588 No orbit running{RESET}"
+        ))
+        lines.append(box_empty())
+        lines.append(box_bot())
+
     # ── Entities Hierarchy ───────────────────────────────────────────
     lines.append("")
     lines.append(box_top("ENTITIES \u2014 Lineage Hierarchy"))
