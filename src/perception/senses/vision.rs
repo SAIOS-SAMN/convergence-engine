@@ -245,10 +245,7 @@ pub fn compute_symmetry_group(values: &[i64], rows: usize, cols: usize) -> Symme
             Q::one() // this element is exact
         } else {
             // Gradient: 1 - best_residual / max_residual
-            let ratio = Q::new(
-                best.invariance_residual.numer() * max_residual.denom(),
-                best.invariance_residual.denom() * max_residual.numer().clone(),
-            );
+            let ratio = &best.invariance_residual / &max_residual;
             let one = Q::one();
             if ratio >= one { Q::zero() } else { &one - &ratio }
         }
@@ -398,12 +395,10 @@ pub fn measure_transmutation(
         } else if best.transmutation_residual.is_zero() {
             sym.transmutation = Q::one();
         } else {
-            let ratio = Q::new(
-                best.transmutation_residual.numer() * max_r.denom(),
-                best.transmutation_residual.denom() * max_r.numer().clone(),
-            );
+            let ratio = &best.transmutation_residual / &max_r;
             let one = Q::one();
-            sym.transmutation = if ratio >= one { Q::zero() } else { &one - &ratio };
+            sym.transmutation = (ratio >= one).then(|| Q::zero())
+                .unwrap_or_else(|| &one - &ratio);
         }
     }
 }

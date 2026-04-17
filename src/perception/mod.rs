@@ -2182,12 +2182,10 @@ pub fn cognize_with_membrane_and_transmutation(
                     // Gradient: sum quality across elements
                     let total_quality: Q = s.elements.iter()
                         .map(|e| {
-                            let ratio = Q::new(
-                                e.invariance_residual.numer() * max_res.denom(),
-                                e.invariance_residual.denom() * max_res.numer().clone(),
-                            );
+                            let ratio = &e.invariance_residual / &max_res;
                             let one = Q::one();
-                            if ratio > one { Q::zero() } else { &one - &ratio }
+                            (ratio > one).then(|| Q::zero())
+                                .unwrap_or_else(|| &one - &ratio)
                         })
                         .fold(Q::zero(), |acc, q| acc + q);
                     Q::new(

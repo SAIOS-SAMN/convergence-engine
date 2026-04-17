@@ -1864,7 +1864,7 @@ impl HarmonicState {
             let min_e = entries_abs.iter().min().cloned().unwrap_or(Q::one());
             let max_e = entries_abs.iter().max().cloned().unwrap_or(Q::one());
             if max_e.is_zero() { Q::zero() }
-            else { Q::new(min_e.numer() * max_e.denom(), min_e.denom() * max_e.numer().clone()) }
+            else { &min_e / &max_e }  // Q division auto-reduces via GCD
         } else {
             Q::one() // single entry = no ratio
         };
@@ -1879,8 +1879,7 @@ impl HarmonicState {
             residual_count += 1;
         });
         let mean_residual = if residual_count > 0 {
-            Q::new(residual_sum.numer().clone(),
-                   residual_sum.denom() * BigInt::from(residual_count as i64))
+            &residual_sum / &Q::from_integer(BigInt::from(residual_count as i64))
         } else {
             Q::zero()
         };
@@ -1910,22 +1909,20 @@ impl HarmonicState {
             if max_entry.is_zero() {
                 symmetry_score = Q::one();
             } else {
-                let ratio = Q::new(abs_diff.numer() * max_entry.denom(),
-                                   abs_diff.denom() * max_entry.numer().clone());
-                symmetry_score = if ratio > Q::one() { Q::zero() } else { Q::one() - &ratio };
+                // Q division auto-reduces — no manual cross-multiplication
+                let ratio = &abs_diff / &max_entry;
+                symmetry_score = (ratio > Q::one()).then(|| Q::zero())
+                    .unwrap_or_else(|| Q::one() - &ratio);
             }
             // Also check cocycle consistency (e02 = e01 + e12)
             let cocycle_diff = e02 - e01 - e12;
             let abs_cocycle = if cocycle_diff < Q::zero() { -cocycle_diff } else { cocycle_diff };
             if !abs_cocycle.is_zero() && !max_entry.is_zero() {
-                let coc_ratio = Q::new(abs_cocycle.numer() * max_entry.denom(),
-                                       abs_cocycle.denom() * max_entry.numer().clone());
+                let coc_ratio = &abs_cocycle / &max_entry;
                 if coc_ratio < Q::one() {
-                    symmetry_score = Q::new(
-                        symmetry_score.numer() * (&Q::one() - &coc_ratio).denom()
-                            + (&Q::one() - &coc_ratio).numer() * symmetry_score.denom(),
-                        symmetry_score.denom() * BigInt::from(2) * (&Q::one() - &coc_ratio).denom(),
-                    );
+                    // Average of symmetry_score and (1 - coc_ratio) via Q division
+                    let coc_term = Q::one() - &coc_ratio;
+                    symmetry_score = (&symmetry_score + &coc_term) / &Q::from_integer(BigInt::from(2));
                 }
             }
         }
@@ -1939,7 +1936,7 @@ impl HarmonicState {
             let abs_d = if diff < Q::zero() { -diff } else { diff };
             let max_e = entries_abs.iter().max().cloned().unwrap_or(Q::one());
             if max_e.is_zero() { Q::zero() }
-            else { Q::new(abs_d.numer() * max_e.denom(), abs_d.denom() * max_e.numer().clone()) }
+            else { &abs_d / &max_e }  // Q division auto-reduces
         } else {
             Q::zero()
         };
@@ -2109,10 +2106,11 @@ impl CoherenceDelta {
             None
         };
 
-        // Convergence: 1 - |delta| / max(|current|, 1)
+        // Convergence: 1 - |velocity| / max(|current|, 1)
+        // Q division auto-reduces via GCD — no manual numer/denom extraction
         let denom = if current.abs() > one { current.abs() } else { one.clone() };
-        let convergence = &one - Q::new(velocity.numer().clone(), denom.numer().clone());
-        let convergence = if convergence < zero { zero.clone() } else { convergence };
+        let convergence = &one - &(velocity.abs() / &denom);
+        let convergence = (convergence < zero).then(|| zero.clone()).unwrap_or(convergence);
 
         Self {
             current, previous, delta, velocity,

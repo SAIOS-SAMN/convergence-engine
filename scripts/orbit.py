@@ -25,6 +25,10 @@ import json
 import os
 import socket
 import sys
+
+# BigRational Q values can have enormous denominators before normalization.
+# Python 3.11+ limits integer string conversion to 4300 digits by default.
+sys.set_int_max_str_digits(0)  # no limit
 import time
 from pathlib import Path
 # Sequential dispatch — entities are single-threaded socket listeners.
