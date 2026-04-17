@@ -96,6 +96,12 @@ pub fn translate<'a>(identifier: &'a str, audience: Audience) -> &'a str {
         ("DISSOLVE", Audience::Mathematician) => "field annihilation",
         ("DISSOLVE", Audience::Biologist)     => "apoptosis",
 
+        // ─── Ensemble (the collective of all entities) ─────────────
+        ("ENS", Audience::Operator)      => "ensemble",
+        ("ENS", Audience::Engineer)      => "entity collective",
+        ("ENS", Audience::Mathematician) => "algebraic ensemble",
+        ("ENS", Audience::Biologist)     => "species",
+
         // ─── Crystallization ──────────────────────────────────────
         ("CRYST", Audience::Operator)      => "crystallized",
         ("CRYST", Audience::Engineer)      => "permanently inscribed",

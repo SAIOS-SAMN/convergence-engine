@@ -38,6 +38,8 @@ VOCABULARY = {
     "UP": "absorb",       "DOWN": "project",    "LATERAL": "interact",
     # Lifecycle (Cessation: halt → condense → suspend → dormant → inert → dissolved)
     "HALT": "halt",       "CONDENSE": "condense",    "DISSOLVE": "dissolved",
+    # Ensemble (the collective)
+    "ENS": "ensemble",
     # Crystallization
     "CRYST": "crystallized", "FRACT": "fractured",
 }
