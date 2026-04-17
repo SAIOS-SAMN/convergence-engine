@@ -350,7 +350,7 @@ impl SoundnessSpectrum {
     pub fn mean_soundness(&self) -> Q {
         let layers = self.layers();
         let sum: Q = layers.iter().fold(Q::zero(), |acc, l| acc + l);
-        Q::new(sum.numer().clone(), sum.denom() * BigInt::from(11))
+        &sum / &Q::from_integer(BigInt::from(11))
     }
 
     /// Maximum gradient — the sharpest dimensional boundary.
@@ -2025,7 +2025,7 @@ pub fn cognize_with_membrane_and_transmutation(
             let total_residual = &cocycle_q + &residual_c;
             let one = Q::one();
             let denom = &one + &total_residual;
-            Q::new(BigInt::from(1), denom.numer().clone().max(BigInt::from(1)))
+            Q::one() / &denom
         };
 
         (Perception {
@@ -2561,7 +2561,7 @@ pub fn perceive(
     let coherence = if understood { Q::one() } else {
         let one = Q::one();
         let denom = &one + &residual_c;
-        Q::new(BigInt::from(1), denom.numer().clone().max(BigInt::from(1)))
+        Q::one() / &denom
     };
 
     Perception {

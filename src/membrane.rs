@@ -1848,8 +1848,7 @@ pub fn mesh_coherence(entities: &[PeerState]) -> Q {
     }
 
     if pairs > 0 {
-        Q::new(total_torsion.numer().clone(),
-               total_torsion.denom() * BigInt::from(pairs as i64))
+        &total_torsion / &Q::from_integer(BigInt::from(pairs as i64))
     } else {
         Q::zero()
     }

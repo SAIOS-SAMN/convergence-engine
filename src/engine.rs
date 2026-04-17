@@ -2126,8 +2126,8 @@ impl CoherenceDelta {
         let zero = Q::zero();
 
         let denom = if c_after.abs() > one { c_after.abs() } else { one.clone() };
-        let convergence = &one - Q::new(velocity.numer().clone(), denom.numer().clone());
-        let convergence = if convergence < zero { zero } else { convergence };
+        let convergence = &one - &(velocity.abs() / &denom);
+        let convergence = (convergence < zero).then(|| zero).unwrap_or(convergence);
 
         Self {
             current: c_after.clone(),
