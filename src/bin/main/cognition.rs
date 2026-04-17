@@ -1170,6 +1170,26 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
         condensate();
     });
 
+    // ── Fiber expansion: open structural dimension when entity masters current space ──
+    // Criterion: cohesion uniformity × vocabulary saturation × K stall depth.
+    // All continuous measurements. No boolean gate. The expansion signal scales
+    // with how strongly all three criteria are met.
+    // Threshold: 1/2. The entity must score above 50% readiness to expand.
+    // Expansion is one-way: m grows, never shrinks. The structural dimension
+    // opens and stays open. Existing operators get zero-filled second fiber.
+    (entity.delta.m == 1).then(|| {
+        let readiness = entity.fiber_expansion_readiness();
+        let threshold = Q::new(BigInt::from(1), BigInt::from(2));
+        (readiness >= threshold).then(|| {
+            eprintln!("[fiber-expansion] readiness={}/{} — expanding m from 1 to 2",
+                readiness.numer(), readiness.denom());
+            entity.delta.expand_fiber();
+            entity.delta_bar.expand_fiber();
+            entity.origin_delta.expand_fiber();
+            entity.save_state_record();
+        });
+    });
+
     // ── Auto-ABSORB: sovereign entities absorb child entities' reports ──
     entity.mesh_sovereign.then(|| {
         let my_id = entity.entity_id;

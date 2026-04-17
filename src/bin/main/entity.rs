@@ -13,7 +13,7 @@ use std::path::PathBuf;
 
 use num_bigint::BigInt;
 use num_rational::BigRational;
-use num_traits::Zero;
+use num_traits::{Zero, One};
 
 use saios_kernel_v2::agent::AgentStateRecord;
 use saios_kernel_v2::chain;
@@ -353,6 +353,49 @@ impl Entity {
     /// Tier name for human display — goes through CCL translation layer.
     /// The code uses Tier::prefix() for filesystem paths (opaque).
     /// This method translates for the operator interface.
+    /// Fiber expansion readiness: continuous measurement of whether the entity
+    /// has mastered its current dimensionality and needs more room.
+    ///
+    /// Three criteria (all Q, all continuous, no boolean gates):
+    /// 1. Cohesion uniformity: 1 - variance/mean². Near 1 = mastered.
+    /// 2. Vocabulary saturation: operators.len / 128. Near 1 = full.
+    /// 3. K stall: 1 - (recent_K_advances / recent_observations). Near 1 = stalled.
+    ///
+    /// Readiness = product of all three. The expansion signal scales with
+    /// how strongly all criteria are met. Not a switch — a measurement.
+    pub fn fiber_expansion_readiness(&self) -> Q {
+        let one = Q::one();
+        let zero = Q::zero();
+
+        // 1. Cohesion uniformity
+        let variance = self.knowledge.cohesion();
+        let mean_c = {
+            let orbit_count = self.knowledge.orbits_known() as i64;
+            (orbit_count > 0).then(|| {
+                // Mean orbit coherence (approximate from total observations / orbits)
+                Q::new(BigInt::from(self.knowledge.total_observations as i64),
+                       BigInt::from(orbit_count).max(BigInt::from(1)))
+            }).unwrap_or(zero.clone())
+        };
+        let uniformity = (mean_c > zero).then(|| {
+            let normalized_var = &variance / &(&mean_c * &mean_c);
+            (&one - &normalized_var).max(zero.clone())
+        }).unwrap_or(zero.clone());
+
+        // 2. Vocabulary saturation
+        let vocab_len = self.state_record.composed_operators.len() as i64;
+        let saturation = Q::new(BigInt::from(vocab_len), BigInt::from(128i64));
+
+        // 3. K stall depth: low K relative to observations
+        let k = self.k_index as i64;
+        let obs = self.knowledge.total_observations.max(1) as i64;
+        let advance_rate = Q::new(BigInt::from(k), BigInt::from(obs));
+        let stall = (&one - &advance_rate).max(zero);
+
+        // Product: all three must be high for expansion to trigger
+        &uniformity * &(&saturation * &stall)
+    }
+
     pub fn tier_str(&self) -> &'static str {
         saios_kernel_v2::ccl::tier_name(self.state_record.lineage_depth, saios_kernel_v2::ccl::Audience::Operator)
     }

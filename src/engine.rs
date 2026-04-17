@@ -363,6 +363,21 @@ impl Delta {
         Delta { dim, m, entries, encoded: None }
     }
 
+    /// Expand the fiber dimension: m → m+1.
+    /// Existing entries get a zero-filled additional coordinate.
+    /// The algebraic structure is preserved — the new coordinate
+    /// starts empty and fills through perception.
+    pub fn expand_fiber(&mut self) {
+        let new_m = self.m + 1;
+        for i in 0..self.dim {
+            for j in 0..self.dim {
+                self.entries[i][j].push(Q::zero());
+            }
+        }
+        self.m = new_m;
+        self.encoded = None; // invalidate cached encoding
+    }
+
     /// Get entry Δ_ij as a &QVec.
     pub fn get(&self, i: usize, j: usize) -> &QVec {
         &self.entries[i][j]
