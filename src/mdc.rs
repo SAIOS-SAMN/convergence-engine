@@ -23,14 +23,12 @@
 //!
 //! Register: D.MDC.1, D.MDC.SEMANTIC.1, T.FOUND.4 (substrate independence).
 
-use std::collections::HashMap;
-
 use num_bigint::BigInt;
 use num_traits::{One, Zero};
 
 use crate::engine::{Delta, Q, coherence_functional, compute_rcf_hash};
 use crate::gradient::compute_coherence_gradient;
-use crate::training::TrainingRecord;
+use crate::practice::PracticeRecord;
 
 // ─── Echelon Weights ──────────────────────────────────────────────────
 
@@ -185,18 +183,20 @@ pub fn strategic_echelon(recent_rcf_hashes: &[[u8; 32]]) -> EchelonHint {
     }
 
     // Count 4-byte prefix frequencies (orbit class bucketing)
-    let mut prefix_counts: HashMap<[u8; 4], (u32, [u8; 32])> = HashMap::new();
+    let mut prefix_counts: Vec<([u8; 4], (u32, [u8; 32]))> = Vec::new();
     for rcf in recent_rcf_hashes {
         let mut prefix = [0u8; 4];
         prefix.copy_from_slice(&rcf[..4]);
-        let entry = prefix_counts.entry(prefix).or_insert((0, *rcf));
-        entry.0 += 1;
+        let pos = prefix_counts.iter().position(|(k, _)| *k == prefix)
+            .unwrap_or_else(|| { prefix_counts.push((prefix, (0, *rcf))); prefix_counts.len() - 1 });
+        prefix_counts[pos].1.0 += 1;
     }
 
     // Modal orbit class
     let (count, (_, modal_rcf)) = prefix_counts.iter()
-        .max_by_key(|(_, (c, _))| *c)
-        .map(|(_, v)| (v.0, v))
+        .map(|(_, v)| v)
+        .max_by_key(|(c, _)| *c)
+        .map(|v| (v.0, v))
         .unwrap_or((0, &(0, [0; 32])));
 
     // Confidence = modal_count / total
@@ -212,7 +212,7 @@ pub fn strategic_echelon(recent_rcf_hashes: &[[u8; 32]]) -> EchelonHint {
 /// Scans practice records for orbit regions with high failure rates
 /// and produces an orbit target that avoids those regions.
 pub fn security_echelon(
-    recent_records: &[TrainingRecord],
+    recent_records: &[PracticeRecord],
     current_rcf: &[u8; 32],
 ) -> EchelonHint {
     if recent_records.is_empty() {
@@ -223,13 +223,15 @@ pub fn security_echelon(
     }
 
     // Count failures by orbit prefix
-    let mut prefix_failures: HashMap<[u8; 4], (u32, u32)> = HashMap::new(); // (fails, total)
+    let mut prefix_failures: Vec<([u8; 4], (u32, u32))> = Vec::new();
     for rec in recent_records {
         let mut prefix = [0u8; 4];
         prefix.copy_from_slice(&rec.rcf_identity[..4]);
-        let entry = prefix_failures.entry(prefix).or_insert((0, 0));
-        entry.1 += 1;
-        if !rec.c7_passed { entry.0 += 1; }
+        let pos = prefix_failures.iter().position(|(k, _)| *k == prefix)
+            .unwrap_or_else(|| { prefix_failures.push((prefix, (0, 0))); prefix_failures.len() - 1 });
+        prefix_failures[pos].1.1 += 1;
+        // c7_passed=false accumulates failure count through u32 addition, not boolean branch
+        prefix_failures[pos].1.0 += (!rec.c7_passed) as u32;
     }
 
     // Current orbit prefix
@@ -237,7 +239,8 @@ pub fn security_echelon(
     current_prefix.copy_from_slice(&current_rcf[..4]);
 
     // Confidence = 1 - (failure_rate_in_current_region)
-    let (fails, total) = prefix_failures.get(&current_prefix).copied().unwrap_or((0, 1));
+    let (fails, total) = prefix_failures.iter().find(|(k, _)| *k == current_prefix)
+        .map(|(_, v)| *v).unwrap_or((0, 1));
     let fail_rate = Q::new(BigInt::from(fails as i64), BigInt::from(total.max(1) as i64));
     let confidence = Q::one() - &fail_rate;
 
@@ -424,7 +427,7 @@ pub fn evaluate_upgrade(
 mod tests {
     use super::*;
     use crate::engine::Delta;
-    use crate::training::FailureCode;
+    use crate::practice::FailureCode;
 
     fn qr(n: i64, d: i64) -> Q { Q::new(BigInt::from(n), BigInt::from(d)) }
 
@@ -500,9 +503,9 @@ mod tests {
     fn test_security_echelon_high_failure_region() {
         let mut records = Vec::new();
         for _ in 0..8 {
-            records.push(TrainingRecord {
+            records.push(PracticeRecord {
                 k_index: 0, entity_id: 0, c7_passed: false,
-                seed_class: crate::training::SeedClass::Directed,
+                seed_class: crate::practice::SeedClass::Directed,
                 orbit_changed: false, sluice_state: 1,
                 coherence_numer: 0, coherence_denom: 1,
                 t_k_numer: 0, t_k_denom: 1,
@@ -512,9 +515,9 @@ mod tests {
             });
         }
         for _ in 0..2 {
-            records.push(TrainingRecord {
+            records.push(PracticeRecord {
                 k_index: 0, entity_id: 0, c7_passed: true,
-                seed_class: crate::training::SeedClass::Directed,
+                seed_class: crate::practice::SeedClass::Directed,
                 orbit_changed: false, sluice_state: 1,
                 coherence_numer: 0, coherence_denom: 1,
                 t_k_numer: 0, t_k_denom: 1,

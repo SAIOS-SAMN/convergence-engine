@@ -900,7 +900,7 @@ pub fn resolve_at_level(
 /// entity_values: the source value for each entity.
 /// test_input: the test grid to derive output for.
 ///
-/// Returns derived output if cross-validation passes (jr=0 on training pairs).
+/// Returns derived output if cross-validation passes (jr=0 on practice pairs).
 pub fn decode_to_grid(
     resolution: &LevelResolution,
     _entity_to_cells: &[Vec<usize>],
@@ -927,7 +927,7 @@ pub fn decode_to_grid(
         n_cells,
     );
 
-    // Cross-validate: does this derivation reproduce ALL training pairs?
+    // Cross-validate: does this derivation reproduce ALL practice pairs?
     let mut jr = 0u64;
     for (inp, out) in train_pairs {
         let pair_derived = derive_from_t(
@@ -983,9 +983,9 @@ pub fn escalate(
 /// The membrane_t is the consensus T Delta from the membrane's meta-Delta.
 /// It constrains the congruent core: value mappings confirmed by the membrane
 /// (multiple primary nodes across diverse state records) are stronger priors than
-/// mappings from this primary entity's practice pairs alone.
+/// mappings from this entity's practice pairs alone.
 ///
-/// This IS gauge cooling — the primary entity's local frame rotates toward the
+/// This IS gauge cooling — the entity's local frame rotates toward the
 /// membrane's global holonomy with each cycle.
 pub fn escalate_with_membrane(
     train_pairs: &[(Vec<i64>, Vec<i64>)],
@@ -1003,7 +1003,7 @@ pub fn escalate_with_membrane(
     for (inp, _) in train_pairs { for &v in inp { if !all_values.contains(&v) { all_values.push(v); } } }
     all_values.sort();
 
-    // Target categories: consensus across ALL training pairs (scoped for core inheritance)
+    // Target categories: consensus across ALL practice pairs (scoped for core inheritance)
     let mut target_vals: Vec<i64> = Vec::new();
 
     if all_values.len() >= 2 {
@@ -1044,7 +1044,7 @@ pub fn escalate_with_membrane(
                     n,
                 );
 
-                // Cross-validate through T across ALL training pairs
+                // Cross-validate through T across ALL practice pairs
                 let mut jr = 0u64;
                 for (inp, out) in train_pairs {
                     let pair_derived = derive_from_t(
@@ -1327,7 +1327,7 @@ pub fn escalate_with_membrane(
     }
 }
 
-/// Joint residual across ALL training pairs.
+/// Joint residual across ALL practice pairs.
 ///
 /// A thought is general when the joint residual = 0 across all pairs.
 /// Not just when C(Δ_1) = 0 for the first pair. This separates
@@ -1386,7 +1386,7 @@ pub fn joint_residual(
 /// Inverse of perception::encode_grid_objects. The encoding stores
 /// Δ_{ij,0} = values[j] - values[i] in coordinate l=0 (identity).
 /// Recovery: v_j = Δ_{0j,0} + v_0. The absolute offset v_0 is lost
-/// in the relational encoding — recovered from training data by
+/// in the relational encoding — recovered from practice data by
 /// finding the value that minimizes quantization error.
 ///
 /// Decode Delta to grid values. When the operator is cohomologically
@@ -1450,7 +1450,7 @@ pub fn navigate_joint(
 /// The result of manifold derivation — what remains after peeling.
 /// VIII.4: ValueMap(HashMap) and PerCell removed. No dimensional collapse.
 
-/// Navigate across ALL training pairs simultaneously.
+/// Navigate across ALL practice pairs simultaneously.
 ///
 /// Encodes each pair at m=3, uses the first pair for navigation direction,
 /// verifies joint residual across all pairs. Understanding requires
@@ -1494,7 +1494,7 @@ pub enum GeneratorSource {
 /// Each iteration of peel_manifold produces several of these; the one
 /// that reduces C most (while passing back-projection) is accepted.
 struct GeneratorCandidate {
-    /// Training pairs with this generator applied to the input side.
+    /// Practice pairs with this generator applied to the input side.
     pairs: Vec<(Vec<i64>, Vec<i64>)>,
     /// Test input with this generator applied. None = no test provided.
     test: Option<Vec<i64>>,
@@ -1510,10 +1510,10 @@ pub struct SenseData {
     /// Adjacency structure from touch (compute_adjacency_structure). None = not computed.
     pub touch_source: Option<perception::AdjacencyStructure>,
     pub touch_target: Option<perception::AdjacencyStructure>,
-    /// Harmonic spectrum from the primary entity's Delta_k — the transliminal bridge.
+    /// Harmonic spectrum from the entity's Delta_k — the transliminal bridge.
     /// 11 vibrations. Each amplitude weights a dimension of the entity encoding.
     /// harmonics[0] weights dimension 0 (value), [1] weights dimension 1 (row),
-    /// [2] weights dimension 2 (col). The state record shapes what the primary entity can derive.
+    /// [2] weights dimension 2 (col). The state record shapes what the entity can derive.
     pub harmonics: Vec<Q>,
     /// Transmutation candidates from vision: (permutation, residual).
     /// Each candidate is a symmetry operator perceived through the genomic aperture.
@@ -1681,7 +1681,7 @@ impl FactoredRule {
         *hasher.finalize().as_bytes()
     }
 
-    /// Verify the rule across ALL training pairs. Returns joint residual.
+    /// Verify the rule across ALL practice pairs. Returns joint residual.
     pub fn joint_residual_values(&self, pairs: &[(Vec<i64>, Vec<i64>)], rows: usize, cols: usize) -> u64 {
         let mut total: u64 = 0;
         for (inp, out) in pairs {
@@ -1709,7 +1709,7 @@ pub mod peel;
 pub mod holonomy;
 /// THINK.2 — Legacy vocabulary-based thinking (pre-coherence).
 ///
-/// Given training pairs, iterate through the thought vocabulary.
+/// Given practice pairs, iterate through the thought vocabulary.
 /// For each thought: apply to all inputs, measure total distance.
 /// The thought with distance=0 across ALL pairs IS the understanding.
 /// If no single thought works, try compositions (depth 2).
@@ -1922,14 +1922,14 @@ pub fn thought_commutator(
 }
 
 /// D.THINK.CONGRUENCE.1 — Test whether two thoughts are congruent
-/// across ALL training pairs.
+/// across ALL practice pairs.
 ///
 /// Congruent iff:
 ///   (a) [T_a, T_b](input) = 0 for all training inputs (commutator vanishes)
 ///   (b) C(Δ, T_a ∘ T_b) < C(Δ, T_a) AND < C(Δ, T_b) (composition improves both)
 ///
 /// Returns (congruent, commutator_magnitude) where magnitude is the total
-/// commutator norm across all training pairs.
+/// commutator norm across all practice pairs.
 pub fn thoughts_congruent(
     t_a: &Thought, t_b: &Thought,
     train_pairs: &[(Vec<i64>, Vec<i64>)],
@@ -2111,7 +2111,7 @@ pub struct AlgebraicProperties {
     /// ALL anchor-fill pairs: each non-background color that triggers fills.
     /// Each entry: (anchor_color, fill_color, measured_offsets).
     /// The offsets are the exact (dr, dc) vectors from anchor to filled cells,
-    /// MEASURED from the training data. No named patterns. The measurement.
+    /// MEASURED from the practice data. No named patterns. The measurement.
     /// Multiple entries means MULTIPLE congruent thoughts are needed.
     pub anchor_fill_pairs: Vec<(i64, i64, Vec<(i32, i32)>)>,
     /// Distance dependent: output values = L1 distance from anchor cells.
@@ -2248,7 +2248,7 @@ pub fn derive_algebraic_properties(
     }
 
     // Position dependent: does each position have a fixed change regardless of input value?
-    // (Check across multiple training pairs if available — here we check single pair)
+    // (Check across multiple practice pairs if available — here we check single pair)
     let position_dependent = !value_dependent && nonzero.len() > 0;
 
     // Periodicity: check rows, cols, diagonal for repeating patterns
@@ -3109,7 +3109,7 @@ pub fn evolve_and_solve(
 // This is not an external operation. It IS thinking. The function:
 // 1. Encodes the observation relationally (no semantic assignment)
 // 2. Checks cognition — does the EpsilonTable recognize this orbit region?
-// 3. Attempts value-level factoring across all training pairs
+// 3. Attempts value-level factoring across all practice pairs
 // 4. If factoring achieves jr=0: understanding. Return it.
 // 5. If not: construct Delta, resolve via coordinator, measure C(Δ)
 // 6. If C stuck: check transmutation need (m-expansion or n-expansion)
@@ -3126,7 +3126,7 @@ pub fn evolve_and_solve(
 pub struct ThoughtResult {
     /// Did the system achieve full understanding (jr=0)?
     pub understood: bool,
-    /// Joint residual across all training pairs (0 = understood).
+    /// Joint residual across all practice pairs (0 = understood).
     /// Integer measurement from FactoredRule path (backward compat).
     pub joint_residual: u64,
     /// Holonomic joint residual — proportional measurement from algebraic path.
@@ -3168,7 +3168,7 @@ pub struct TransmutationEvent {
 
 /// Think about an observation. The complete internal conversation.
 ///
-/// `pairs`: training pairs as (source_values, target_values).
+/// `pairs`: practice pairs as (source_values, target_values).
 /// `m`: initial coordinate dimension.
 /// `orbit_prefix`: first 4 bytes of rcf_identity for memory lookup (None = no prior cognition).
 /// `max_iterations`: maximum resolution attempts before returning partial result.
@@ -3689,14 +3689,14 @@ mod tests {
 
     // ─── D.THINK.CONGRUENCE.1 — Measurement + Commutator gate tests ───
     //
-    // Every test provides training data, calls derive_algebraic_properties()
+    // Every test provides practice data, calls derive_algebraic_properties()
     // to MEASURE the offset vectors, then verifies the measurements.
     // No test constructs AdjacencyFill with hardcoded offsets.
     // The offsets come from the measurement or they don't exist.
 
     #[test]
     fn test_measurement_discovers_cross_offsets() {
-        // Training data: anchor 1 at center, fill 7 at L1=1 neighbors.
+        // Practice data: anchor 1 at center, fill 7 at L1=1 neighbors.
         // derive_algebraic_properties must MEASURE these displacement vectors.
         let input = vec![
             0, 0, 0,
@@ -3727,7 +3727,7 @@ mod tests {
 
     #[test]
     fn test_measurement_discovers_diagonal_offsets() {
-        // Training data: anchor 2 at center, fill 4 at DIAGONAL neighbors.
+        // Practice data: anchor 2 at center, fill 4 at DIAGONAL neighbors.
         // derive_algebraic_properties must measure diagonal displacements.
         let input = vec![
             0, 0, 0,
@@ -3754,7 +3754,7 @@ mod tests {
 
     #[test]
     fn test_measurement_multi_anchor_then_commutator() {
-        // Training data: TWO anchors, each with its own fill geometry.
+        // Practice data: TWO anchors, each with its own fill geometry.
         // Measurement finds both. Commutator gate tests their congruency.
         let input = vec![
             0, 0, 0, 0, 0,
@@ -3806,7 +3806,7 @@ mod tests {
 
     #[test]
     fn test_commutator_detects_overlap() {
-        // Training data where two anchors have OVERLAPPING fill regions.
+        // Practice data where two anchors have OVERLAPPING fill regions.
         // Measurement finds both. Commutator must be non-zero.
         let input = vec![
             1, 0, 2,
@@ -3991,7 +3991,7 @@ mod tests {
     #[test]
     fn test_stage1_color_map_through_engine() {
         // 0d3d703e: color map 3→4, 1→5, 2→6
-        // ALL THREE training pairs — joint residual is the real test
+        // ALL THREE practice pairs — joint residual is the real test
         let pairs = vec![
             (vec![3,1,2, 3,1,2, 3,1,2], vec![4,5,6, 4,5,6, 4,5,6]),
             (vec![2,3,8, 2,3,8, 2,3,8], vec![6,4,9, 6,4,9, 6,4,9]),

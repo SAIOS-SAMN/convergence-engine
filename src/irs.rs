@@ -120,14 +120,15 @@ pub fn compute_coherence_signature(
     let modal_orbit = if recent_orbits.is_empty() {
         mdc.combined_target
     } else {
-        let mut counts = std::collections::HashMap::new();
+        let mut counts: Vec<([u8; 4], (u32, [u8; 32]))> = Vec::new();
         for rcf in recent_orbits {
             let mut prefix = [0u8; 4];
             prefix.copy_from_slice(&rcf[..4]);
-            let entry = counts.entry(prefix).or_insert((0u32, *rcf));
-            entry.0 += 1;
+            let pos = counts.iter().position(|(k, _)| *k == prefix)
+                .unwrap_or_else(|| { counts.push((prefix, (0, *rcf))); counts.len() - 1 });
+            counts[pos].1.0 += 1;
         }
-        counts.values().max_by_key(|(c, _)| *c).map(|(_, rcf)| *rcf).unwrap_or(mdc.combined_target)
+        counts.iter().map(|(_, v)| v).max_by_key(|(c, _)| *c).map(|(_, rcf)| *rcf).unwrap_or(mdc.combined_target)
     };
 
     // Basin crossings

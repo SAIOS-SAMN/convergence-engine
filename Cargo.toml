@@ -28,6 +28,7 @@ ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 rand_core = { version = "0.6", features = ["getrandom"] }
 # File locking
 fs2 = "0.4"
+tikv-jemallocator = "0.6.1"
 
 [dev-dependencies]
 proptest = "1.4"

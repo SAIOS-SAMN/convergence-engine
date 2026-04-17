@@ -254,7 +254,7 @@ pub const RESONANCE_M10_COS: [(i64, i64); 10] = [
 pub const DISC_NORMAL: u8 = 0x00;
 pub const DISC_RESTART: u8 = 0x01;
 pub const DISC_ISOLATED: u8 = 0x02;
-pub const DISC_CORRUPTED: u8 = 0x03;
+pub const DISC_FRACTURED: u8 = 0x03;
 
 // ─── Tests ─────────────────────────────────────────────────────────────
 

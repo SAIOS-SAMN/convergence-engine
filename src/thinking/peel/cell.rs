@@ -25,7 +25,7 @@ pub struct CellPeelResult {
     pub total_thoughts_evaluated: u32,
     /// Composition depth (0 = single thought, 1+ = composed).
     pub composition_depth: usize,
-    /// Whether full understanding was achieved (L1 = 0 on all training pairs).
+    /// Whether full understanding was achieved (L1 = 0 on all practice pairs).
     pub understood: bool,
 }
 

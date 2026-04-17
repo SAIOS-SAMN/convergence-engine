@@ -20,7 +20,6 @@
 //!
 //! Register: D.SAMPLER.1, D.AGENT.9 (gradient), D.LLM.TRAINING.1 (binary records).
 
-use std::collections::HashMap;
 use std::io::{self, Read};
 use std::fs::File;
 use std::path::Path;
@@ -30,7 +29,7 @@ use num_traits::{One, Signed, Zero};
 
 use crate::engine::{Delta, Operator, Q};
 use crate::gradient::{compute_coherence_gradient, gradient_hint};
-use crate::training::{TrainingRecord, SeedClass, RECORD_SIZE};
+use crate::practice::{PracticeRecord, SeedClass, RECORD_SIZE};
 
 /// Orbit prefix length for lookup bucketing (first 4 bytes of rcf_identity).
 const ORBIT_PREFIX_LEN: usize = 4;
@@ -42,7 +41,7 @@ const K_PHASE_MOD: u64 = 100;
 const MIN_BUCKET_SIZE: usize = 3;
 
 /// Lookup key: (k_phase, seed_class, orbit_prefix_4bytes).
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LookupKey {
     pub k_phase: u64,
     pub seed_class: u8,
@@ -50,7 +49,7 @@ pub struct LookupKey {
 }
 
 impl LookupKey {
-    pub fn from_record(rec: &TrainingRecord) -> Self {
+    pub fn from_record(rec: &PracticeRecord) -> Self {
         let mut prefix = [0u8; ORBIT_PREFIX_LEN];
         prefix.copy_from_slice(&rec.rcf_identity[..ORBIT_PREFIX_LEN]);
         Self {
@@ -145,18 +144,18 @@ pub struct TransmutationMemory {
 }
 
 pub struct EpsilonTable {
-    buckets: HashMap<LookupKey, EpsilonBucket>,
+    /// Sorted Vec preserves the 3D fiber structure of (k_phase, seed_class, orbit_prefix).
+    /// Nearby keys are physically adjacent. The relational geometry between
+    /// epsilon values at neighboring orbit regions is preserved — not hashed away.
+    buckets: Vec<(LookupKey, EpsilonBucket)>,
     /// Total records loaded.
     total_records: u64,
     /// Records that contributed to buckets (had valid operator entries).
     indexed_records: u64,
     /// Orbit transition records — for basin hopping.
-    orbit_transitions: Vec<TrainingRecord>,
-    /// Transmutation history — indexed by orbit_prefix.
-    /// When enough transmutations accumulate for a prefix, the system
-    /// predicts dimensional expansion instead of re-deriving it.
-    /// This is evolution: the law is internalized, not computed.
-    transmutation_history: HashMap<[u8; ORBIT_PREFIX_LEN], Vec<TransmutationMemory>>,
+    orbit_transitions: Vec<PracticeRecord>,
+    /// Transmutation history — sorted by orbit_prefix.
+    transmutation_history: Vec<([u8; ORBIT_PREFIX_LEN], Vec<TransmutationMemory>)>,
 }
 
 impl EpsilonTable {
@@ -167,17 +166,17 @@ impl EpsilonTable {
         let count = len / RECORD_SIZE as u64;
 
         let mut table = Self {
-            buckets: HashMap::new(),
+            buckets: Vec::new(),
             total_records: count,
             indexed_records: 0,
             orbit_transitions: Vec::new(),
-            transmutation_history: HashMap::new(),
+            transmutation_history: Vec::new(),
         };
 
         let mut buf = [0u8; RECORD_SIZE];
         for _ in 0..count {
             file.read_exact(&mut buf)?;
-            let rec = TrainingRecord::from_bytes(&buf);
+            let rec = PracticeRecord::from_bytes(&buf);
             table.index_record(&rec);
         }
 
@@ -185,7 +184,7 @@ impl EpsilonTable {
     }
 
     /// Index a single practice record into the lookup table.
-    fn index_record(&mut self, rec: &TrainingRecord) {
+    fn index_record(&mut self, rec: &PracticeRecord) {
         let key = LookupKey::from_record(rec);
 
         // Extract the dominant operator entry (largest absolute epsilon)
@@ -202,7 +201,13 @@ impl EpsilonTable {
             return;
         }
 
-        let bucket = self.buckets.entry(key).or_insert_with(EpsilonBucket::new);
+        let bucket = match self.buckets.iter_mut().find(|(k, _)| *k == key) {
+            Some((_, b)) => b,
+            None => {
+                self.buckets.push((key, EpsilonBucket::new()));
+                &mut self.buckets.last_mut().unwrap().1
+            }
+        };
         bucket.insert(best_entry.0, best_entry.1, rec.c7_passed);
         self.indexed_records += 1;
 
@@ -215,7 +220,7 @@ impl EpsilonTable {
     /// Look up the best epsilon for a given state.
     /// Returns (numerator, denominator) or None if no data.
     pub fn lookup(&self, key: &LookupKey) -> Option<(i16, u16)> {
-        let bucket = self.buckets.get(key)?;
+        let bucket = &self.buckets.iter().find(|(k, _)| k == key)?.1;
         if bucket.total_count < MIN_BUCKET_SIZE as u32 {
             return None; // Not enough data — fall through to gradient-only
         }
@@ -296,7 +301,7 @@ impl EpsilonTable {
     }
 
     /// Record a new result back into the table (self-reinforcing loop).
-    pub fn feedback(&mut self, rec: &TrainingRecord) {
+    pub fn feedback(&mut self, rec: &PracticeRecord) {
         self.index_record(rec);
         self.total_records += 1;
     }
@@ -304,15 +309,15 @@ impl EpsilonTable {
     /// Record a transmutation event. Over time, the system accumulates
     /// enough history to predict transmutations from orbit_prefix alone.
     pub fn record_transmutation(&mut self, orbit_prefix: &[u8; ORBIT_PREFIX_LEN], old_m: u8, new_m: u8, k_index: u64) {
-        self.transmutation_history
-            .entry(*orbit_prefix)
-            .or_default()
-            .push(TransmutationMemory {
-                orbit_prefix: *orbit_prefix,
-                old_m,
-                new_m,
-                k_at_transmutation: k_index,
-            });
+        let entry = self.transmutation_history.iter_mut().find(|(k, _)| k == orbit_prefix);
+        match entry {
+            Some((_, v)) => v.push(TransmutationMemory {
+                orbit_prefix: *orbit_prefix, old_m, new_m, k_at_transmutation: k_index,
+            }),
+            None => self.transmutation_history.push((*orbit_prefix, vec![TransmutationMemory {
+                orbit_prefix: *orbit_prefix, old_m, new_m, k_at_transmutation: k_index,
+            }])),
+        }
     }
 
     /// Predict whether an orbit region will need transmutation, based on
@@ -326,7 +331,7 @@ impl EpsilonTable {
     /// that governs when transmutations occur at this orbit region.
     /// It predicts instead of re-deriving.
     pub fn predict_transmutation(&self, orbit_prefix: &[u8; ORBIT_PREFIX_LEN], current_m: u8) -> Option<u8> {
-        let history = self.transmutation_history.get(orbit_prefix)?;
+        let history = &self.transmutation_history.iter().find(|(k, _)| k == orbit_prefix)?.1;
         // Need at least 2 matching transitions to form a pattern
         let matching: Vec<&TransmutationMemory> = history.iter()
             .filter(|t| t.old_m == current_m)
@@ -343,7 +348,7 @@ impl EpsilonTable {
     }
 
     pub fn transmutation_history_count(&self) -> usize {
-        self.transmutation_history.values().map(|v| v.len()).sum()
+        self.transmutation_history.iter().map(|(_, v)| v.len()).sum()
     }
 
     /// D.INTELLIGENCE.EVOLVE: Learn from cognition.
@@ -372,7 +377,13 @@ impl EpsilonTable {
             orbit_prefix: *orbit_prefix,
         };
 
-        let bucket = self.buckets.entry(key).or_insert_with(EpsilonBucket::new);
+        let bucket = match self.buckets.iter_mut().find(|(k, _)| *k == key) {
+            Some((_, b)) => b,
+            None => {
+                self.buckets.push((key, EpsilonBucket::new()));
+                &mut self.buckets.last_mut().unwrap().1
+            }
+        };
         // Insert as passed=true — cognition achieved coherence, so the direction
         // is validated at the perception level. C7 will further validate at the
         // algebraic level before accepting.
@@ -537,11 +548,11 @@ impl AlgebraicSampler {
     pub fn empty() -> Self {
         Self {
             table: EpsilonTable {
-                buckets: HashMap::new(),
+                buckets: Vec::new(),
                 total_records: 0,
                 indexed_records: 0,
                 orbit_transitions: Vec::new(),
-                transmutation_history: HashMap::new(),
+                transmutation_history: Vec::new(),
             },
             config: SamplerConfig::default(),
             stats: SamplerStats::new(),
@@ -853,12 +864,16 @@ impl AlgebraicSampler {
             s_l[vib_row][vib_col] = &s_l[vib_row][vib_col] + &vib_eps;
             s_l[vib_col][vib_row] = &s_l[vib_col][vib_row] - &vib_eps;
 
-            // Global R̄ contribution for this fiber coordinate
+            // Global R̄ contribution for this fiber coordinate.
+            // Project curvature into entity's dimension — min(r_bar.dim, dim).
+            // When dimensions differ, the intersection is used. No discard.
+            // When l >= r_bar.m, that fiber coordinate contributes zero — measured, not gated.
             global_curvature
-                .filter(|r_bar| r_bar.dim == dim && l < r_bar.m)
+                .filter(|r_bar| l < r_bar.m)
                 .map(|r_bar| {
-                    for i in 0..dim {
-                        for j in 0..dim {
+                    let shared_dim = dim.min(r_bar.dim);
+                    for i in 0..shared_dim {
+                        for j in 0..shared_dim {
                             let weighted = &w_global * &r_bar.entries[i][j][l];
                             s_l[i][j] = &s_l[i][j] + &weighted;
                         }
@@ -954,7 +969,7 @@ impl AlgebraicSampler {
     }
 
     /// Record a C7 result back into the table. Self-reinforcing loop.
-    pub fn feedback(&mut self, rec: &TrainingRecord) {
+    pub fn feedback(&mut self, rec: &PracticeRecord) {
         self.table.feedback(rec);
         if rec.c7_passed {
             self.stats.c7_passes += 1;
@@ -1149,14 +1164,14 @@ mod tests {
         let mut sampler = AlgebraicSampler::empty();
         assert_eq!(sampler.table.total_records(), 0);
 
-        let rec = TrainingRecord {
+        let rec = PracticeRecord {
             k_index: 42, entity_id: 1, c7_passed: true, seed_class: SeedClass::Directed,
             orbit_changed: false, sluice_state: 1,
             coherence_numer: -1, coherence_denom: 100,
             t_k_numer: 1, t_k_denom: 10,
             rcf_identity: [0x42; 32],
             operator_entries: [(1,20),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1)],
-            timestamp_ns: 0, failure_code: crate::training::FailureCode::None,
+            timestamp_ns: 0, failure_code: crate::practice::FailureCode::None,
         };
         sampler.feedback(&rec);
         assert_eq!(sampler.table.total_records(), 1);

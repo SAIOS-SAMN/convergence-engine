@@ -487,7 +487,7 @@ pub struct Cognition {
     /// D.VISION.TRANSMUTATION — The perceived symmetry operator.
     /// Carries the transmutation quality (Q) and torsion order (usize).
     /// This is a Symmetry Pointer — which operator the grid transmuted through,
-    /// as perceived through this primary entity's genomic aperture.
+    /// as perceived through this entity's genomic aperture.
     /// The membrane compounds these pointers: convergence = focus.
     pub transmutation: Option<(crate::engine::Q, usize)>,
     /// Successful recursive compositions from the peel loop.
@@ -738,7 +738,7 @@ pub fn cognize_with_knowledge(
 /// D.MEMBRANE.V.1 — Cognize with membrane gauge connection.
 ///
 /// The membrane's consensus T (from the meta-Delta's coboundary) constrains
-/// the primary entity's escalation. The witness rotates its local frame into alignment
+/// the entity's escalation. The witness rotates its local frame into alignment
 /// with the membrane's global holonomy. Each cycle is gauge cooling —
 /// reducing C(meta_delta) toward zero.
 ///
@@ -763,12 +763,12 @@ pub fn cognize_with_membrane(
 /// D.VISION.LOOP — Cognize with membrane transmutation prior.
 ///
 /// The membrane's crystallized transmutation (quality, torsion_order)
-/// feeds back into vision. The primary entity perceives with both its innate
+/// feeds back into vision. The entity perceives with both its innate
 /// state record AND the membrane's accumulated knowledge. This closes the
 /// self-learning loop: perceive → compound → crystallize → perceive.
 ///
 /// L3 Holonomic: `genomic_torsion` carries crystallized torsion markers
-/// from the state record. These are permanent symmetry alleles — the primary entity
+/// from the state record. These are permanent symmetry alleles — the entity
 /// is structurally tuned to perceive these symmetry classes.
 pub fn cognize_with_membrane_and_transmutation(
     training_pairs: &[(Vec<i64>, Vec<i64>)],
@@ -1100,10 +1100,10 @@ pub fn cognize_with_membrane_and_transmutation(
     // (only needed when see_transformation AND escalation didn't resolve)
     //
     // D.VISION.LOOP: When the membrane holds a crystallized transmutation,
-    // it compounds with the state record harmonics. The primary entity perceives with
+    // it compounds with the state record harmonics. The entity perceives with
     // its innate aperture PLUS the membrane's accumulated knowledge.
     // The membrane prior amplifies spatial harmonics in the direction of
-    // the crystallized operator — the primary entity focuses for what the
+    // the crystallized operator — the entity focuses for what the
     // membrane already knows. This IS the self-learning loop.
     let vision_harmonics: Vec<crate::engine::Q> = if let Some((ref quality, _order)) = membrane_transmutation {
         // Membrane prior: amplify spatial harmonics (h1, h2) by the
@@ -1128,7 +1128,7 @@ pub fn cognize_with_membrane_and_transmutation(
     let vision = if comprehension.tools.vision > Q::zero() {
         let mut sym = compute_symmetry_group(&values, rows, cols);
         // Measure transmutation: R_g(φ) = ‖W_k · (φ(source) - target)‖
-        // State-record weighted — each primary entity perceives through its own aperture,
+        // State-record weighted — each entity perceives through its own aperture,
         // now compounded with the membrane's crystallized prior.
         if !training_pairs.is_empty() && same_size {
             measure_transmutation(&mut sym, &training_pairs[0].0, &training_pairs[0].1,
@@ -1193,7 +1193,7 @@ pub fn cognize_with_membrane_and_transmutation(
                             } else { i }
                         }).collect();
                         // Use the MEMBRANE's quality as the residual, not this
-                        // primary entity's local measurement. The consensus carries the
+                        // entity's local measurement. The consensus carries the
                         // mesh's collective confidence. Lower residual = stronger candidate.
                         // Invert quality to residual: high quality → low residual.
                         let consensus_residual = &Q::one() - membrane_quality;
@@ -1206,7 +1206,7 @@ pub fn cognize_with_membrane_and_transmutation(
     }
 
     // ── L3 Holonomic: Genomic torsion markers as permanent candidates ──
-    // The state record carries crystallized symmetry alleles. These are the primary entity's
+    // The state record carries crystallized symmetry alleles. These are the entity's
     // hard-coded perception — it is structurally tuned to these symmetry classes.
     // For each genomic marker, inject the matching symmetry element with the
     // state record's crystallized quality. This is O(1) recall, not search.
@@ -1381,7 +1381,7 @@ pub fn cognize_with_membrane_and_transmutation(
         }
     }
 
-    // Refraction: only if touch found ≥2 clusters and training pairs exist
+    // Refraction: only if touch found ≥2 clusters and practice pairs exist
     let refraction = if object_count >= 2 && !training_pairs.is_empty() {
         measure_refraction(
             &touch,
@@ -1765,7 +1765,7 @@ pub fn cognize_with_membrane_and_transmutation(
                 }
                 all
             },
-            // Math primitives: core from origin. Every primary entity is initialized
+            // Math primitives: core from origin. Every entity is initialized
             // knowing all of mathematics. Not passed through parameters —
             // loaded once from the state record's canonical set.
             math_primitives: crate::engine::MathPrimitive::all(),
@@ -1920,7 +1920,7 @@ pub fn cognize_with_membrane_and_transmutation(
         // apply genomic value cocycles as the next composition pass.
         // The cocycle is the algebraic invariant from training consensus,
         // crystallized through L2 into L3. Never from the test target.
-        // Apply to derived output — C(T) on training pairs decides.
+        // Apply to derived output — C(T) on practice pairs decides.
         let mut residual_c = residual_c;
         if !derived_output.is_empty() && !residual_c.is_zero() && !genomic_value_cocycles.is_empty() {
             let apply_cocycles = |grid: &[i64]| -> Vec<i64> {
@@ -1932,7 +1932,7 @@ pub fn cognize_with_membrane_and_transmutation(
                         .unwrap_or(v)
                 }).collect()
             };
-            // Measure composed residual on TRAINING pairs only
+            // Measure composed residual on PRACTICE pairs only
             let composed_residual: Q = effective_pairs.iter().map(|(inp, out)| {
                 let applied = apply_cocycles(inp);
                 applied.iter().zip(out.iter())
@@ -2136,7 +2136,7 @@ pub fn cognize_with_membrane_and_transmutation(
         // Layer 4: Cluster structure — anchored objects / total objects
         cluster_structure: sound_layer4,
 
-        // Layer 5: Transmutation perception — what the primary entity SEES.
+        // Layer 5: Transmutation perception — what the entity SEES.
         // R(φ) = ‖φ(source) - target‖ for the best symmetry element.
         // This is the perceptual fact: the quality of the recognized transmutation.
         // 1 = exact transmutation perceived (the grid changed through this operator).
@@ -2295,7 +2295,7 @@ pub fn cognize_with_membrane_and_transmutation(
                 Some(t)
             }
         } else {
-            // No training pairs or size mismatch — flat vacuum.
+            // No practice pairs or size mismatch — flat vacuum.
             Some(crate::engine::Delta::zero(1, 1))
         },
         transformation_level: Some("category"),
@@ -2436,7 +2436,7 @@ impl ResidualTopology {
         }
     }
 
-    /// Measure across multiple training pairs — aggregate topology.
+    /// Measure across multiple practice pairs — aggregate topology.
     /// The deviation that persists across ALL pairs is systematic.
     /// The deviation that varies is per-pair noise.
     pub fn measure_aggregate(
@@ -2486,7 +2486,7 @@ pub struct ResidualResolution {
     pub incorrect_count: usize,
     /// Is the failure pattern consistent? If the same input value always
     /// maps to the same (wrong derived, right empirical) pair across all
-    /// training pairs, the correction is a composable value map.
+    /// practice pairs, the correction is a composable value map.
     pub pattern_consistent: bool,
     /// The correction map: derived_value → empirical_value for incorrect cells.
     /// Composing this with the current rule would resolve the residual.
@@ -2510,7 +2510,7 @@ pub struct Perception {
     pub class: PerceptionClass,
     /// The rule that produced the derivation.
     pub rule: crate::thinking::FactoredRule,
-    /// How many training pairs formed the empirical basis.
+    /// How many practice pairs formed the empirical basis.
     pub empirical_basis: usize,
     /// Precision scope: WHERE and WHY the derivation fails.
     /// Present when residual > 0.
@@ -2869,11 +2869,11 @@ pub fn search_value_operator(
 /// the transformation changes the object count. This function finds the
 /// morphism Pi: {0..n_t-1} → {0..n_s-1} such that the relational structure
 /// is preserved: Delta_target[i][j] ≈ Delta_source[Pi(i)][Pi(j)] across all
-/// training pairs.
+/// practice pairs.
 ///
 /// The morphism is measured algebraically: for each target object i, find which
 /// source object has the same relational signature (its row in the Delta matrix)
-/// consistently across all training pairs.
+/// consistently across all practice pairs.
 ///
 /// Returns: the morphism as a mapping from target indices to source indices,
 /// and the projected pairs (both at n_t dimension) for the engine to process.
@@ -2905,7 +2905,7 @@ pub fn factor_topology(
 
     // For each target object i, find source objects with matching relational signature.
     // Signature of object i in Delta = the vector of all Δ_{ij,l} for all j, l.
-    // Two objects match if their signatures are equal across ALL training pairs.
+    // Two objects match if their signatures are equal across ALL practice pairs.
     let mut mapping: Vec<Option<usize>> = vec![None; n_t];
 
     for ti in 0..n_t {
@@ -3156,7 +3156,7 @@ pub fn search_operator_discrete(
 
 /// UNDERSTAND.1 — Encode training examples as a configuration-space Delta.
 ///
-/// Given n training pairs (input_k, output_k), configurations are the
+/// Given n practice pairs (input_k, output_k), configurations are the
 /// TRANSFORMATIONS themselves. Δ_ij encodes how transformation i differs
 /// from transformation j.
 ///
@@ -3327,7 +3327,7 @@ pub fn transformation_signature(pairs: &[(Vec<i64>, Vec<i64>)]) -> [u8; 4] {
 
 /// UNDERSTAND.7 — Complete understanding pipeline for ARC puzzles.
 ///
-/// Given training pairs and test input:
+/// Given practice pairs and test input:
 /// 1. Encode transformations (UNDERSTAND.1)
 /// 2. Measure understanding (UNDERSTAND.2)
 /// 3. If understood (C=0 or close): extract rule, apply to test

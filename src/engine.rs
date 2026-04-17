@@ -133,7 +133,7 @@ pub enum TripleLockFailReason {
 /// transition violated a conservation law. A Fractured entity has suffered
 /// an integrity breach. Neither state can be overridden by external command.
 /// The entity must re-establish coherence through its own algebraic evolution.
-/// Forcing a Gated entity to Locked = forging a receipt = chain corruption.
+/// Forcing a Gated entity to Locked = forging a receipt = chain fracture.
 ///
 /// - `Locked`    : Full write authority. All checks passed. K advanced.
 /// - `Shifting`  : Reduced authority. Coherence degrading. Re-sync triggered.
@@ -742,7 +742,7 @@ pub const CLASS_TIMEKEEPER: u32 = 2;
 /// - Evolved Delta: the coboundary-reduced current position (mutable state)
 ///
 /// Serialization format (self-describing, no marker files):
-///   [magic: u32 = 0x47454E45 "GENE"]
+///   [magic: u32 = 0x47454E45 "SREC"]
 ///   [process_class: u32]
 ///   [generation: u32]
 ///   [dim: u32][m: u32]
@@ -1321,7 +1321,7 @@ impl StateRecord {
     /// Serialize the state record to compact binary.
     ///
     /// Format v2 (compact):
-    ///   [GENE magic: 4 bytes]
+    ///   [SREC magic: 4 bytes]
     ///   [process_class: 1 byte] [generation: 2 bytes]
     ///   [n_nonzero_poly: 1 byte]
     ///   [for each nonzero: index(1) + numer_i16(2) + denom_u16(2) = 5 bytes]
@@ -3382,7 +3382,7 @@ mod tests {
     }
 
     #[test]
-    fn test_temporal_anchor_rejects_corrupt_data() {
+    fn test_temporal_anchor_rejects_fractured_data() {
         assert!(Delta::from_temporal_anchor(&[]).is_none());
         assert!(Delta::from_temporal_anchor(&[0, 0, 0, 0, 0, 0, 0, 0]).is_none()); // dim=0
         assert!(Delta::from_temporal_anchor(&[3, 0, 0, 0, 1, 0, 0, 0]).is_none()); // 3x1 but truncated

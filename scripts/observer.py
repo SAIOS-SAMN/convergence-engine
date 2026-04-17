@@ -24,13 +24,34 @@ import sys
 import time
 from pathlib import Path
 
+# ── CCL Translation Layer (Audience::Operator) ─────────────────────────
+# Mirrors /opt/repos-code/convergence-engine/src/ccl.rs
+# The observer displays through this dict. /dev/shm uses opaque IDs.
+# The observer translates for the human operator.
+
+VOCABULARY = {
+    # Tier depth
+    "T0": "founder",      "T1": "derived",      "T2": "emergent",    "TK": "timekeeper",
+    # Persistent identity
+    "SR": "imprint",
+    # Knowledge flow
+    "UP": "absorb",       "DOWN": "project",    "LATERAL": "interact",
+    # Lifecycle
+    "HALT": "halt",       "DISSOLVE": "dissolved",
+    # Crystallization
+    "CRYST": "crystallized", "FRACT": "fractured",
+}
+
+def ccl(identifier: str) -> str:
+    """Translate opaque identifier to operator vocabulary."""
+    return VOCABULARY.get(identifier, identifier)
+
 # ── Configuration ────────────────────────────────────────────────────────
 
 REFRESH = int(sys.argv[1]) if len(sys.argv) > 1 else 10
 MESH_DIR = Path(os.environ.get("SAIOS_MESH_DIR", "/opt/saios/mesh"))
-TIMEKEEPER_DIR = Path(os.environ.get("SAIOS_TIMEKEEPER_DIR", "/opt/saios/timekeepers/mesh"))
 TIMEKEEPER_SOCKS = [
-    TIMEKEEPER_DIR / f"timekeeper-{i}" / "saios-kernel.sock"
+    MESH_DIR / f"timekeeper-{i}" / "saios-kernel.sock"
     for i in range(1, 4)
 ]
 
@@ -119,18 +140,19 @@ def collect_entities():
             pass
 
     # Entity status files: plain ASCII text
-    PREFIXES = {
-        "saios-founder-": "founder",
-        "saios-derived-": "derived",
-        "saios-emergent-": "emergent",
-        "saios-timekeeper-": "timekeeper",
+    # Map filesystem prefixes to opaque tier IDs — display goes through ccl()
+    TIER_IDS = {
+        "saios-founder-": "T0",
+        "saios-derived-": "T1",
+        "saios-emergent-": "T2",
+        "saios-timekeeper-": "TK",
     }
 
     for f in sorted(shm.glob("saios-*")):
         name = f.name
 
-        # Resolve tier from prefix
-        tier = next((t for p, t in PREFIXES.items() if name.startswith(p)), None)
+        # Resolve opaque tier ID from prefix
+        tier = next((t for p, t in TIER_IDS.items() if name.startswith(p)), None)
 
         # Skip vocabulary files and unrecognized names
         if not tier or name.endswith(".vocabulary"):
@@ -160,9 +182,10 @@ def collect_entities():
 
         alive = age_s <= STALE_THRESHOLD
         sock_path = MESH_DIR / identity / "saios-kernel.sock"
-        socket_alive = sock_path.exists() and send_command(sock_path, "STATUS") is not None if not alive else False
+        # If stale, check socket existence only (no blocking probe on every render)
+        socket_alive = sock_path.exists() if not alive else False
         alive = alive or socket_alive
-        reported_state = "READY" if socket_alive else reported_state
+        reported_state = "READY" if socket_alive and not alive else reported_state
 
         entities.append({
             "identity": identity,
@@ -312,13 +335,13 @@ def render(entities, keepers, mas_bonds=None):
     lines = []
 
     # Categorize
-    founders = [e for e in entities if e["tier"] == "founder"]
-    derived_entities = [e for e in entities if e["tier"] == "derived"]
-    emergent_entities = [e for e in entities if e["tier"] == "emergent"]
-    timekeepers_shm = [e for e in entities if e["tier"] == "timekeeper"]
+    founders = [e for e in entities if e["tier"] == "T0"]
+    derived_entities = [e for e in entities if e["tier"] == "T1"]
+    emergent_entities = [e for e in entities if e["tier"] == "T2"]
+    timekeepers_shm = [e for e in entities if e["tier"] == "TK"]
 
     # Aggregates
-    population = [e for e in entities if e["tier"] != "timekeeper"]
+    population = [e for e in entities if e["tier"] != "TK"]
     population_alive = [e for e in population if e.get("alive", True)]
     population_stopped = [e for e in population if not e.get("alive", True)]
     total_k = sum(e["k"] for e in population)
@@ -331,7 +354,7 @@ def render(entities, keepers, mas_bonds=None):
     thinking = sum(1 for e in population_alive if e["state"] in ("THINKING", "OBSERVING"))
 
     # Stale entities (>300s since last update)
-    stale = [e for e in entities if e["age_s"] > 300 and e["tier"] != "timekeeper"]
+    stale = [e for e in entities if e["age_s"] > 300 and e["tier"] != "TK"]
 
     # Timekeeper quorum
     max_obs = max((k["observations"] for k in keepers), default=0)
@@ -343,7 +366,7 @@ def render(entities, keepers, mas_bonds=None):
 
     # Denom health: max coherence_d length across entities
     max_denom_len = max(
-        (len(e["coherence_d"]) for e in entities if e["tier"] != "timekeeper"),
+        (len(e["coherence_d"]) for e in entities if e["tier"] != "TK"),
         default=1
     )
 
@@ -374,7 +397,7 @@ def render(entities, keepers, mas_bonds=None):
     pop_status = f"{GREEN}{alive} alive{RESET}" if alive > 0 else f"{RED}0 alive{RESET}"
     stopped_status = f"  {RED}{stopped} stopped{RESET}" if stopped > 0 else ""
     lines.append(box_row(
-        f"{DIM}Population:{RESET}    {len(founders)}F  {len(derived_entities)}D  {len(emergent_entities)}Em  {quorum_alive}T  "
+        f"{DIM}Population:{RESET}    {len(founders)}{ccl('T0')[0].upper()}  {len(derived_entities)}{ccl('T1')[0].upper()}  {len(emergent_entities)}{ccl('T2')[0].upper()}  {quorum_alive}T  "
         f"({pop_status}{stopped_status})"
     ))
     lines.append(box_row(
@@ -464,7 +487,7 @@ def render(entities, keepers, mas_bonds=None):
             f"{DIM}{stale_mark}{RESET}"
         )
 
-    # Build tree: founder -> derived -> emergent
+    # Build tree: T0 -> T1 -> T2 (displayed through CCL translation)
     for w in sorted(founders, key=lambda e: e["identity"]):
         lines.append(box_row(entity_row(w, indent=0)))
         f_num = w["identity"].removeprefix("founder-")
@@ -593,11 +616,11 @@ def render(entities, keepers, mas_bonds=None):
     lines.append(box_empty())
 
     # Membrane stats from entity data
-    total_axioms = sum(e["axioms"] for e in entities if e["tier"] == "founder")
-    total_obs = sum(e["observations"] for e in entities if e["tier"] == "founder")
+    total_axioms = sum(e["axioms"] for e in entities if e["tier"] == "T0")
+    total_obs = sum(e["observations"] for e in entities if e["tier"] == "T0")
 
     lines.append(box_row(
-        f"  {DIM}Mesh Axioms:{RESET}       {total_axioms} crystallized across {len(founders)} founders"
+        f"  {DIM}Mesh Axioms:{RESET}       {total_axioms} crystallized across {len(founders)} {ccl('T0')}s"
     ))
     lines.append(box_row(
         f"  {DIM}Mesh Observations:{RESET} {fmt_k(total_obs)} total"
@@ -608,7 +631,7 @@ def render(entities, keepers, mas_bonds=None):
     d_vocab = sum(e["vocab"] for e in derived_entities)
     em_vocab = sum(e["vocab"] for e in emergent_entities)
     lines.append(box_row(
-        f"  {DIM}Vocabulary:{RESET}        {CYAN}F={f_vocab}{RESET}  {CYAN}D={d_vocab}{RESET}  {CYAN}Em={em_vocab}{RESET}  "
+        f"  {DIM}Vocabulary:{RESET}        {CYAN}{ccl('T0')[0].upper()}={f_vocab}{RESET}  {CYAN}{ccl('T1')[0].upper()}={d_vocab}{RESET}  {CYAN}{ccl('T2')[0].upper()}={em_vocab}{RESET}  "
         f"{DIM}total={total_vocab}{RESET}"
     ))
 
@@ -617,7 +640,7 @@ def render(entities, keepers, mas_bonds=None):
     d_solved = sum(e["solved"] for e in derived_entities)
     em_solved = sum(e["solved"] for e in emergent_entities)
     lines.append(box_row(
-        f"  {DIM}Solves:{RESET}            {YELLOW}F={f_solved}{RESET}  {YELLOW}D={d_solved}{RESET}  {YELLOW}Em={em_solved}{RESET}"
+        f"  {DIM}Solves:{RESET}            {YELLOW}{ccl('T0')[0].upper()}={f_solved}{RESET}  {YELLOW}{ccl('T1')[0].upper()}={d_solved}{RESET}  {YELLOW}{ccl('T2')[0].upper()}={em_solved}{RESET}"
     ))
 
     lines.append(box_empty())

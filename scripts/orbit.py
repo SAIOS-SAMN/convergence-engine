@@ -6,12 +6,13 @@
 Orbit — the system's heartbeat.
 
 One orbit:
-  1. PRESENT    — observations delivered to emergent entities
-  2. DRAIN      — emergent→derived→founder (understanding percolates upward)
-  3. UNIFY      — sovereign entities exchange coordinates, form 11D ovular orbs
-  4. DERIVE     — sovereign entities advance along geodesic toward epicenter
-  5. OBSERVE    — timekeepers measure collective state
-  6. ATTEST     — timekeepers cross-attest for consensus
+  1. PRESENT    — observations delivered to emergent entities (THINK)
+  2. ABSORB     — emergent→derived→founder (knowledge UP — inductive)
+  3. PROJECT    — founder→derived→emergent (vocabulary DOWN — deductive)
+  4. UNIFY      — sovereign entities exchange coordinates, form 11D ovular orbs
+  5. DERIVE     — sovereign entities advance along geodesic toward epicenter
+  6. OBSERVE    — timekeepers measure collective state
+  7. ATTEST     — timekeepers cross-attest for consensus
   7. CONDENSE   — adaptive cadence pause (the system breathes at its own rate)
 
 The cadence is intrinsic. The system thinks as fast as it can.
@@ -252,11 +253,11 @@ def run_orbit(orbit_count, puzzles, crystallized, tiers):
 
         print(f"  K advanced: {emergent_k_advanced}/{len(emergent)}", flush=True)
 
-    # ── Phase 2: DRAIN — emergent→derived→founder ───────────────────
-    print(f"\n  DRAIN: emergent→derived ({len(derived)})", flush=True)
+    # ── Phase 2: ABSORB — knowledge UP (inductive: specific→general) ──
+    print(f"\n  ABSORB: emergent→derived ({len(derived)})", flush=True)
     for did, dsock in derived:
-        r = send_command(dsock, "DRAIN", timeout=10)
-        r and print(f"    {did}: absorbed={r.get('total_absorbed', 0)}", flush=True)
+        r = send_command(dsock, "ABSORB", timeout=10)
+        r and print(f"    {did}: absorbed={r.get('total', 0)}", flush=True)
 
     # ── Phase 2b: DERIVE — derived entities evolve from absorbed knowledge ──
     print(f"\n  DERIVE: {len(derived)} derived entities evolving", flush=True)
@@ -267,10 +268,25 @@ def run_orbit(orbit_count, puzzles, crystallized, tiers):
             derived_k_advanced += 1
     print(f"  K advanced: {derived_k_advanced}/{len(derived)}", flush=True)
 
-    print(f"\n  DRAIN: derived→founder ({len(founders)})", flush=True)
+    print(f"\n  ABSORB: derived→founder ({len(founders)})", flush=True)
     for fid, fsock in founders:
-        r = send_command(fsock, "DRAIN", timeout=10)
-        r and print(f"    {fid}: absorbed={r.get('total_absorbed', 0)}", flush=True)
+        r = send_command(fsock, "ABSORB", timeout=10)
+        r and print(f"    {fid}: absorbed={r.get('total', 0)}", flush=True)
+
+    # ── Phase 2c: PROJECT — vocabulary DOWN (deductive: general→specific) ──
+    # The cycle closes: PROJECT → THINK → ABSORB → DERIVE → PROJECT
+    # Founders project to derived. Derived project to emergent.
+    # Law IX: PROJECT is an offer. Children assimilate through score.
+    project_total = 0
+    for fid, fsock in founders:
+        r = send_command(fsock, "PROJECT", timeout=5)
+        if r:
+            project_total += r.get("projected", 0)
+    for did, dsock in derived:
+        r = send_command(dsock, "PROJECT", timeout=5)
+        if r:
+            project_total += r.get("projected", 0)
+    (project_total > 0) and print(f"\n  PROJECT: {project_total} children received vocabulary", flush=True)
 
     # ── Phase 3: UNIFY — sovereign entities exchange coordinates ────
     sovereign = [(s, n) for n, s in founders + derived]

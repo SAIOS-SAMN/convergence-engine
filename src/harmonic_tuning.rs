@@ -79,7 +79,7 @@ pub struct HarmonicTuning {
     /// When the entity encounters an orbit with a marker, the harmonic tuning
     /// activates the stored path directly. C(T) validates on first use.
     /// If the path doesn't produce coherence, the marker dissolves.
-    /// Max 64 markers — bounded to prevent genome bloat.
+    /// Max 64 markers — bounded to prevent state record bloat.
     pub transmutation_markers: Vec<([u8; 4], TransmutationPath)>,
 }
 

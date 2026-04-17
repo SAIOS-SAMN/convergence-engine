@@ -10,7 +10,7 @@
 //!
 //! Hierarchy (fixed depth):
 //!   Founder (depth 0) — founding tier. Creates ≤3 derived entities.
-//!   Derived (depth 1) — created by primary entity. Creates ≤6 emergent entities.
+//!   Derived (depth 1) — created by entity. Creates ≤6 emergent entities.
 //!   Emergent (depth 2) — created by derived entity. Creates none.
 //!
 //! Population bounds: 7 founders × (≤3 derived each) × (≤6 emergent each) = 7 + 21 + 126 = 154 max.

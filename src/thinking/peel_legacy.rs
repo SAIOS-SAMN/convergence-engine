@@ -163,7 +163,7 @@ pub fn peel_manifold_with_senses(
 
         // ── Cohesion: category-level cocycle residual in Z ──
         // 1. Build candidate's category map: for each source value, find
-        //    the dominant derived value across training pairs.
+        //    the dominant derived value across practice pairs.
         let mut cand_cat_vals: Vec<i64> = Vec::with_capacity(k);
         for &sv in &all_initial_vals {
             // Consensus: most common derived value where input == sv
@@ -311,7 +311,7 @@ pub fn peel_manifold_with_senses(
         // If a source value maps to multiple targets (e.g., 8→{1,2}), split
         // into sub-entities. Each sub-entity gets cells where THAT specific
         // transition occurs in training consensus. This is measured fission,
-        // not manufactured — the training data determines the partition.
+        // not manufactured — the practice data determines the partition.
         let mut cat_vals: Vec<i64> = Vec::new();
         let mut cat_tgt: Vec<i64> = Vec::new();
         // First pass: collect unique source values
@@ -322,7 +322,7 @@ pub fn peel_manifold_with_senses(
         src_vals.sort();
 
         for &sv in &src_vals {
-            // Count target values for this source value across all training pairs
+            // Count target values for this source value across all practice pairs
             let mut counts: Vec<(i64, usize)> = Vec::new();
             let mut total_count = 0usize;
             for (inp, out) in intermediate_pairs.iter() {
@@ -342,7 +342,7 @@ pub fn peel_manifold_with_senses(
 
             // Entity Fission: if multiple targets each have >10% of observations,
             // create a sub-entity for each. Otherwise use the dominant target.
-            // This is A.6 measured covariance — the training data partitions the entity.
+            // This is A.6 measured covariance — the practice data partitions the entity.
             let threshold = total_count / 10; // 10% minimum to be a real sub-entity
             let significant: Vec<(i64, usize)> = counts.iter()
                 .filter(|(_, c)| *c > threshold)
@@ -386,7 +386,7 @@ pub fn peel_manifold_with_senses(
         // Properties are RANK-NORMALIZED among same-value peers per grid.
         // Rank = count of same-value peers with strictly smaller property.
         // The rank is the holonomic invariant — preserved across scale changes.
-        // Training teaches: rank_vector → target_value from cached pair_touches.
+        // Practice teaches: rank_vector → target_value from cached pair_touches.
         // Test grid matched by rank_vector from cached test_touch.
         // No compute_adjacency_structure here — reads saved perception.
         {
@@ -417,7 +417,7 @@ pub fn peel_manifold_with_senses(
                 }).collect()
             };
 
-            // Learn: rank-normalized samples from ALL training pairs.
+            // Learn: rank-normalized samples from ALL practice pairs.
             // (source_value, rank_gap, rank_mass, rank_β₁, rank_interior, target_value)
             let mut rank_samples: Vec<(i64, i64, i64, i64, i64, i64)> = Vec::new();
             for (pair_idx, (_, out)) in intermediate_pairs.iter().enumerate() {
@@ -483,7 +483,7 @@ pub fn peel_manifold_with_senses(
         // The count of non-background clusters per value in the input manifold
         // may correlate with output values. The relational count is derived from
         // the morphism of cluster densities — not coded as a counting operation.
-        // Training consensus: (source_value, cluster_count) → target_value.
+        // Practice consensus: (source_value, cluster_count) → target_value.
         // The count IS a geometric property of the fiber bundle.
         {
             // Learn: collect (source_value, count_of_same_value_clusters, target_value) from training
@@ -580,7 +580,7 @@ pub fn peel_manifold_with_senses(
         {
             // Detect periodicity from training outputs.
             // For each candidate period (pr, pc), check if output[r][c] == output[r+pr][c+pc]
-            // across all training pairs. The smallest period with full agreement is the unit cell.
+            // across all practice pairs. The smallest period with full agreement is the unit cell.
             let _grid_n = intermediate_pairs[0].0.len();
 
             // Candidate periods: divisors of (rows, cols)
@@ -850,7 +850,7 @@ pub fn peel_manifold_with_senses(
                 .map(|(v, _)| *v).unwrap_or(0);
 
             // Derive spatial parameters from the residual structure.
-            // Changed cells: positions where source != target across training pairs.
+            // Changed cells: positions where source != target across practice pairs.
             let mut changed_rows: Vec<usize> = Vec::new();
             let mut changed_cols: Vec<usize> = Vec::new();
             let mut row_displacements: Vec<i64> = Vec::new();
@@ -881,7 +881,7 @@ pub fn peel_manifold_with_senses(
             // Scan for: homogeneous rows/cols (all one value = divider),
             // spectral discontinuities (value set disjoint from neighbors).
             // These are the pivot candidates — typically 1-5 per grid.
-            // Test each candidate against training pairs. The candidate set is small.
+            // Test each candidate against practice pairs. The candidate set is small.
 
             let grid0 = &intermediate_pairs[0].0;
             let mut pivot_rows: Vec<i64> = Vec::new();

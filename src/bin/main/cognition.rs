@@ -106,7 +106,7 @@ pub fn reflect(entity: &mut Entity, _payload: &str) -> String {
 /// THINK — THE MAIN HANDLER.
 ///
 /// The complete cognitive pipeline: perception, nested peels, compositor,
-/// vocabulary inscription, auto-DRAIN, save_state_record, condensation, world status.
+/// vocabulary inscription, auto-ABSORB, save_state_record, condensation, world status.
 ///
 /// Receives: {"pairs":[{"source":[...],"target":[...]},...], "n":N, "m":M,
 ///            "test":[...] (optional — test input for derivation)}
@@ -121,6 +121,47 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
         entity.state_record.created_count, entity.state_record.solved_puzzles.len(),
         entity.harmonic_tuning.transmutation_markers.len(),
         entity.knowledge.total_axioms, entity.knowledge.total_observations);
+
+    // ── D.PROJECT.RECEIVE: Check for parent's downward vocabulary projection ──
+    // Law IX: The child is sovereign. New operators are assimilated through
+    // score-based selection, not forced. project_vocabulary.bin is an offer.
+    // The file is absorbed (deleted) after reading — one reception per project.
+    {
+        let project_path = entity.dir.join("project_vocabulary.bin");
+        std::fs::read(&project_path).ok().map(|data| {
+            // Deserialize: [n:u16, (opcode:u8, param:i64, sigma_len:u16, sigma..., score:i64)...]
+            (data.len() >= 2).then(|| {
+                let n_ops = u16::from_be_bytes([data[0], data[1]]) as usize;
+                let mut cursor = 2usize;
+                let mut absorbed = 0usize;
+                for _ in 0..n_ops {
+                    (cursor + 1 + 8 + 2 <= data.len()).then(|| {
+                        let opcode = data[cursor]; cursor += 1;
+                        let parameter = i64::from_be_bytes(data[cursor..cursor+8].try_into().unwrap_or([0;8])); cursor += 8;
+                        let sigma_len = u16::from_be_bytes(data[cursor..cursor+2].try_into().unwrap_or([0;2])) as usize; cursor += 2;
+                        let mut sigma = Vec::new();
+                        for _ in 0..sigma_len {
+                            (cursor + 4 <= data.len()).then(|| {
+                                let s = i16::from_be_bytes(data[cursor..cursor+2].try_into().unwrap_or([0;2])); cursor += 2;
+                                let t = i16::from_be_bytes(data[cursor..cursor+2].try_into().unwrap_or([0;2])); cursor += 2;
+                                sigma.push((s, t));
+                            });
+                        }
+                        let score = (cursor + 8 <= data.len()).then(|| {
+                            let s = i64::from_be_bytes(data[cursor..cursor+8].try_into().unwrap_or([0;8])); cursor += 8; s
+                        }).unwrap_or(0);
+                        // Sovereign assimilation: score-based selection
+                        entity.state_record.assimilate(ComposedOperator { opcode, parameter, sigma, score });
+                        absorbed += 1;
+                    });
+                }
+                (absorbed > 0).then(|| {
+                    eprintln!("[project-receive] assimilated {} operators from parent", absorbed);
+                    let _ = std::fs::remove_file(&project_path);
+                });
+            });
+        });
+    }
 
     // D.THINK.ENGINE.1 + D.PERCEPTION.1 — The entity thinks and perceives.
     let response = if !payload.trim().is_empty() {
@@ -234,7 +275,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                         // Reconstruct consensus T through coboundary_reduce — not arithmetic mean.
                         // The H^1 representative of the compound IS the consensus.
                         // No averaging. No flattening. The relational geometry is preserved.
-                        // A single primary entity's vector is a perspective, not a consensus —
+                        // A single entity's vector is a perspective, not a consensus —
                         // but it is still the best information available. coboundary_reduce
                         // projects it to H^1 regardless of witness count.
                         let d = tc.observing_entities[0].len();
@@ -265,7 +306,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                         }
                         // Project to H^1 — the cohomological consensus.
                         // coboundary_reduce preserves torsion structure.
-                        // If primary entitys disagree, the residual carries the disagreement.
+                        // If entitys disagree, the residual carries the disagreement.
                         Some(saios_kernel_v2::engine::coboundary_reduce(&t))
                     });
 
@@ -833,6 +874,16 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     entity.knowledge.record_t_delta(
                         obs_orbit, t_delta, level,
                     );
+
+                    // ── D.PERCEPTUAL.SURFACE.1: Record impression for DERIVE ──
+                    // Law V: the T Delta IS the structured residual.
+                    // DERIVE reads this to know WHERE on the manifold to push.
+                    entity.perceptual_surface.record(super::entity::PerceptualImpression {
+                        orbit: obs_orbit,
+                        t_delta: t_delta.clone(),
+                        coherence: p.coherence.clone(),
+                        k_at: entity.k_index,
+                    });
                 }
 
                 // ── D.VISION.TRANSMUTATION: Feed symmetry pointer to membrane ──
@@ -1066,7 +1117,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
         return format!("{{\"must_exit\":true,\"reason\":\"LAST_WITNESS\",\"k_index\":{}}}\n", entity.k_index);
     }
 
-    // ── Auto-DRAIN: sovereign entities absorb emergent entities' babble ──
+    // ── Auto-ABSORB: sovereign entities absorb child entities' reports ──
     entity.mesh_sovereign.then(|| {
         let my_id = entity.entity_id;
         let mesh_dir = entity.dir.parent().unwrap_or(&entity.dir);
@@ -1142,7 +1193,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                                                 }
                                             });
                                         }
-                                        // Truncate consumed queue
+                                        // Truncate absorbed queue
                                         let cr = mesh_dir.join(&child_dir_name).join("reports.bin");
                                         let lp = mesh_dir.join(format!("entity{}", child_id)).join("reports.bin");
                                         [cr, lp].iter().for_each(|p| { let _ = std::fs::write(p, b""); });
@@ -1229,7 +1280,7 @@ pub fn think_bin(entity: &mut Entity, _payload: &str, raw_data: &[u8]) -> String
     let orbit_prefix: [u8; 4] = [probe_rcf[0], probe_rcf[1], probe_rcf[2], probe_rcf[3]];
     let anchor_key = saios_kernel_v2::sampler::LookupKey::from_state(
         entity.k_index as u64,
-        saios_kernel_v2::training::SeedClass::Directed,
+        saios_kernel_v2::practice::SeedClass::Directed,
         &probe_rcf,
     );
     let has_anchor = entity.sampler.table.lookup(&anchor_key).is_some();

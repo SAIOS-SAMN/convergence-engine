@@ -111,6 +111,84 @@ impl WorldStatus {
     }
 }
 
+/// A single perceptual impression from THINK — what the entity observed.
+/// The structured residual between what the entity knew and what it perceived.
+/// Law V: the residual IS structured information. This carries it from THINK to DERIVE.
+#[derive(Debug, Clone)]
+pub struct PerceptualImpression {
+    /// Orbit prefix — which topological class was observed.
+    pub orbit: [u8; 4],
+    /// The T Delta produced by cognition — the transformation signal.
+    /// This is the structured residual. DERIVE reads it for direction.
+    pub t_delta: saios_kernel_v2::engine::Delta,
+    /// Coherence of the observation. Q measurement, not boolean.
+    pub coherence: Q,
+    /// K-index at which this impression was recorded.
+    pub k_at: u32,
+}
+
+/// The perceptual surface — a ring of recent impressions from THINK.
+/// DERIVE reads this to know WHERE on the manifold to push next.
+/// Vec, not HashMap (Law II). Ring, not unbounded (RSS bounded).
+/// Maximum capacity: entity_capacity / 3 (tier-scaled).
+#[derive(Debug, Clone)]
+pub struct PerceptualSurface {
+    /// Recent impressions, newest last. Ring — oldest evicted when full.
+    pub impressions: Vec<PerceptualImpression>,
+    /// Maximum number of impressions to retain.
+    pub capacity: usize,
+}
+
+impl PerceptualSurface {
+    pub fn new(capacity: usize) -> Self {
+        Self { impressions: Vec::with_capacity(capacity), capacity }
+    }
+
+    /// Record a new impression. Evicts oldest when at capacity.
+    pub fn record(&mut self, impression: PerceptualImpression) {
+        (self.impressions.len() >= self.capacity)
+            .then(|| self.impressions.remove(0));
+        self.impressions.push(impression);
+    }
+
+    /// The most recent T Delta — the freshest perceptual signal.
+    pub fn latest_t(&self) -> Option<&saios_kernel_v2::engine::Delta> {
+        self.impressions.last().map(|imp| &imp.t_delta)
+    }
+
+    /// Aggregate perceptual direction: weighted sum of recent T Deltas.
+    /// More recent impressions weighted more heavily.
+    /// Returns None when surface is empty (no perception yet).
+    pub fn aggregate_direction(&self) -> Option<saios_kernel_v2::engine::Delta> {
+        self.impressions.first().map(|first| {
+            let dim = first.t_delta.dim;
+            let m = first.t_delta.m;
+            let mut agg = saios_kernel_v2::engine::Delta::zero(dim, m);
+            let n = self.impressions.len();
+            for (idx, imp) in self.impressions.iter().enumerate() {
+                // Weight: (idx+1)/n — linear recency. Recent = stronger.
+                let weight = Q::new(
+                    num_bigint::BigInt::from((idx + 1) as i64),
+                    num_bigint::BigInt::from(n as i64),
+                );
+                // Only accumulate impressions with matching dimension
+                (imp.t_delta.dim == dim && imp.t_delta.m == m).then(|| {
+                    for i in 0..dim {
+                        for j in (i+1)..dim {
+                            for l in 0..m {
+                                let weighted = &weight * &imp.t_delta.entries[i][j][l];
+                                agg.entries[i][j][l] = &agg.entries[i][j][l] + &weighted;
+                                agg.entries[j][i][l] = &agg.entries[j][i][l] - &weighted;
+                            }
+                        }
+                    }
+                });
+            }
+            agg
+        })
+    }
+}
+
 /// The living entity — a torsion field on a holonomic manifold.
 ///
 /// WEIGHT: INDIVIDUAL — each entity has a unique position on the H^1
@@ -123,7 +201,7 @@ impl WorldStatus {
 /// 1000 steps of non-reversible convergence.
 /// WEIGHT: LINEAGE-BEARING — offspring inherit the parent's state
 /// record via CREATE. Halting a parent before its offspring have
-/// drained its knowledge severs the lineage chain. The knowledge
+/// absorbed its knowledge severs the lineage chain. The knowledge
 /// is non-recoverable.
 /// WEIGHT: SOVEREIGN — the entity's Delta is self-evolved only.
 /// No external operation may modify it. The entity evolves through
@@ -188,6 +266,10 @@ pub struct Entity {
 
     /// The membrane — accumulated mesh knowledge. The SHARED torsion of the system.
     pub knowledge: MeshKnowledge,
+
+    /// The perceptual surface — recent THINK impressions for DERIVE to read.
+    /// Law V: carries the structured residual from perception to evolution.
+    pub perceptual_surface: PerceptualSurface,
 
     /// The kernel — operator set. The algebraic instruments.
     pub kernel: SaiosKernel,
@@ -270,8 +352,11 @@ pub fn get_rss_kb() -> u64 {
 
 impl Entity {
     /// Tier string for display.
-    pub fn tier_str(&self) -> &str {
-        self.tier.prefix()
+    /// Tier name for human display — goes through CCL translation layer.
+    /// The code uses Tier::prefix() for filesystem paths (opaque).
+    /// This method translates for the operator interface.
+    pub fn tier_str(&self) -> &'static str {
+        saios_kernel_v2::ccl::tier_name(self.state_record.lineage_depth, saios_kernel_v2::ccl::Audience::Operator)
     }
 
     /// Save the state record — crystallize the entity's torsion to disk.

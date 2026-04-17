@@ -230,9 +230,38 @@ pub fn derive(entity: &mut Entity, payload: &str) -> String {
     // When K stalls, the aggregate residual of unsolved orbits
     // bends the sampler toward the conjugation shift.
     let global_curvature = entity.knowledge.derive_global_curvature();
+    // D.PERCEPTUAL.SURFACE.1: Aggregate perceptual direction from THINK.
+    // The perceptual surface carries structured residual from recent observations.
+    // When present, it provides a more specific direction than global curvature alone.
+    // The two signals superpose — global curvature is the landscape,
+    // perceptual direction is the entity's recent experience of that landscape.
+    let perceptual_direction = entity.perceptual_surface.aggregate_direction();
+    // Effective curvature: superpose perceptual direction onto global curvature.
+    // When perceptual surface is empty, global curvature alone. When both present,
+    // perceptual direction adds to global curvature — no replacement, no gate.
+    let effective_curvature: Option<saios_kernel_v2::engine::Delta> = match (&global_curvature, &perceptual_direction) {
+        (Some(gc), Some(pd)) => {
+            // Superpose: only when dimensions match. Otherwise use whichever is present.
+            (gc.dim == pd.dim && gc.m == pd.m).then(|| {
+                let mut combined = gc.clone();
+                for i in 0..gc.dim {
+                    for j in (i+1)..gc.dim {
+                        for l in 0..gc.m {
+                            combined.entries[i][j][l] = &combined.entries[i][j][l] + &pd.entries[i][j][l];
+                            combined.entries[j][i][l] = &combined.entries[j][i][l] + &pd.entries[j][i][l];
+                        }
+                    }
+                }
+                combined
+            }).or_else(|| Some(gc.clone()))
+        }
+        (Some(gc), None) => Some(gc.clone()),
+        (None, Some(pd)) => Some(pd.clone()),
+        (None, None) => None,
+    };
     let sampler_response = match entity.sampler.sample_refractive_with_gravity(
         &entity.delta, entity.k_index as u64, &rcf, &derive_harmonic,
-        global_curvature.as_ref(), &entity.trajectory.velocity,
+        effective_curvature.as_ref(), &entity.trajectory.velocity,
         gravity.as_ref(),
     ) {
         Some(op) => {
@@ -268,6 +297,21 @@ pub fn derive(entity: &mut Entity, payload: &str) -> String {
                             entity.k_index = entity.k_index.saturating_add(1);
                             entity.t_k_latest = t_k.clone();
                             entity.sluice_state = SluiceState::Locked;
+
+                            // Denominator health: measure max digit count after coboundary_reduce.
+                            // Large denominators = Q multiplication compounding = heap growth.
+                            // coboundary_reduce should normalize to denom=1.
+                            // When it doesn't, the log is structured information (Law V).
+                            let max_denom_digits = entity.delta.entries.iter()
+                                .flat_map(|row| row.iter().flat_map(|col| col.iter()))
+                                .map(|q| q.denom().to_string().len())
+                                .max()
+                                .unwrap_or(1);
+                            (max_denom_digits > 10).then(|| {
+                                eprintln!("[DENOM] K={} max_denom_digits={} — re-normalizing",
+                                    entity.k_index, max_denom_digits);
+                                entity.delta = coboundary_reduce(&entity.delta);
+                            });
 
                             // Chronometry v1.0: H^1 representative is the reference
                             entity.delta_bar = entity.delta.clone();
@@ -353,6 +397,13 @@ pub fn derive(entity: &mut Entity, payload: &str) -> String {
     }
     sampler_response
     }; // close response block
+
+    // RSS check after DERIVE — evolution allocates through operator application,
+    // coboundary_reduce, and gradient computation. Must run here too, not just THINK.
+    entity.last_witness_protocol().then(|| {
+        return format!("{{\"must_exit\":true,\"reason\":\"LAST_WITNESS\",\"k_index\":{}}}\n", entity.k_index);
+    });
+
     response
 }
 
@@ -508,7 +559,7 @@ pub fn irs_loop(entity: &mut Entity, _payload: &str) -> String {
     // MDC-driven as fallback (derived from echelon voting).
     // Perception IS the intent — the system acts on what it perceived.
     let loop_perception = saios_kernel_v2::perception::perceive(
-        &[], // IRS loop has no training pairs — it perceives the current state
+        &[], // IRS loop has no practice pairs — it perceives the current state
         &[], // No test input — state perception only
         None,
     );

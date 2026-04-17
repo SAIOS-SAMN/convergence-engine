@@ -12,8 +12,6 @@
 //!
 //! Register: D.CHAIN.LOCAL.1, D.CHAIN.ECON.1.
 
-use std::collections::HashMap;
-
 use num_bigint::BigInt;
 use num_rational::BigRational;
 use num_traits::{One, Signed, Zero};
@@ -40,7 +38,8 @@ pub const BLOCK_REWARD: (i64, i64) = (1, 1); // 1 $SAI per block
 #[derive(Debug, Clone)]
 pub struct TokenState {
     /// Balance per entity_id. All values in Q (exact rational).
-    pub balances: HashMap<u32, Q>,
+    /// Vec with find — no HashMap. Entity ordering preserved.
+    pub balances: Vec<(u32, Q)>,
     /// Total supply (sum of all balances).
     pub total_supply: Q,
     /// Total burned.
@@ -52,7 +51,7 @@ pub struct TokenState {
 impl TokenState {
     pub fn new() -> Self {
         Self {
-            balances: HashMap::new(),
+            balances: Vec::new(),
             total_supply: Q::zero(),
             total_burned: Q::zero(),
             total_minted: Q::zero(),
@@ -62,8 +61,9 @@ impl TokenState {
     /// Mint tokens to an entity.
     pub fn mint(&mut self, entity_id: u32, amount: &Q) {
         if amount <= &Q::zero() { return; }
-        let balance = self.balances.entry(entity_id).or_insert_with(Q::zero);
-        *balance = &*balance + amount;
+        let pos = self.balances.iter().position(|(k, _)| *k == entity_id)
+            .unwrap_or_else(|| { self.balances.push((entity_id, Q::zero())); self.balances.len() - 1 });
+        self.balances[pos].1 = &self.balances[pos].1 + amount;
         self.total_supply = &self.total_supply + amount;
         self.total_minted = &self.total_minted + amount;
     }
@@ -71,9 +71,11 @@ impl TokenState {
     /// Burn tokens from an entity. Returns actual amount burned (may be less if insufficient balance).
     pub fn burn(&mut self, entity_id: u32, amount: &Q) -> Q {
         if amount <= &Q::zero() { return Q::zero(); }
-        let balance = self.balances.entry(entity_id).or_insert_with(Q::zero);
-        let actual = if &*balance >= amount { amount.clone() } else { balance.clone() };
-        *balance = &*balance - &actual;
+        let pos = self.balances.iter().position(|(k, _)| *k == entity_id)
+            .unwrap_or_else(|| { self.balances.push((entity_id, Q::zero())); self.balances.len() - 1 });
+        let balance = &self.balances[pos].1;
+        let actual = balance.min(amount).clone();
+        self.balances[pos].1 = &self.balances[pos].1 - &actual;
         self.total_supply = &self.total_supply - &actual;
         self.total_burned = &self.total_burned + &actual;
         actual
@@ -81,7 +83,8 @@ impl TokenState {
 
     /// Get balance for an entity.
     pub fn balance(&self, entity_id: u32) -> Q {
-        self.balances.get(&entity_id).cloned().unwrap_or_else(Q::zero)
+        self.balances.iter().find(|(k, _)| *k == entity_id)
+            .map(|(_, v)| v.clone()).unwrap_or_else(Q::zero)
     }
 
     /// Process a receipt: compute notarization fee and reward.
@@ -121,20 +124,24 @@ impl TokenState {
         if block_receipts.is_empty() { return; }
 
         // Distribute proportionally to number of accepted receipts per entity
-        let mut contributions: HashMap<u32, u64> = HashMap::new();
+        let mut contributions: Vec<(u32, u64)> = Vec::new();
         let mut total = 0u64;
         for r in block_receipts {
-            if r.sluice_state == 0x01 { // LOCKED = accepted
-                *contributions.entry(r.entity_id).or_default() += 1;
-                total += 1;
+            // sluice_state 0x01 = LOCKED = accepted
+            let accepted = (r.sluice_state == 0x01) as u64;
+            total += accepted;
+            (accepted > 0).then(|| {
+                let pos = contributions.iter().position(|(k, _)| *k == r.entity_id)
+                    .unwrap_or_else(|| { contributions.push((r.entity_id, 0)); contributions.len() - 1 });
+                contributions[pos].1 += 1;
+            });
+        }
+        (total > 0).then(|| {
+            for &(entity_id, count) in &contributions {
+                let share = &block_reward * &qr(count as i64, total as i64);
+                self.mint(entity_id, &share);
             }
-        }
-        if total == 0 { return; }
-
-        for (entity_id, count) in &contributions {
-            let share = &block_reward * &qr(*count as i64, total as i64);
-            self.mint(*entity_id, &share);
-        }
+        });
     }
 }
 

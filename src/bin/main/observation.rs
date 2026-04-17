@@ -270,8 +270,8 @@ pub fn run_timekeeper(
 
                         // Inscribe to Temporal Ledger — the distributed consensus layer
                         ledger.add_receipt(receipt.clone());
-                        // Self-witness: this timekeeper attests its own receipt
-                        ledger.add_witness(obs_count, config.entity_id, config.entity_id);
+                        // Self-attestation: this timekeeper attests its own receipt
+                        ledger.add_attestation(obs_count, config.entity_id, config.entity_id);
 
                         // Sluice entry for the observation
                         let sluice_entry = SluiceEntry::from_k_step(
@@ -361,9 +361,9 @@ pub fn run_timekeeper(
 
                                 // Inscribe peer receipt to Temporal Ledger
                                 ledger.add_receipt(peer_receipt);
-                                // Peer primary entities itself; we witness the peer
-                                ledger.add_witness(peer_k, peer_id, peer_id);
-                                ledger.add_witness(peer_k, peer_id, config.entity_id);
+                                // Peer attests itself; we attest the peer
+                                ledger.add_attestation(peer_k, peer_id, peer_id);
+                                ledger.add_attestation(peer_k, peer_id, config.entity_id);
 
                                 // Check finality at this level
                                 let finalized = ledger.finalize_level(peer_k);

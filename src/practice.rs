@@ -67,7 +67,7 @@ impl From<u8> for FailureCode {
 
 /// A single 128-byte practice record.
 #[derive(Debug, Clone)]
-pub struct TrainingRecord {
+pub struct PracticeRecord {
     pub k_index: u64,           // [0..8]
     pub entity_id: u32,           // [8..12]
     pub c7_passed: bool,        // [12]
@@ -85,7 +85,7 @@ pub struct TrainingRecord {
     // [125..128] reserved
 }
 
-impl TrainingRecord {
+impl PracticeRecord {
     pub fn to_bytes(&self) -> [u8; RECORD_SIZE] {
         let mut buf = [0u8; RECORD_SIZE];
         buf[0..8].copy_from_slice(&self.k_index.to_be_bytes());
@@ -140,13 +140,13 @@ impl TrainingRecord {
 }
 
 /// Binary practice data store — append-only, fixed-size records.
-pub struct TrainingStore {
+pub struct PracticeStore {
     file: File,
     _path: PathBuf,
     count: u64,
 }
 
-impl TrainingStore {
+impl PracticeStore {
     pub fn open(path: &Path) -> io::Result<Self> {
         let file = OpenOptions::new()
             .read(true).write(true).create(true).open(path)?;
@@ -155,21 +155,21 @@ impl TrainingStore {
         Ok(Self { file, _path: path.to_path_buf(), count })
     }
 
-    pub fn append(&mut self, record: &TrainingRecord) -> io::Result<()> {
+    pub fn append(&mut self, record: &PracticeRecord) -> io::Result<()> {
         self.file.seek(SeekFrom::End(0))?;
         self.file.write_all(&record.to_bytes())?;
         self.count += 1;
         Ok(())
     }
 
-    pub fn read_at(&mut self, index: u64) -> io::Result<TrainingRecord> {
+    pub fn read_at(&mut self, index: u64) -> io::Result<PracticeRecord> {
         if index >= self.count {
             return Err(io::Error::new(io::ErrorKind::NotFound, "index out of range"));
         }
         self.file.seek(SeekFrom::Start(index * RECORD_SIZE as u64))?;
         let mut buf = [0u8; RECORD_SIZE];
         self.file.read_exact(&mut buf)?;
-        Ok(TrainingRecord::from_bytes(&buf))
+        Ok(PracticeRecord::from_bytes(&buf))
     }
 
     pub fn len(&self) -> u64 { self.count }
@@ -231,8 +231,8 @@ impl QualityReport {
 mod tests {
     use super::*;
 
-    fn test_record() -> TrainingRecord {
-        TrainingRecord {
+    fn test_record() -> PracticeRecord {
+        PracticeRecord {
             k_index: 42, entity_id: 7, c7_passed: true, seed_class: SeedClass::Shear,
             orbit_changed: false, sluice_state: 1,
             coherence_numer: -3, coherence_denom: 100,
@@ -248,7 +248,7 @@ mod tests {
         let r = test_record();
         let bytes = r.to_bytes();
         assert_eq!(bytes.len(), RECORD_SIZE);
-        let decoded = TrainingRecord::from_bytes(&bytes);
+        let decoded = PracticeRecord::from_bytes(&bytes);
         assert_eq!(decoded.k_index, 42);
         assert_eq!(decoded.entity_id, 7);
         assert!(decoded.c7_passed);
@@ -258,9 +258,9 @@ mod tests {
 
     #[test]
     fn test_store_append_read() {
-        let path = std::env::temp_dir().join(format!("saios-training-test-{}.bin",
+        let path = std::env::temp_dir().join(format!("saios-practice-test-{}.bin",
             std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
-        let mut store = TrainingStore::open(&path).unwrap();
+        let mut store = PracticeStore::open(&path).unwrap();
         store.append(&test_record()).unwrap();
         assert_eq!(store.len(), 1);
         let read = store.read_at(0).unwrap();
@@ -272,7 +272,7 @@ mod tests {
     fn test_quality_scan() {
         let path = std::env::temp_dir().join(format!("saios-quality-test-{}.bin",
             std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
-        let mut store = TrainingStore::open(&path).unwrap();
+        let mut store = PracticeStore::open(&path).unwrap();
         let mut r = test_record();
         r.c7_passed = true; r.coherence_numer = -1;
         store.append(&r).unwrap();

@@ -33,7 +33,7 @@ pub struct SymmetryElement {
     /// Transmutation residual: R(φ) = ‖φ(source) - target‖.
     /// Measures how well this symmetry element relates source to target.
     /// Zero = the grid has transmuted through exactly this symmetry.
-    /// The primary entity perceives the transmutation, it does not execute it.
+    /// The entity perceives the transmutation, it does not execute it.
     pub transmutation_residual: Q,
 }
 
@@ -306,7 +306,7 @@ pub fn compute_symmetry_group(values: &[i64], rows: usize, cols: usize) -> Symme
 /// Cells that fall outside the state record's aperture contribute LESS.
 ///
 /// Result: a spatial-centric state record amplifies spatial discrepancies.
-/// A value-centric state record amplifies value discrepancies. Each primary entity
+/// A value-centric state record amplifies value discrepancies. Each entity
 /// perceives the SAME grid through a DIFFERENT curvature.
 ///
 /// harmonics[0] = value weight, harmonics[1] = row weight, harmonics[2] = col weight.
@@ -450,13 +450,13 @@ pub fn derive_from_symmetry(
 /// alignments (identity, reflections, rotations, translations) — NOT from
 /// the input's symmetry group, but from the grid geometry itself. For each
 /// alignment σ, computes the induced value map f where output[i] = f(input[σ(i)]).
-/// Cross-validates (σ, f) across ALL training pairs.
+/// Cross-validates (σ, f) across ALL practice pairs.
 ///
 /// Identity is tested first — most transformations change values in place.
 /// Non-identity alignments compose spatial + value into one transmutation.
 ///
 /// Returns: (permutation, value_rule, residual) for the best composition
-/// that generalizes across all training pairs. None if nothing achieves jr=0.
+/// that generalizes across all practice pairs. None if nothing achieves jr=0.
 /// VIII.4: see_transformation — Vision sense.
 ///
 /// Previously composed spatial permutations with HashMap value factoring.

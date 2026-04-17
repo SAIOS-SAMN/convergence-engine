@@ -208,10 +208,32 @@ mod tests {
     }
 
     #[test]
-    fn test_c5_phase1_resonance_fails_for_off_phase_majority() {
+    fn test_c5_phase1_resonance_fails_when_alignment_below_threshold() {
+        // All coordinates off-phase: alignment = 0/12 < 1/3 → violated.
+        // Encoded state has zero coords on diagonal — use a large off-phase
+        // r_remainder that dominates the zero entries.
         let kernel = SaiosKernel::new_default(vec![identity_operator(2)]);
         let off_phase = &kernel.params.delta / Q::from_integer(BigInt::from(4));
-        let state = encoded_state_for_resonance(off_phase, 3);
+        // Build a fully off-phase encoded state — no zero diagonal entries
+        let m = 3;
+        let mut delta = Delta::zero(2, m);
+        delta.set_antisym(0, 1, vec![q(1, 1); m]);
+        let encoded = vec![
+            vec![
+                vec![SubstrateCoord { q_component: Q::zero(), r_remainder: off_phase.clone() }; m],
+                vec![SubstrateCoord { q_component: Q::zero(), r_remainder: off_phase.clone() }; m],
+            ],
+            vec![
+                vec![SubstrateCoord { q_component: Q::zero(), r_remainder: off_phase.clone() }; m],
+                vec![SubstrateCoord { q_component: Q::zero(), r_remainder: off_phase.clone() }; m],
+            ],
+        ];
+        delta.encoded = Some(encoded);
+        let state = EntityState {
+            entity_id: 1, k_index: 0, sluice_state: SluiceState::Locked,
+            latest_sigma_enc: 0, delta_bar: delta.clone(), delta_k: delta,
+            trajectory: Trajectory::new(), t_k_latest: Q::zero(),
+        };
         assert_eq!(kernel.check_c5_resonance(&state), Err(SaiosError::C5ResonanceViolated));
     }
 

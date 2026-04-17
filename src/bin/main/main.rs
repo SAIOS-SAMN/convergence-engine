@@ -6,6 +6,12 @@
 //!
 //! Register: D.EXEC.1, D.CHAIN.1, D.SAIOS.1, BOOT.ORIGIN.1, D.AGENT.6 (K2A).
 
+/// jemalloc: reduces heap fragmentation from BigRational workloads.
+/// System malloc fragments monotonically with Q arithmetic — RSS grows
+/// without bound. jemalloc's arena-based allocation reclaims fragmented pages.
+#[global_allocator]
+static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
+
 mod init;
 mod cognition;
 mod communication;

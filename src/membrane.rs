@@ -22,7 +22,6 @@
 //!
 //! Register: D.MEMBRANE.1, D.MEMBRANE.COMPOUND.1, D.MEMBRANE.AXIOM.1.
 
-use std::collections::HashMap;
 use std::io::{self, Read, Write};
 use std::fs::{File, OpenOptions};
 use std::path::Path;
@@ -184,11 +183,14 @@ pub fn compound_perspectives(perspectives: &[Perspective]) -> CompoundPerspectiv
 
     for k in 0..output_len {
         // Count value occurrences at this cell across all perspectives
-        let mut value_counts: HashMap<i64, usize> = HashMap::new();
+        let mut value_counts: Vec<(i64, usize)> = Vec::new();
         let mut total_votes = 0usize;
         for p in perspectives {
             if k < p.derived_output.len() {
-                *value_counts.entry(p.derived_output[k]).or_insert(0) += 1;
+                let x = p.derived_output[k];
+                let pos = value_counts.iter().position(|(k, _)| *k == x)
+                    .unwrap_or_else(|| { value_counts.push((x, 0)); value_counts.len() - 1 });
+                value_counts[pos].1 += 1;
                 total_votes += 1;
             }
         }
@@ -196,7 +198,7 @@ pub fn compound_perspectives(perspectives: &[Perspective]) -> CompoundPerspectiv
         // Find majority value
         let (majority_val, majority_count) = value_counts.iter()
             .max_by_key(|(_, count)| *count)
-            .map(|(&v, &c)| (v, c))
+            .map(|&(v, c)| (v, c))
             .unwrap_or((0, 0));
 
         cell_congruence.push((majority_val, majority_count));
@@ -219,10 +221,13 @@ pub fn compound_perspectives(perspectives: &[Perspective]) -> CompoundPerspectiv
     };
 
     // Dominant encoding level
-    let mut encoding_counts: HashMap<&str, usize> = HashMap::new();
+    let mut encoding_counts: Vec<(&str, usize)> = Vec::new();
     for p in perspectives {
         if p.coherence >= Q::one() {
-            *encoding_counts.entry(p.encoding_level.as_str()).or_insert(0) += 1;
+            let s = p.encoding_level.as_str();
+            let pos = encoding_counts.iter().position(|(k, _)| *k == s)
+                .unwrap_or_else(|| { encoding_counts.push((s, 0)); encoding_counts.len() - 1 });
+            encoding_counts[pos].1 += 1;
         }
     }
     let dominant_encoding = encoding_counts.iter()
@@ -289,7 +294,7 @@ pub struct MeshAxiom {
     /// chain_confirmations / total_observations. Higher = more massive.
     pub mass: Q,
     /// D.CRYSTALLIZE.1: Hardness — mean pairwise origin_drift distance
-    /// among confirming primary entities. Higher = more evolutionary diversity bridged.
+    /// among confirming entities. Higher = more evolutionary diversity bridged.
     pub hardness: Q,
     /// D.ESCALATION.1: Highest dimensional level that was attempted.
     /// "category" / "cluster" / "cell" / "unresolved"
@@ -310,12 +315,12 @@ pub struct MeshAxiom {
 /// D.MEMBRANE.T.2 — Transformation compound at an orbit.
 ///
 /// The membrane does NOT average T Deltas — averaging IS dimensional collapse.
-/// Instead, each primary entity's T is an ENTITY. The membrane builds a meta-Delta
-/// between primary entities' Ts. C(meta_delta) measures whether primary entities' transformations
-/// are cohomologically consistent — parallel transport of T around the loop of primary entities.
+/// Instead, each entity's T is an ENTITY. The membrane builds a meta-Delta
+/// between entities' Ts. C(meta_delta) measures whether entities' transformations
+/// are cohomologically consistent — parallel transport of T around the loop of entities.
 ///
 /// C(meta_delta) = 0 → holonomic perceptual lock → crystallized.
-/// C(meta_delta) > 0 → H^1 reveals where primary entities diverge — structured info.
+/// C(meta_delta) > 0 → H^1 reveals where entities diverge — structured info.
 ///
 /// The coboundary part of meta_delta = consensus T (what all agree on).
 /// The H^1 = where diverse perspectives create non-trivial structure.
@@ -323,23 +328,23 @@ pub struct MeshAxiom {
 /// Runtime only — not serialized. Rebuilt from observations each session.
 #[derive(Debug, Clone)]
 pub struct TransformCompound {
-    /// Each primary entity's T, flattened to upper-triangle entity vector.
+    /// Each entity's T, flattened to upper-triangle entity vector.
     /// observing_entities[k] = flattened T from observer k.
     /// These become entities in the meta-Delta.
     pub observing_entities: Vec<Vec<Q>>,
-    /// The meta-Delta between primary entities — the membrane's manifold.
+    /// The meta-Delta between entities — the membrane's manifold.
     /// Each observer is an entity. Coordinates = T entries.
     /// C(meta_delta) = membrane coherence on T.
     pub meta_delta: Option<Delta>,
     /// C(meta_delta) — coherence of the inter-entity transformation manifold.
-    /// Zero = all primary entities agree (holonomic lock). Nonzero = structured divergence.
+    /// Zero = all entities agree (holonomic lock). Nonzero = structured divergence.
     pub coherence: Q,
     /// Three-state cohesion measurement at the Entity→Membrane boundary.
-    /// None: no consensus possible (< 2 primary entities). Single perspective.
-    /// Some(Q::zero()): consensus achieved. Zero torsion between primary entities.
+    /// None: no consensus possible (< 2 entities). Single perspective.
+    /// Some(Q::zero()): consensus achieved. Zero torsion between entities.
     /// Some(Q > 0): consensus with measured inter-entity torsion.
     pub cohesion: Option<Q>,
-    /// Number of primary entities compounded.
+    /// Number of entities compounded.
     pub count: usize,
     /// Dimensional level (category, cluster, cell).
     pub level: String,
@@ -425,26 +430,26 @@ pub struct SpatialCochain {
 /// - T compounds: the membrane's understanding of the transformation (the depth)
 ///
 /// The T compound at each orbit is the membrane's higher-dimensional
-/// understanding. Individual primary entities produce T at their genomic level.
+/// understanding. Individual entities produce T at their genomic level.
 /// The membrane compounds them — the compound IS the intelligence above
 /// any individual entity. C(compound_T) = 0 means the membrane has
-/// crystallized a consistent transformation across diverse primary entities.
+/// crystallized a consistent transformation across diverse entities.
 pub struct MeshKnowledge {
     /// Axioms indexed by orbit prefix (surface — the lookup index).
-    axioms: HashMap<[u8; 4], Vec<MeshAxiom>>,
+    axioms: Vec<([u8; 4], Vec<MeshAxiom>)>,
     /// Membrane coherence per orbit (volume — the internal structure).
     /// C(Δ) of the axiom Delta at each orbit. Decreases as observations
     /// tighten the internal bonds. Zero = crystallized.
-    orbit_coherence: HashMap<[u8; 4], Q>,
+    orbit_coherence: Vec<([u8; 4], Q)>,
     /// Spatial cochains accumulated across observations.
     /// The marrow's relational experience: operator + parameter + cohesion field.
     /// Keyed by orbit prefix — each topological class accumulates its own cochains.
-    spatial_cochains: HashMap<[u8; 4], Vec<SpatialCochain>>,
+    spatial_cochains: Vec<([u8; 4], Vec<SpatialCochain>)>,
     /// D.MEMBRANE.T.1 — T Delta compounds per orbit, grouped by level.
     /// The membrane's higher-dimensional understanding. Each entry compounds
-    /// T Deltas from multiple primary entities at the same dimensional level.
+    /// T Deltas from multiple entities at the same dimensional level.
     /// Runtime only — not serialized. Rebuilt from observations.
-    orbit_t_compounds: HashMap<[u8; 4], Vec<TransformCompound>>,
+    orbit_t_compounds: Vec<([u8; 4], Vec<TransformCompound>)>,
     /// Total axioms across all orbits.
     pub total_axioms: u32,
     /// Total observations processed by the mesh.
@@ -454,10 +459,10 @@ pub struct MeshKnowledge {
 impl MeshKnowledge {
     pub fn new() -> Self {
         Self {
-            axioms: HashMap::new(),
-            orbit_coherence: HashMap::new(),
-            spatial_cochains: HashMap::new(),
-            orbit_t_compounds: HashMap::new(),
+            axioms: Vec::new(),
+            orbit_coherence: Vec::new(),
+            spatial_cochains: Vec::new(),
+            orbit_t_compounds: Vec::new(),
             total_axioms: 0,
             total_observations: 0,
         }
@@ -482,7 +487,13 @@ impl MeshKnowledge {
         // High mass = consistent understanding. Low mass = obstruction remains.
         // The structured residual (1 - coherence) identifies the obstruction class.
 
-        let axioms = self.axioms.entry(orbit).or_insert_with(Vec::new);
+        let axioms = match self.axioms.iter().position(|(key, _)| *key == orbit) {
+            Some(pos) => &mut self.axioms[pos].1,
+            None => {
+                self.axioms.push((orbit, Vec::new()));
+                &mut self.axioms.last_mut().unwrap().1
+            }
+        };
         let existing = axioms.iter_mut().find(|a| a.encoding_level == encoding_level);
 
         if let Some(axiom) = existing {
@@ -499,7 +510,7 @@ impl MeshKnowledge {
             );
             axiom.mass = &(&axiom.mass * &(&n - &Q::one()) + &coherence) / &n;
 
-            // Hardness: diversity of primary entities that attempted.
+            // Hardness: diversity of entities that attempted.
             let drift_diff = &entity_origin_drift - &axiom.hardness;
             let abs_diff = if drift_diff < Q::zero() { -drift_diff } else { drift_diff };
             let alpha = Q::new(BigInt::from(1), BigInt::from(axiom.attempts.max(1) as i64));
@@ -543,10 +554,10 @@ impl MeshKnowledge {
                 .map(|(k, _)| k);
 
             weakest.map(|orbit_to_evict| {
-                self.axioms.remove(&orbit_to_evict);
-                self.orbit_coherence.remove(&orbit_to_evict);
-                self.spatial_cochains.remove(&orbit_to_evict);
-                self.orbit_t_compounds.remove(&orbit_to_evict);
+                self.axioms.retain(|(key, _)| *key != orbit_to_evict);
+                self.orbit_coherence.retain(|(key, _)| *key != orbit_to_evict);
+                self.spatial_cochains.retain(|(key, _)| *key != orbit_to_evict);
+                self.orbit_t_compounds.retain(|(key, _)| *key != orbit_to_evict);
             });
         });
 
@@ -556,7 +567,7 @@ impl MeshKnowledge {
         // The coherence of this meta-Delta IS the membrane's internal
         // crystallization state at this orbit. It tightens with each
         // congruent observation — the inner lattice of the hypercube.
-        if let Some(axioms) = self.axioms.get(&orbit) {
+        if let Some(axioms) = self.axioms.iter().find(|(key, _)| *key == orbit).map(|(_, v)| v) {
             if axioms.len() >= 2 {
                 let entities: Vec<Vec<Q>> = axioms.iter().map(|a| {
                     vec![
@@ -567,7 +578,9 @@ impl MeshKnowledge {
                 }).collect();
                 let axiom_delta = crate::perception::encode_relational(&entities);
                 let c = crate::engine::coherence_functional(&axiom_delta);
-                self.orbit_coherence.insert(orbit, c);
+                let pos = self.orbit_coherence.iter().position(|(key, _)| *key == orbit)
+                    .unwrap_or_else(|| { self.orbit_coherence.push((orbit, Q::zero())); self.orbit_coherence.len() - 1 });
+                self.orbit_coherence[pos].1 = c;
             }
         }
 
@@ -575,28 +588,52 @@ impl MeshKnowledge {
         self.enforce_byte_budget();
     }
 
+    /// Estimate Q heap size: 16 bytes base + 4 bytes per limb (numer + denom).
+    fn q_heap_bytes(q: &Q) -> usize {
+        let numer_limbs = (q.numer().bits() as usize + 31) / 32;
+        let denom_limbs = (q.denom().bits() as usize + 31) / 32;
+        16 + (numer_limbs + denom_limbs) * 4
+    }
+
     /// Estimate the in-memory byte footprint of the membrane.
-    /// Each Q is ~80 bytes in RAM (BigInt numer + denom).
-    /// Axioms: ~200 bytes each (orbit + fields + Q values).
-    /// Cochains: per-cell Q × 80 bytes + overhead.
+    /// Uses Q-aware limb counting instead of fixed estimates.
     fn byte_estimate(&self) -> usize {
-        let axiom_bytes: usize = self.axioms.values()
-            .map(|v| v.len() * 200)
+        let axiom_bytes: usize = self.axioms.iter()
+            .map(|(_, v)| v.iter().map(|a| {
+                // orbit(4) + fields(~40) + 2 Q values (coherence + mass)
+                44 + Self::q_heap_bytes(&a.coherence_at_crystallization)
+                   + Self::q_heap_bytes(&a.mass)
+            }).sum::<usize>())
             .sum();
-        let cochain_bytes: usize = self.spatial_cochains.values()
-            .map(|v| v.iter().map(|c| c.cohesion.len() * 80 + 100).sum::<usize>())
+        let cochain_bytes: usize = self.spatial_cochains.iter()
+            .map(|(_, v)| v.iter().map(|c| {
+                100 + c.cohesion.iter().map(Self::q_heap_bytes).sum::<usize>()
+            }).sum::<usize>())
             .sum();
-        let t_bytes: usize = self.orbit_t_compounds.values()
-            .map(|v| v.len() * 500)
+        let t_bytes: usize = self.orbit_t_compounds.iter()
+            .map(|(_, compounds)| compounds.iter().map(|tc| {
+                // Each observer is a Vec<Q>. meta_delta is a Delta.
+                let observer_bytes: usize = tc.observing_entities.iter()
+                    .map(|ent| ent.iter().map(Self::q_heap_bytes).sum::<usize>())
+                    .sum();
+                let meta_bytes: usize = tc.meta_delta.as_ref()
+                    .map(|d| d.entries.iter()
+                        .flat_map(|row| row.iter().flat_map(|col| col.iter()))
+                        .map(Self::q_heap_bytes)
+                        .sum())
+                    .unwrap_or(0);
+                80 + observer_bytes + meta_bytes
+            }).sum::<usize>())
             .sum();
         axiom_bytes + cochain_bytes + t_bytes
     }
 
-    /// Enforce the 2MB metabolic byte budget.
+    /// Enforce the 1MB metabolic byte budget.
     /// Evict lowest-mass orbits until the membrane fits within budget.
     /// The membrane remembers only what matters most.
+    /// Reduced from 2MB: Q-aware estimate is 2-5x more accurate than fixed.
     fn enforce_byte_budget(&mut self) {
-        const BYTE_BUDGET: usize = 2_000_000;
+        const BYTE_BUDGET: usize = 1_000_000;
         while self.byte_estimate() > BYTE_BUDGET && !self.axioms.is_empty() {
             // Find orbit with lowest max mass
             let weakest = self.axioms.iter()
@@ -613,10 +650,10 @@ impl MeshKnowledge {
 
             match weakest {
                 Some(orbit) => {
-                    self.axioms.remove(&orbit);
-                    self.orbit_coherence.remove(&orbit);
-                    self.spatial_cochains.remove(&orbit);
-                    self.orbit_t_compounds.remove(&orbit);
+                    self.axioms.retain(|(key, _)| *key != orbit);
+                    self.orbit_coherence.retain(|(key, _)| *key != orbit);
+                    self.spatial_cochains.retain(|(key, _)| *key != orbit);
+                    self.orbit_t_compounds.retain(|(key, _)| *key != orbit);
                 }
                 None => break,
             }
@@ -633,7 +670,7 @@ impl MeshKnowledge {
         op: crate::engine::ComposedOperator,
         distance: u64,
     ) {
-        self.axioms.get_mut(&orbit)
+        self.axioms.iter_mut().find(|(key, _)| *key == orbit).map(|(_, axioms)| axioms)
             .and_then(|axioms| axioms.iter_mut().next())
             .map(|axiom| {
                 (distance < axiom.partial_distance).then(|| {
@@ -645,7 +682,7 @@ impl MeshKnowledge {
 
     /// Retrieve the best partial operator for an orbit, if one exists.
     pub fn partial_operator(&self, orbit: &[u8; 4]) -> Option<&crate::engine::ComposedOperator> {
-        self.axioms.get(orbit)
+        self.axioms.iter().find(|(key, _)| key == orbit).map(|(_, v)| v)
             .and_then(|axioms| axioms.first())
             .and_then(|a| a.partial_operator.as_ref())
     }
@@ -654,8 +691,8 @@ impl MeshKnowledge {
     ///
     /// When the peel loop detects non-zero curvature that it cannot resolve
     /// with its current vocabulary, the curvature vector is stored as a
-    /// spatial cochain. The membrane uses δ to compare across primary entities.
-    /// If δ = 0 (all primary entities see the same curvature): promote to axiom.
+    /// spatial cochain. The membrane uses δ to compare across entities.
+    /// If δ = 0 (all entities see the same curvature): promote to axiom.
     /// The system discovers new structure from the manifold's geometry.
     pub fn record_holonomy(
         &mut self,
@@ -676,12 +713,12 @@ impl MeshKnowledge {
     /// C(Δ) of the axiom Delta. Zero = fully crystallized.
     /// The measurement, not a threshold.
     pub fn membrane_coherence(&self, orbit: &[u8; 4]) -> Q {
-        self.orbit_coherence.get(orbit).cloned().unwrap_or(Q::zero())
+        self.orbit_coherence.iter().find(|(key, _)| key == orbit).map(|(_, v)| v).cloned().unwrap_or(Q::zero())
     }
 
     /// Is the orbit crystallized? C(axiom_delta) = 0.
     pub fn is_crystallized(&self, orbit: &[u8; 4]) -> bool {
-        self.orbit_coherence.get(orbit).map(|c| c.is_zero()).unwrap_or(false)
+        self.orbit_coherence.iter().find(|(key, _)| key == orbit).map(|(_, c)| c.is_zero()).unwrap_or(false)
     }
 
     /// D.CRYSTALLIZE.1: Crystallization energy at an orbit.
@@ -696,7 +733,7 @@ impl MeshKnowledge {
     /// Query: what does the mesh know about this orbit?
     /// Returns the axiom with the most confirmations.
     pub fn query_orbit(&self, orbit: &[u8; 4]) -> Option<&MeshAxiom> {
-        self.axioms.get(orbit)
+        self.axioms.iter().find(|(key, _)| key == orbit).map(|(_, v)| v)
             .and_then(|axioms| axioms.iter().max_by_key(|a| a.confirmations))
     }
 
@@ -705,20 +742,20 @@ impl MeshKnowledge {
         self.axioms.len()
     }
 
-    /// D.MEMBRANE.COMPOUND.1 — Compound resolution across primary entities.
+    /// D.MEMBRANE.COMPOUND.1 — Compound resolution across entities.
     ///
-    /// The membrane operates ABOVE individual primary entities. It takes all
+    /// The membrane operates ABOVE individual entities. It takes all
     /// axioms for an orbit and produces the compound understanding:
     /// - Which dimensional level has the BEST resolution?
     /// - What is the LOWEST disjoint_rank achieved by any entity?
-    /// - Are multiple primary entities congruent (same level, same path)?
+    /// - Are multiple entities congruent (same level, same path)?
     ///
     /// This IS the membrane computing — not storing, computing.
     /// The compound is the global invariant that no local entity can see.
     ///
     /// Returns: (best_level, lowest_disjoint, congruent_count, total_attempts)
     pub fn compound_for_orbit(&self, orbit: &[u8; 4]) -> Option<(String, usize, u32, u32)> {
-        let axioms = self.axioms.get(orbit)?;
+        let axioms = self.axioms.iter().find(|(key, _)| key == orbit).map(|(_, v)| v)?;
         if axioms.is_empty() { return None; }
 
         // Find the axiom with the highest resolved level and lowest disjoint rank
@@ -762,7 +799,7 @@ impl MeshKnowledge {
         resolved_level: &str,
         disjoint_rank: usize,
     ) {
-        if let Some(axioms) = self.axioms.get_mut(&orbit) {
+        if let Some(axioms) = self.axioms.iter_mut().find(|(key, _)| *key == orbit).map(|(_, v)| v) {
             // Update the axiom with the highest resolution
             if let Some(best) = axioms.iter_mut().max_by_key(|a| a.confirmations) {
                 let level_order = |s: &str| -> usize {
@@ -782,12 +819,12 @@ impl MeshKnowledge {
     // D.MEMBRANE.T.2 — Spinor Manifold Mapping
     //
     // Each observer is an entity (a spinor — local oriented frame).
-    // Each primary entity's T Delta, flattened to upper-triangle, is the entity's
-    // coordinate vector. The meta-Delta between primary entities IS the membrane's
+    // Each entity's T Delta, flattened to upper-triangle, is the entity's
+    // coordinate vector. The meta-Delta between entities IS the membrane's
     // manifold. C(meta_delta) measures holonomic coherence.
     //
     // NO averaging. Averaging IS dimensional collapse.
-    // The relational structure between primary entities IS the intelligence.
+    // The relational structure between entities IS the intelligence.
     //
     // C(meta_delta) = 0 → holonomic perceptual lock → crystallized.
     // C(meta_delta) > 0 → H^1 reveals structured inter-entity divergence.
@@ -815,7 +852,7 @@ impl MeshKnowledge {
     ///
     /// Record a T Delta from an entity at a given orbit and level.
     ///
-    /// Each primary entity's T becomes an entity in the meta-Delta manifold.
+    /// Each entity's T becomes an entity in the meta-Delta manifold.
     /// The membrane recomputes C(meta_delta) after each new observer —
     /// measuring inter-entity coherence on the transformation.
     pub fn record_t_delta(
@@ -824,7 +861,13 @@ impl MeshKnowledge {
         t_delta: &Delta,
         level: &str,
     ) {
-        let compounds = self.orbit_t_compounds.entry(orbit).or_insert_with(Vec::new);
+        let compounds = match self.orbit_t_compounds.iter().position(|(key, _)| *key == orbit) {
+            Some(pos) => &mut self.orbit_t_compounds[pos].1,
+            None => {
+                self.orbit_t_compounds.push((orbit, Vec::new()));
+                &mut self.orbit_t_compounds.last_mut().unwrap().1
+            }
+        };
 
         // Flatten T to entity vector
         let entity = Self::flatten_t_to_entity(t_delta);
@@ -851,7 +894,7 @@ impl MeshKnowledge {
             (tc.observing_entities.len() >= 2).then(|| {
                 let meta = crate::perception::encode_relational(&tc.observing_entities);
                 let c = coherence_functional(&meta);
-                // Three-state cohesion: measured now that 2+ primary entities exist
+                // Three-state cohesion: measured now that 2+ entities exist
                 tc.cohesion = Some(c.clone());
                 tc.coherence = c;
                 tc.meta_delta = Some(meta);
@@ -871,28 +914,42 @@ impl MeshKnowledge {
         }
 
         // Update orbit_coherence from meta-Delta (the membrane's manifold)
-        if let Some(compounds) = self.orbit_t_compounds.get(&orbit) {
+        if let Some(compounds) = self.orbit_t_compounds.iter().find(|(key, _)| *key == orbit).map(|(_, v)| v) {
             if let Some(best) = compounds.iter()
                 .filter(|tc| tc.count >= 2 && tc.meta_delta.is_some())
                 .min_by(|a, b| a.coherence.cmp(&b.coherence))
             {
-                self.orbit_coherence.insert(orbit, best.coherence.clone());
+                let pos = self.orbit_coherence.iter().position(|(key, _)| *key == orbit)
+                    .unwrap_or_else(|| { self.orbit_coherence.push((orbit, Q::zero())); self.orbit_coherence.len() - 1 });
+                self.orbit_coherence[pos].1 = best.coherence.clone();
             }
         }
+
+        // Evict weakest T compound orbit when exceeding cap.
+        // The membrane holds a bounded window of orbits — unbounded growth
+        // is the primary RSS leak. Weakest = lowest total observation count.
+        const MAX_T_COMPOUND_ORBITS: usize = 64;
+        (self.orbit_t_compounds.len() > MAX_T_COMPOUND_ORBITS).then(|| {
+            self.orbit_t_compounds.iter()
+                .enumerate()
+                .min_by_key(|(_, (_, compounds))| compounds.iter().map(|c| c.count).sum::<usize>())
+                .map(|(idx, _)| idx)
+                .map(|idx| self.orbit_t_compounds.remove(idx));
+        });
     }
 
     /// Get the compound T at an orbit — the membrane's transformation manifold.
     ///
-    /// Returns the compound with the most primary entities (deepest manifold).
+    /// Returns the compound with the most entities (deepest manifold).
     /// When count >= 2, the meta-Delta IS the membrane perceiving.
     pub fn compound_t(&self, orbit: &[u8; 4]) -> Option<&TransformCompound> {
-        self.orbit_t_compounds.get(orbit)
+        self.orbit_t_compounds.iter().find(|(key, _)| key == orbit).map(|(_, v)| v)
             .and_then(|compounds| compounds.iter().max_by_key(|tc| tc.count))
     }
 
     /// Get the compound T at a specific level.
     pub fn compound_t_at_level(&self, orbit: &[u8; 4], level: &str) -> Option<&TransformCompound> {
-        self.orbit_t_compounds.get(orbit)
+        self.orbit_t_compounds.iter().find(|(key, _)| key == orbit).map(|(_, v)| v)
             .and_then(|compounds| compounds.iter()
                 .filter(|tc| tc.level == level)
                 .max_by_key(|tc| tc.count))
@@ -900,8 +957,8 @@ impl MeshKnowledge {
 
     /// C(meta_delta) at an orbit — the membrane's inter-entity coherence.
     ///
-    /// This is NOT C(average_T). This is C(relational_structure_between_primary entities).
-    /// Zero = holonomic perceptual lock (all primary entities' Ts are cohomologically
+    /// This is NOT C(average_T). This is C(relational_structure_between_entities).
+    /// Zero = holonomic perceptual lock (all entities' Ts are cohomologically
     /// consistent). Nonzero = structured divergence in H^1.
     pub fn compound_t_coherence(&self, orbit: &[u8; 4]) -> Q {
         self.compound_t(orbit)
@@ -929,7 +986,7 @@ impl MeshKnowledge {
     pub fn derive_torsion_spectrum(&self) -> Vec<TorsionOrbital> {
         let mut orbitals: Vec<TorsionOrbital> = Vec::new();
 
-        for compounds in self.orbit_t_compounds.values() {
+        for (_, compounds) in &self.orbit_t_compounds {
             for tc in compounds {
                 if tc.observing_entities.is_empty() { continue; }
 
@@ -1110,7 +1167,7 @@ impl MeshKnowledge {
                 if tc.level != "transmutation" || tc.count < 2 { continue; }
                 if tc.t_dim != 2 || tc.t_m != 2 { continue; }
                 if tc.observing_entities.is_empty() { continue; }
-                // Average quality across primary entities
+                // Average quality across entities
                 let k = Q::new(BigInt::from(tc.count as i64), BigInt::from(1));
                 let quality_sum: Q = tc.observing_entities.iter()
                     .filter_map(|e| e.first().cloned())
@@ -1129,7 +1186,7 @@ impl MeshKnowledge {
 
     /// Integrate value cocycle spectrum across all orbits.
     /// No gates. No filters. Every transition — including identity — is measured.
-    /// Quality is the consensus density: how many primary entities observed this
+    /// Quality is the consensus density: how many entities observed this
     /// transition / total observations. C(T) in peel_manifold decides what composes.
     /// The scanner is a spectrometer, not a gatekeeper.
     pub fn all_value_cocycle_crystals(&self) -> Vec<ValueCocycleCrystal> {
@@ -1182,7 +1239,13 @@ impl MeshKnowledge {
         quality: Q,
         cohesion: Vec<Q>,
     ) {
-        let cochains = self.spatial_cochains.entry(*orbit).or_insert_with(Vec::new);
+        let cochains = match self.spatial_cochains.iter().position(|(key, _)| key == orbit) {
+            Some(pos) => &mut self.spatial_cochains[pos].1,
+            None => {
+                self.spatial_cochains.push((*orbit, Vec::new()));
+                &mut self.spatial_cochains.last_mut().unwrap().1
+            }
+        };
         // Find existing H^1 representative with same (operator, parameter)
         let existing = cochains.iter_mut().find(|c| c.operator == operator && c.parameter == parameter);
         match existing {
@@ -1237,7 +1300,7 @@ impl MeshKnowledge {
     pub fn all_spatial_cochains(&self) -> Vec<SpatialCochain> {
         // Track (operator, parameter) → (merged cochain, orbit count)
         let mut merged: Vec<(SpatialCochain, usize)> = Vec::new();
-        for cochains in self.spatial_cochains.values() {
+        for (_, cochains) in &self.spatial_cochains {
             for c in cochains {
                 let existing = merged.iter_mut()
                     .find(|(x, _)| x.operator == c.operator && x.parameter == c.parameter);
@@ -1269,7 +1332,7 @@ impl MeshKnowledge {
     }
 
     /// Is the orbit crystallized via meta-Delta?
-    /// C(meta_delta) = 0 across >= 2 primary entities = holonomic perceptual lock.
+    /// C(meta_delta) = 0 across >= 2 entities = holonomic perceptual lock.
     pub fn is_t_crystallized(&self, orbit: &[u8; 4]) -> bool {
         self.compound_t(orbit)
             .map(|tc| tc.count >= 2 && tc.meta_delta.is_some() && tc.coherence.is_zero())
@@ -1278,8 +1341,8 @@ impl MeshKnowledge {
 
     /// Derive output from the membrane's consensus T at an orbit.
     ///
-    /// When C(meta_delta) = 0, all primary entities agree. The consensus T is
-    /// any primary entity's T (they're all cohomologically equivalent).
+    /// When C(meta_delta) = 0, all entities agree. The consensus T is
+    /// any entity's T (they're all cohomologically equivalent).
     /// When C(meta_delta) > 0, the coboundary part gives the agreed-upon T.
     /// The membrane derives from the consensus — higher-dimensional than
     /// any individual entity because it holds the inter-entity manifold.
@@ -1294,7 +1357,7 @@ impl MeshKnowledge {
         let tc = self.compound_t(orbit)?;
         if tc.count < 2 || tc.observing_entities.is_empty() { return None; }
 
-        // Consensus T: when primary entities agree (C=0), use any primary entity's T.
+        // Consensus T: when entities agree (C=0), use any entity's T.
         // When they disagree, use the mean entity vector as best approximation
         // of the coboundary part (the part all agree on).
         let d = tc.observing_entities[0].len();
@@ -1344,10 +1407,10 @@ impl MeshKnowledge {
         Some(derived)
     }
 
-    /// How many orbits have meta-Deltas with >= 2 primary entities?
+    /// How many orbits have meta-Deltas with >= 2 entities?
     pub fn t_compound_orbits(&self) -> usize {
-        self.orbit_t_compounds.values()
-            .filter(|compounds| compounds.iter().any(|tc| tc.count >= 2))
+        self.orbit_t_compounds.iter()
+            .filter(|(_, compounds)| compounds.iter().any(|tc| tc.count >= 2))
             .count()
     }
 
@@ -1381,9 +1444,9 @@ impl MeshKnowledge {
     fn encode(&self) -> Vec<u8> {
         let mut buf = Vec::new();
         buf.extend_from_slice(&self.total_observations.to_be_bytes());
-        let axiom_count: u32 = self.axioms.values().map(|v| v.len() as u32).sum();
+        let axiom_count: u32 = self.axioms.iter().map(|(_, v)| v.len() as u32).sum();
         buf.extend_from_slice(&axiom_count.to_be_bytes());
-        for axioms in self.axioms.values() {
+        for (_, axioms) in &self.axioms {
             for a in axioms {
                 buf.extend_from_slice(&a.orbit);
                 buf.push(a.encoding_level as u8);
@@ -1409,7 +1472,7 @@ impl MeshKnowledge {
             }
         }
         // Spatial cochains: [count: u32] [orbit:4 + op:1 + param:i64 + q_n:i64 + q_d:i64 + n_cells:u16 + (coh_n:i64 + coh_d:i64) per cell]
-        let sc_count: u32 = self.spatial_cochains.values().map(|v| v.len() as u32).sum();
+        let sc_count: u32 = self.spatial_cochains.iter().map(|(_, v)| v.len() as u32).sum();
         buf.extend_from_slice(&sc_count.to_be_bytes());
         for (orbit, cochains) in &self.spatial_cochains {
             for c in cochains {
@@ -1477,7 +1540,13 @@ impl MeshKnowledge {
                 (Q::zero(), Q::zero())
             };
 
-            let axioms = mk.axioms.entry(orbit).or_insert_with(Vec::new);
+            let axioms = match mk.axioms.iter().position(|(key, _)| *key == orbit) {
+                Some(pos) => &mut mk.axioms[pos].1,
+                None => {
+                    mk.axioms.push((orbit, Vec::new()));
+                    &mut mk.axioms.last_mut().unwrap().1
+                }
+            };
             axioms.push(MeshAxiom { orbit, encoding_level, path, confirmations, coherence_at_crystallization: coherence, attempts, mass, hardness, resolved_level: String::new(), disjoint_rank: 0, partial_operator: None, partial_distance: u64::MAX });
             mk.total_axioms += 1;
         }
@@ -1502,7 +1571,13 @@ impl MeshKnowledge {
                     let cd = i64::from_be_bytes(data[off..off+8].try_into().unwrap_or([0;8])); off += 8;
                     cohesion.push(Q::new(BigInt::from(cn), BigInt::from(if cd == 0 { 1 } else { cd })));
                 }
-                let cochains = mk.spatial_cochains.entry(orbit).or_insert_with(Vec::new);
+                let cochains = match mk.spatial_cochains.iter().position(|(key, _)| *key == orbit) {
+                    Some(pos) => &mut mk.spatial_cochains[pos].1,
+                    None => {
+                        mk.spatial_cochains.push((orbit, Vec::new()));
+                        &mut mk.spatial_cochains.last_mut().unwrap().1
+                    }
+                };
                 cochains.push(SpatialCochain { operator, parameter, quality, cohesion, confirmations: 1 });
             }
         }
@@ -1528,8 +1603,8 @@ impl MeshKnowledge {
 
     /// Get all axioms, sorted by confirmations descending.
     pub fn all_axioms(&self) -> Vec<&MeshAxiom> {
-        let mut all: Vec<&MeshAxiom> = self.axioms.values()
-            .flat_map(|v| v.iter())
+        let mut all: Vec<&MeshAxiom> = self.axioms.iter()
+            .flat_map(|(_, v)| v.iter())
             .collect();
         all.sort_by(|a, b| b.confirmations.cmp(&a.confirmations));
         all
@@ -1590,7 +1665,7 @@ impl PeerState {
 
     /// Encode this entity as a rational entity vector for relational Delta.
     /// 18D: 7 identity coordinates + 11 vibration coordinates.
-    /// The vibrations ARE the harmonic state — the primary entity's polytonal
+    /// The vibrations ARE the harmonic state — the entity's polytonal
     /// self-perception propagated through the membrane.
     pub fn to_entity(&self) -> Vec<Q> {
         let mut v = vec![
@@ -1794,12 +1869,13 @@ pub fn detect_congruence(
     contributions: &[EntityContribution],
     min_confirmations: usize,
 ) -> Vec<CongruenceReceipt> {
-    use std::collections::HashMap;
-
     // Group contributions by orbit prefix
-    let mut orbit_groups: HashMap<[u8; 4], Vec<&EntityContribution>> = HashMap::new();
+    let mut orbit_groups: Vec<([u8; 4], Vec<&EntityContribution>)> = Vec::new();
     for c in contributions {
-        orbit_groups.entry(c.orbit).or_insert_with(Vec::new).push(c);
+        match orbit_groups.iter().position(|(key, _)| *key == c.orbit) {
+            Some(pos) => orbit_groups[pos].1.push(c),
+            None => orbit_groups.push((c.orbit, vec![c])),
+        }
     }
 
     let mut receipts = Vec::new();
@@ -1814,9 +1890,12 @@ pub fn detect_congruence(
         if coherent.len() < min_confirmations { continue; }
 
         // Measure path diversity: how many distinct paths led to this orbit?
-        let unique_paths: std::collections::HashSet<&str> = coherent.iter()
+        // Vec with dedup — no HashSet. Relational ordering preserved.
+        let mut unique_paths: Vec<&str> = coherent.iter()
             .map(|c| c.path.as_str())
             .collect();
+        unique_paths.sort_unstable();
+        unique_paths.dedup();
         let path_diversity = Q::new(
             BigInt::from(unique_paths.len() as i64),
             BigInt::from(coherent.len() as i64),
@@ -1825,9 +1904,11 @@ pub fn detect_congruence(
         // Measure orbital diversity: how many distinct ENTITY orbits contributed?
         // (This is different from the observation orbit — it's where the ENTITIES live)
         // For now, count unique entity IDs as a proxy
-        let unique_entities: std::collections::HashSet<u32> = coherent.iter()
+        let mut unique_entities: Vec<u32> = coherent.iter()
             .map(|c| c.entity_id)
             .collect();
+        unique_entities.sort_unstable();
+        unique_entities.dedup();
         let orbital_diversity = unique_entities.len();
 
         // Interpretation coherence via A.5:

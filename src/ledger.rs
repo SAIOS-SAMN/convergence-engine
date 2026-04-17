@@ -27,7 +27,7 @@ use num_bigint::BigInt;
 use num_rational::BigRational;
 use num_traits::{Signed, ToPrimitive};
 
-use crate::constants::{DISC_NORMAL, DISC_RESTART, DISC_ISOLATED, DISC_CORRUPTED};
+use crate::constants::{DISC_NORMAL, DISC_RESTART, DISC_ISOLATED, DISC_FRACTURED};
 
 type Q = BigRational;
 
@@ -169,7 +169,7 @@ pub struct ThoughtTelemetry {
     /// α_origin: coherence reduction ratio (understood = 1/1).
     pub alpha_origin_numer: i64,
     pub alpha_origin_denom: u64,
-    /// Number of training pairs the rule generalizes across.
+    /// Number of practice pairs the rule generalizes across.
     pub pair_count: u32,
     /// Depth of the compound operator (number of composed thoughts).
     pub compound_depth: u32,
@@ -450,7 +450,7 @@ impl ReceiptChain {
         }
 
         // Invariant (5): valid disc_flag
-        if !matches!(disc_flag, DISC_NORMAL | DISC_RESTART | DISC_ISOLATED | DISC_CORRUPTED) {
+        if !matches!(disc_flag, DISC_NORMAL | DISC_RESTART | DISC_ISOLATED | DISC_FRACTURED) {
             return Err(LedgerError::InvalidDiscFlag(disc_flag));
         }
 
@@ -546,7 +546,7 @@ impl DiscontinuityReset {
                 reset_delta_bar_to_current: true,
                 reload_delta_from_anchor: false,
             },
-            DISC_CORRUPTED => Self {
+            DISC_FRACTURED => Self {
                 clear_coherence_history: true,
                 reset_delta_bar_to_current: false,
                 reload_delta_from_anchor: true,
@@ -815,8 +815,8 @@ mod tests {
     }
 
     #[test]
-    fn test_discontinuity_reset_corrupted() {
-        let reset = DiscontinuityReset::for_flag(DISC_CORRUPTED);
+    fn test_discontinuity_reset_fractured() {
+        let reset = DiscontinuityReset::for_flag(DISC_FRACTURED);
         assert!(reset.clear_coherence_history);
         assert!(!reset.reset_delta_bar_to_current);
         assert!(reset.reload_delta_from_anchor);

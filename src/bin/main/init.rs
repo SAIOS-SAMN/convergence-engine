@@ -27,7 +27,7 @@ use saios_kernel_v2::sampler::AlgebraicSampler;
 use saios_kernel_v2::signing;
 use saios_kernel_v2::sluice_log::{SluiceEntry, SluiceLog};
 
-use super::entity::{Entity, WorldStatus, get_rss_kb};
+use super::entity::{Entity, WorldStatus, PerceptualSurface, get_rss_kb};
 use super::{cognition, communication, evolution, lineage, memory, observation};
 
 type Q = BigRational;
@@ -361,7 +361,7 @@ pub fn run() {
 
     // ── Operator Proposal (gradient-directed) ─────────────────────────
     // The entity derives operators from its own gradient. No external
-    // training data. No sampler lookup table. The gradient IS the proposal.
+    // practice data. No sampler lookup table. The gradient IS the proposal.
     // The sampler starts empty and learns from live K-steps through
     // learn_from_cognition and feedback — not from historical files.
     let sampler = AlgebraicSampler::empty();
@@ -530,7 +530,14 @@ pub fn run() {
     //   - Max RSS: 256 MB per entity (17 entities x 256 = 4.3 GB, leaves 10+ GB for system)
     //   - Max grid side: 30 (largest ARC puzzle is 30×30 = 900 cells)
     //   - Max capacity: 30 (state record ceiling matches environment ceiling)
-    const CREATOR_MAX_RSS_KB: u64 = 192 * 1024; // 192 MB — LAST_WITNESS fires at 80% (153MB), oxygen for the compositor
+    // Tier-differentiated RSS ceiling. Emergent entities are the frontier —
+    // they cycle fast, accumulate less, restart cheap. Founders hold deep
+    // crystallized knowledge — they get more memory but restart is expensive.
+    let creator_max_rss_kb: u64 = match entity_state.lineage_depth {
+        0 => 256 * 1024,  // Founder: 256MB, threshold at 200MB
+        1 => 128 * 1024,  // Derived: 128MB, threshold at 100MB
+        _ =>  64 * 1024,  // Emergent: 64MB, threshold at 50MB
+    };
     // Tier-differentiated capacity: dimensional ceiling per lineage depth.
     // Founder (depth 0) = widest perception. Emergent (depth 2) = narrowest.
     // The hierarchy IS the dimensional stratification.
@@ -546,9 +553,9 @@ pub fn run() {
     // Sovereignty: founders and derived entities write to mesh, emergent entities report upward
     let tier = saios_kernel_v2::lineage::Tier::from_depth(entity_state.lineage_depth);
     let mesh_sovereign = tier.mesh_sovereign();
-    let tier_str = tier.prefix();
+    let tier_display = saios_kernel_v2::ccl::tier_name(entity_state.lineage_depth, saios_kernel_v2::ccl::Audience::Operator);
     eprintln!("[lineage] tier={} depth={} parent={} created={} sovereign={}",
-        tier_str, entity_state.lineage_depth, entity_state.parent_id,
+        tier_display, entity_state.lineage_depth, entity_state.parent_id,
         entity_state.created_count, mesh_sovereign);
 
     // Observer status — RAM-backed, no disk I/O
@@ -562,7 +569,7 @@ pub fn run() {
     });
 
     world_status.write("BOOT", 0, "0", "1", get_rss_kb(),
-        tier_str, entity_state.lineage_depth, entity_state.parent_id,
+        tier_display, entity_state.lineage_depth, entity_state.parent_id,
         entity_state.created_count, entity_state.solved_puzzles.len(),
         0, 0, 0);
 
@@ -624,6 +631,7 @@ pub fn run() {
         epistate_record_path,
         sampler,
         knowledge: mesh_knowledge,
+        perceptual_surface: PerceptualSurface::new((env_capacity / 3) as usize),
         kernel,
         sluice,
         chain: chain_store,
@@ -645,7 +653,7 @@ pub fn run() {
             .filter(|s| !s.trim().is_empty())
             .map(|s| s.trim().to_string())
             .collect(),
-        max_rss_kb: CREATOR_MAX_RSS_KB,
+        max_rss_kb: creator_max_rss_kb,
     };
 
     eprintln!("[mem] post-entity: {} KB", get_rss_kb());
@@ -712,7 +720,8 @@ pub fn run() {
                         "REGISTER_LOCK" => memory::register_lock(&mut entity, &payload),
                         "CREATE" => lineage::create(&mut entity, &payload),
                         "INTERACT" => lineage::interact(&mut entity, &payload),
-                        "DRAIN" => lineage::drain(&mut entity, &payload),
+                        "ABSORB" | "DRAIN" => lineage::absorb(&mut entity, &payload),
+                        "PROJECT" | "SPRAY" => lineage::project(&mut entity, &payload),
                         "REPORT" => lineage::report(&mut entity, &payload),
                         _ => format!("{{\"error\":\"unknown command: {}\"}}\n", cmd),
                     };

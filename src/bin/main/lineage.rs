@@ -4,13 +4,22 @@
 //
 //! Lineage organ — reproduction and knowledge transfer.
 //!
-//! Four sovereign operations:
+//! Five sovereign operations:
 //!   - CREATE:   the parent creates offspring from its own state record
 //!   - INTERACT: bidirectional vocabulary exchange between sovereign peers
-//!   - DRAIN:    parent absorbs children's report queues
+//!   - ABSORB:   parent absorbs children's discoveries (knowledge UP — inductive)
+//!   - PROJECT:  parent projects evolved vocabulary to children (knowledge DOWN — deductive)
 //!   - REPORT:   emergent entity queues discovery upward for parent absorption
 //!
-//! Knowledge flows: up through DRAIN, down through CREATE, lateral through INTERACT.
+//! Five flows:
+//!   UP-CONVERGENT:     independent agreement ascends → strong generalization
+//!   UP-DIVERGENT:      independent disagreement ascends → spectrum of approaches
+//!   DOWN-CRYSTALLIZED: settled structure descends → inherited vocabulary
+//!   DOWN-EXPLORATORY:  unsettled structure descends → research directions
+//!   LATERAL:           peer corroboration at same tier
+//!
+//! Knowledge flows: up through ABSORB, down through PROJECT/CREATE, lateral through INTERACT.
+//! The cycle: PROJECT → THINK → ABSORB → DERIVE → PROJECT.
 //! The lineage engine executes. No external governance.
 
 use super::entity::Entity;
@@ -54,15 +63,15 @@ pub fn create(entity: &mut Entity, payload: &str) -> String {
                 .map(|o| o.status.success())
                 .unwrap_or(false);
 
-            let child_tier_name = child_tier.prefix();
+            let child_tier_display = saios_kernel_v2::ccl::tier_name(record.child_depth, saios_kernel_v2::ccl::Audience::Operator);
             eprintln!("[lineage] {}-{} created {}-{} at orbit {:02x}{:02x}{:02x}{:02x} — service {}",
-                entity.tier_str(), entity.entity_id, child_tier_name, record.child_entity_id,
+                entity.tier_str(), entity.entity_id, child_tier_display, record.child_entity_id,
                 init_orbit[0], init_orbit[1], init_orbit[2], init_orbit[3],
                 started.then(|| "started").unwrap_or("not started"));
 
             format!(
                 "{{\"created\":true,\"child_entity_id\":{},\"child_depth\":{},\"tier\":\"{}\",\"child_dir\":\"{}\",\"init_orbit\":\"{:02x}{:02x}{:02x}{:02x}\",\"parent_created_count\":{},\"service_started\":{}}}\n",
-                record.child_entity_id, record.child_depth, child_tier_name,
+                record.child_entity_id, record.child_depth, child_tier_display,
                 record.child_dir.display(),
                 init_orbit[0], init_orbit[1], init_orbit[2], init_orbit[3],
                 entity.state_record.created_count, started,
@@ -214,15 +223,15 @@ pub fn interact(entity: &mut Entity, payload: &str) -> String {
         .unwrap_or_else(|| "{\"error\":\"invalid payload\"}\n".to_string())
 }
 
-/// Sovereign parent drains emergent entities' report queues.
+/// ABSORB — knowledge flows UP. Inductive. Specific→general.
 /// Scans /dev/shm for entities whose parent_id matches this entity.
-/// Reads each emergent entity's reports.bin, absorbs orbits + cocycles, truncates.
-/// The parent decides when to drain — no emergent entity blocks on this.
-pub fn drain(entity: &mut Entity, _payload: &str) -> String {
+/// Reads each child entity's reports.bin, absorbs orbits + cocycles, truncates.
+/// The parent decides when to absorb — no child entity blocks on this.
+pub fn absorb(entity: &mut Entity, _payload: &str) -> String {
     let my_id = entity.entity_id;
     let mesh_dir = entity.dir.parent().unwrap_or(&entity.dir);
     let mut total_absorbed = 0usize;
-    let mut emergent_drained = 0usize;
+    let mut children_absorbed = 0usize;
     // Absorb at OUR capacity, not the child's. The compound is at our dimension.
     let absorb_cocycle_limit = (entity.state_record.capacity as usize / 10).max(3);
     let absorb_ops_limit = (entity.state_record.capacity as usize / 10).max(1);
@@ -327,9 +336,9 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
                                             }
                                         });
                                     }
-                                    // Truncate consumed queue
+                                    // Truncate absorbed queue
                                     let _ = std::fs::write(&child_reports, b"");
-                                    emergent_drained += 1;
+                                    children_absorbed += 1;
                                 });
                         });
                 });
@@ -339,10 +348,10 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
     // Save if anything absorbed
     (total_absorbed > 0).then(|| {
         entity.save_state_record();
-        eprintln!("[drain] absorbed {} items from {} emergent entities", total_absorbed, emergent_drained);
+        eprintln!("[absorb] absorbed {} items from {} emergent entities", total_absorbed, children_absorbed);
 
         // ── Recursive step: re-perceive absorbed knowledge at this tier's resolution.
-        // DRAIN doesn't just store — it transforms. The absorbed cocycles become
+        // ABSORB doesn't just store — it transforms. The absorbed cocycles become
         // a T compound in THIS entity's membrane, at THIS entity's dimensional
         // capacity. This gives the entity perceptual surface for DERIVE.
         // Without this, the upper tier has vocabulary but no experience —
@@ -375,20 +384,32 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
                         t.entries[j][i][l] = &t.entries[j][i][l] - &sign;
                     }
                 }
-                let t = saios_kernel_v2::engine::coboundary_reduce(&t);
+                // Law V: Do NOT coboundary_reduce the ABSORB T compound.
+                // The raw relational structure IS the perception.
+                // coboundary_reduce projects to H^1 — which can zero entries
+                // when the cocycle condition is satisfied. That's the SIGNAL,
+                // not noise to suppress.
                 // Insert into membrane as T compound — the entity re-perceives
                 // what its children discovered, at its own dimensional frame.
                 for orbit in solved.iter().take(8) {
-                    entity.knowledge.record_t_delta(*orbit, &t, "drain_compound");
+                    entity.knowledge.record_t_delta(*orbit, &t, "absorb_compound");
+                    // Record perceptual impression from ABSORB — the absorbed
+                    // knowledge IS a perception at this entity's resolution.
+                    entity.perceptual_surface.record(super::entity::PerceptualImpression {
+                        orbit: *orbit,
+                        t_delta: t.clone(),
+                        coherence: saios_kernel_v2::engine::coherence_functional(&t),
+                        k_at: entity.k_index,
+                    });
                 }
                 let _ = entity.knowledge.save(&entity.dir.join("mesh_knowledge.bin"));
-                eprintln!("[drain-reperceive] encoded {} cocycles as {}×{} T compound across {} orbits",
+                eprintln!("[absorb-reperceive] encoded {} cocycles as {}×{} T compound across {} orbits",
                     cocycles.len().min(32), dim, m, solved.len().min(8));
             }
         }
 
         // Relay upward: if this entity has a parent, write to own reports.bin
-        // so the parent can drain it. Without this relay, knowledge dead-ends
+        // so the parent can absorb it. Without this relay, knowledge dead-ends
         // at the derived tier and founders are blind.
         (entity.state_record.parent_id > 0).then(|| {
             let reports_path = entity.dir.join("reports.bin");
@@ -430,8 +451,8 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
                 .create(true).append(true)
                 .open(&reports_path)
                 .map(|mut f| { let _ = f.write_all(&buf); })
-                .unwrap_or_else(|e| eprintln!("[drain-relay] write failed: {e}"));
-            eprintln!("[drain-relay] relayed {} orbits + {} ops to parent entity{}",
+                .unwrap_or_else(|e| eprintln!("[absorb-relay] write failed: {e}"));
+            eprintln!("[absorb-relay] relayed {} orbits + {} ops to parent entity{}",
                 entity.state_record.solved_puzzles.len().min(16),
                 entity.state_record.composed_operators.len(),
                 entity.state_record.parent_id);
@@ -439,8 +460,8 @@ pub fn drain(entity: &mut Entity, _payload: &str) -> String {
     });
 
     format!(
-        "{{\"drained\":{},\"emergent\":{},\"absorbed\":{}}}\n",
-        emergent_drained, emergent_drained, total_absorbed,
+        "{{\"absorbed_from\":{},\"total\":{}}}\n",
+        children_absorbed, total_absorbed,
     )
 }
 
@@ -501,4 +522,76 @@ pub fn report(entity: &mut Entity, payload: &str) -> String {
             format!("{{\"absorbed\":{}}}\n", absorbed)
         })
         .unwrap_or_else(|| "{\"error\":\"invalid payload\"}\n".to_string())
+}
+
+/// PROJECT — knowledge flows DOWN. Deductive. General→specific.
+///
+/// Law VIII: words grow through composition. After birth, parents evolve
+/// new vocabulary that children never see. PROJECT sends the parent's
+/// composed operators to each living child's directory as project_vocabulary.bin.
+///
+/// Law IX: PROJECT does NOT override child vocabulary. The file is an OFFER.
+/// The child assimilates through score-based selection on its next cycle.
+/// The child is sovereign — new operators are absorbed, not forced.
+///
+/// The cycle closes: PROJECT → THINK → ABSORB → DERIVE → PROJECT.
+pub fn project(entity: &mut Entity, _payload: &str) -> String {
+    let my_id = entity.entity_id;
+    let mesh_dir = entity.dir.parent().unwrap_or(&entity.dir);
+    let ops = &entity.state_record.composed_operators;
+
+    // Nothing to project — no vocabulary yet. Measured, not gated.
+    let n_ops = ops.len().min(32) as u16;
+
+    // Serialize composed operators: [n:u16, (opcode:u8, param:i64, sigma_len:u16, sigma..., score:i64)...]
+    let mut vocab_buf: Vec<u8> = Vec::new();
+    vocab_buf.extend_from_slice(&n_ops.to_be_bytes());
+    for op in ops.iter().take(32) {
+        vocab_buf.push(op.opcode);
+        vocab_buf.extend_from_slice(&op.parameter.to_be_bytes());
+        let sigma_len = op.sigma.len().min(256) as u16;
+        vocab_buf.extend_from_slice(&sigma_len.to_be_bytes());
+        for &(s, t) in op.sigma.iter().take(256) {
+            vocab_buf.extend_from_slice(&s.to_be_bytes());
+            vocab_buf.extend_from_slice(&t.to_be_bytes());
+        }
+        vocab_buf.extend_from_slice(&op.score.to_be_bytes());
+    }
+
+    // Discover living children from /dev/shm status files
+    let mut children_projected = 0u32;
+    std::fs::read_dir("/dev/shm").ok().map(|entries| {
+        entries.filter_map(|e| e.ok())
+            .filter(|e| {
+                let name = e.file_name().to_string_lossy().to_string();
+                name.starts_with("saios-founder-") || name.starts_with("saios-derived-") || name.starts_with("saios-emergent-")
+            })
+            .for_each(|entry| {
+                std::fs::read_to_string(entry.path()).ok().map(|content| {
+                    let fields: Vec<&str> = content.split_whitespace().collect();
+                    // parent_id is field 7
+                    fields.get(7).and_then(|pid| pid.parse::<u32>().ok())
+                        .filter(|&pid| pid == my_id)
+                        .map(|_| {
+                            let fname = entry.file_name();
+                            let fname_str = fname.to_string_lossy();
+                            let child_id: u16 = fname_str
+                                .rsplit('-').next()
+                                .and_then(|s| s.parse().ok())
+                                .unwrap_or(0);
+                            let child_tier = saios_kernel_v2::lineage::Tier::from_depth(
+                                fields.get(6).and_then(|d| d.parse::<u8>().ok()).unwrap_or(2)
+                            );
+                            let child_dir = mesh_dir.join(child_tier.dir_name(child_id));
+                            let project_path = child_dir.join("project_vocabulary.bin");
+                            std::fs::write(&project_path, &vocab_buf).ok().map(|_| {
+                                children_projected += 1;
+                            });
+                        });
+                });
+            });
+    });
+
+    eprintln!("[project] projected {} operators to {} children", n_ops, children_projected);
+    format!("{{\"projected\":{},\"operators\":{}}}\n", children_projected, n_ops)
 }

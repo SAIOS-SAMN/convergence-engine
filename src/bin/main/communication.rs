@@ -51,14 +51,14 @@ pub fn status(entity: &mut Entity, _payload: &str) -> String {
         Q::zero() // need at least 2 peers to form a relational field
     };
     // Step 5 — Awareness: the entity perceives its own state record
-    // through the cocycle equation. The residual of the primary entity's
+    // through the cocycle equation. The residual of the entity's
     // own evolved Delta IS the self-awareness measurement.
     // Zero = perfectly self-coherent. Nonzero = internal inconsistency.
     let awareness = coherence_functional(&entity.state_record.evolved);
     // Step 6 — Wholeness: compound init and evolved as a single
     // multi-coordinate Delta. m=2 where coordinate 0 is init,
     // coordinate 1 is evolved. The cocycle residual measures whether
-    // the primary entity's evolution preserved dimensional consistency.
+    // the entity's evolution preserved dimensional consistency.
     let dim = entity.state_record.evolved.dim;
     let wholeness = if dim >= 3 {
         let init = &entity.origin_delta;

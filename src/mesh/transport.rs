@@ -12,7 +12,7 @@
 //!   Total: 140 bytes
 //!
 //! The payload is the MeshReceipt wire format from mesh.rs (135 bytes).
-//! The checksum is XOR of all payload bytes (fast corruption detection).
+//! The checksum is XOR of all payload bytes (fast fracture detection).
 //!
 //! Register: D.TRANSPORT.1.
 
@@ -235,7 +235,7 @@ mod tests {
     }
 
     #[test]
-    fn test_corrupted_checksum_rejected() {
+    fn test_fractured_checksum_rejected() {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
 

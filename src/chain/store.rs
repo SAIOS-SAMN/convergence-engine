@@ -102,13 +102,15 @@ impl ReceiptStore {
     ///
     /// Memory coordinates: orbit_prefix → Vec<k_index>.
     /// The system walks from any orbit coordinate to all thoughts at that orbit.
-    pub fn build_orbit_index(&mut self) -> std::collections::HashMap<[u8; 4], Vec<u64>> {
-        let mut index: std::collections::HashMap<[u8; 4], Vec<u64>> = std::collections::HashMap::new();
+    pub fn build_orbit_index(&mut self) -> Vec<([u8; 4], Vec<u64>)> {
+        let mut index: Vec<([u8; 4], Vec<u64>)> = Vec::new();
         for i in 0..self.count {
             if let Ok(receipt) = self.read_at(i) {
                 let mut prefix = [0u8; 4];
                 prefix.copy_from_slice(&receipt.rcf_identity[..4]);
-                index.entry(prefix).or_default().push(receipt.k_index);
+                let pos = index.iter().position(|(k, _)| *k == prefix)
+                    .unwrap_or_else(|| { index.push((prefix, Vec::new())); index.len() - 1 });
+                index[pos].1.push(receipt.k_index);
             }
         }
         index

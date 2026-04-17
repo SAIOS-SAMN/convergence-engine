@@ -10,14 +10,14 @@
 //! Temporal links: receipt.parent_hash (vertical, per-entity chain)
 //! Spatial links: receipt.primary nodes (horizontal, peer attestations)
 //! Level root: BLAKE3 Merkle of all receipts at K=k
-//! Level finality: Σ_maj witness weight > 0.5
+//! Level finality: Σ_maj attestation weight > 0.5
 //!
 //! The TemporalLedger is the distributed consensus layer for chronometric
 //! facts. Timekeepers inscribe observations as receipts. When a quorum
 //! of timekeepers agree on the same observation, the level finalizes —
 //! that moment becomes an immutable fact in the system' history.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
 use num_bigint::BigInt;
 use num_rational::BigRational;
@@ -35,11 +35,12 @@ fn qr(n: i64, d: i64) -> Q { Q::new(BigInt::from(n), BigInt::from(d)) }
 pub struct Level {
     pub k_index: u64,
     pub receipts: Vec<MeshReceipt>,
-    /// entity_id → list of entity_ids that witnessed this entity's receipt
-    pub witnesses: HashMap<u32, Vec<u32>>,
+    /// entity_id → list of entity_ids that attested this entity's receipt
+    /// Vec with find — no HashMap. Entity ordering preserved.
+    pub attestations: Vec<(u32, Vec<u32>)>,
     pub level_root: [u8; 32],
     pub finalized: bool,
-    pub witness_weight: Q,
+    pub attestation_weight: Q,
     pub entity_count: u32,
 }
 
@@ -48,10 +49,10 @@ impl Level {
         Self {
             k_index,
             receipts: Vec::new(),
-            witnesses: HashMap::new(),
+            attestations: Vec::new(),
             level_root: [0u8; 32],
             finalized: false,
-            witness_weight: Q::zero(),
+            attestation_weight: Q::zero(),
             entity_count: 0,
         }
     }
@@ -62,9 +63,11 @@ impl Level {
         self.receipts.push(receipt);
     }
 
-    /// Record that entity `witness_id` witnessed entity `target_id`'s receipt.
-    pub fn add_witness(&mut self, target_id: u32, witness_id: u32) {
-        self.witnesses.entry(target_id).or_default().push(witness_id);
+    /// Record that entity `attester_id` attested entity `target_id`'s receipt.
+    pub fn add_attestation(&mut self, target_id: u32, attester_id: u32) {
+        let pos = self.attestations.iter().position(|(k, _)| *k == target_id)
+            .unwrap_or_else(|| { self.attestations.push((target_id, Vec::new())); self.attestations.len() - 1 });
+        self.attestations[pos].1.push(attester_id);
     }
 
     /// Compute the level root (Merkle of all receipt hashes).
@@ -75,23 +78,24 @@ impl Level {
         self.level_root = merkle_root(&hashes);
     }
 
-    /// Check if this level is finalized (witness weight > 0.5).
+    /// Check if this level is finalized (attestation weight > 0.5).
     pub fn check_finality(&mut self, total_mesh_weight: &Q) {
         if total_mesh_weight.is_zero() {
             self.finalized = self.entity_count > 0;
             return;
         }
-        // Count unique witnessing nodes
-        let mut witnessing_nodes: std::collections::HashSet<u32> = std::collections::HashSet::new();
-        for witnesses in self.witnesses.values() {
-            for &w in witnesses {
-                witnessing_nodes.insert(w);
+        // Count unique attesting nodes — Vec with contains, no HashSet
+        let mut attesting_nodes: Vec<u32> = Vec::new();
+        for (_, attestors) in &self.attestations {
+            for &w in attestors {
+                (!attesting_nodes.contains(&w))
+                    .then(|| attesting_nodes.push(w));
             }
         }
-        // Each witnessing entity contributes equal weight (simplified ω = 1/N)
+        // Each attesting entity contributes equal weight (simplified ω = 1/N)
         let total_entities = self.entity_count.max(1);
-        self.witness_weight = qr(witnessing_nodes.len() as i64, total_entities as i64);
-        self.finalized = self.witness_weight > qr(1, 2);
+        self.attestation_weight = qr(attesting_nodes.len() as i64, total_entities as i64);
+        self.finalized = self.attestation_weight > qr(1, 2);
     }
 
     /// Check if all receipts at this level satisfy resonance (T.SAMN.11).
@@ -133,10 +137,10 @@ impl TemporalLedger {
         self.token_state.process_receipt(&receipt);
     }
 
-    /// Record a witness attestation.
-    pub fn add_witness(&mut self, k_index: u64, target_id: u32, witness_id: u32) {
+    /// Record an attestation.
+    pub fn add_attestation(&mut self, k_index: u64, target_id: u32, attester_id: u32) {
         if let Some(level) = self.levels.get_mut(&k_index) {
-            level.add_witness(target_id, witness_id);
+            level.add_attestation(target_id, attester_id);
         }
     }
 
@@ -236,16 +240,16 @@ mod tests {
     }
 
     #[test]
-    fn test_level_finality_with_witnesses() {
+    fn test_level_finality_with_attestations() {
         let mut lattice = TemporalLedger::new();
         for eid in 0..5 {
             lattice.add_receipt(test_receipt(eid, 10));
         }
-        // 3 out of 5 witness each other → 60% > 50% → finalized
+        // 3 out of 5 attest each other → 60% > 50% → finalized
         for target in 0..5 {
-            for witness in 0..3 {
-                if witness != target {
-                    lattice.add_witness(10, target, witness);
+            for attester in 0..3 {
+                if attester != target {
+                    lattice.add_attestation(10, target, attester);
                 }
             }
         }
@@ -261,9 +265,9 @@ mod tests {
             lattice.add_receipt(test_receipt(eid, 100));
         }
         for target in 0..5 {
-            for witness in 0..5 {
-                if witness != target {
-                    lattice.add_witness(100, target, witness);
+            for attester in 0..5 {
+                if attester != target {
+                    lattice.add_attestation(100, target, attester);
                 }
             }
         }
@@ -288,12 +292,12 @@ mod tests {
     fn test_prune_unfinalized() {
         let mut lattice = TemporalLedger::new();
         for k in 1..=20u64 {
-            lattice.add_receipt(test_receipt(0, k)); // single entity, no primary entities
+            lattice.add_receipt(test_receipt(0, k)); // single entity, no entities
         }
         // Only finalize even levels
         for k in (2..=20).step_by(2) {
             for w in 1..3 {
-                lattice.add_witness(k, 0, w);
+                lattice.add_attestation(k, 0, w);
             }
             lattice.finalize_level(k);
         }

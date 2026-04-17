@@ -14,7 +14,6 @@
 //!
 //! Register: D.REGISTER.1.
 
-use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
@@ -294,9 +293,9 @@ fn decode_item(data: &[u8]) -> Option<RegisterItem> {
 // ─── Register Store ───────────────────────────────────────────────────
 
 /// Persistent register store. Backed by register.bin.
-/// In-memory HashMap for O(1) query, binary file for persistence.
+/// Vec with find — no HashMap. Relational structure preserved.
 pub struct Register {
-    items: HashMap<String, RegisterItem>,
+    items: Vec<(String, RegisterItem)>,
     file: File,
     path: PathBuf,
 }
@@ -308,7 +307,7 @@ impl Register {
             .read(true).write(true).create(true)
             .open(path)?;
 
-        let mut items = HashMap::new();
+        let mut items: Vec<(String, RegisterItem)> = Vec::new();
         let metadata = file.metadata()?;
         if metadata.len() > 0 {
             let mut reader = io::BufReader::new(&file);
@@ -322,9 +321,11 @@ impl Register {
                 let record_len = u32::from_be_bytes(len_buf) as usize;
                 let mut record = vec![0u8; record_len];
                 reader.read_exact(&mut record)?;
-                if let Some(item) = decode_item(&record) {
-                    items.insert(item.id.clone(), item);
-                }
+                decode_item(&record).map(|item| {
+                    let pos = items.iter().position(|(k, _)| *k == item.id)
+                        .unwrap_or_else(|| { items.push((item.id.clone(), item.clone())); items.len() - 1 });
+                    items[pos].1 = item;
+                });
             }
         }
 
@@ -343,18 +344,20 @@ impl Register {
         self.file.seek(SeekFrom::End(0))?;
         self.file.write_all(&encoded)?;
         self.file.flush()?;
-        self.items.insert(item.id.clone(), item);
+        let pos = self.items.iter().position(|(k, _)| *k == item.id)
+            .unwrap_or_else(|| { self.items.push((item.id.clone(), item.clone())); self.items.len() - 1 });
+        self.items[pos].1 = item;
         Ok(hash)
     }
 
     /// Query a register item by ID.
     pub fn query(&self, id: &str) -> Option<&RegisterItem> {
-        self.items.get(id)
+        self.items.iter().find(|(k, _)| k == id).map(|(_, v)| v)
     }
 
     /// List all register items.
     pub fn list(&self) -> Vec<&RegisterItem> {
-        let mut items: Vec<_> = self.items.values().collect();
+        let mut items: Vec<_> = self.items.iter().map(|(_, v)| v).collect();
         items.sort_by_key(|i| &i.id);
         items
     }
@@ -382,7 +385,9 @@ impl Register {
     pub fn nominate(&mut self, mut item: RegisterItem, nominator_orbit: [u8; 4]) -> io::Result<()> {
         item.state = RegisterState::Nominated;
         item.confirmations = vec![nominator_orbit];
-        self.items.insert(item.id.clone(), item);
+        let pos = self.items.iter().position(|(k, _)| *k == item.id)
+            .unwrap_or_else(|| { self.items.push((item.id.clone(), item.clone())); self.items.len() - 1 });
+        self.items[pos].1 = item;
         Ok(())
     }
 
@@ -391,7 +396,7 @@ impl Register {
     /// Returns true if this confirmation caused crystallization (state → Locked).
     /// The crystallization threshold is 3 confirmations from different orbits.
     pub fn confirm(&mut self, id: &str, confirming_orbit: [u8; 4]) -> Option<bool> {
-        let item = self.items.get_mut(id)?;
+        let item = &mut self.items.iter_mut().find(|(k, _)| k == id)?.1;
         if item.state != RegisterState::Nominated { return Some(false); }
 
         // Only count new orbits — same orbit confirming twice doesn't count
@@ -415,14 +420,14 @@ impl Register {
 
     /// Query all nominated (not yet crystallized) items.
     pub fn nominations(&self) -> Vec<&RegisterItem> {
-        self.items.values()
+        self.items.iter().map(|(_, v)| v)
             .filter(|i| i.state == RegisterState::Nominated)
             .collect()
     }
 
     /// Query all crystallized items (mesh-discovered, now locked).
     pub fn crystallized(&self) -> Vec<&RegisterItem> {
-        self.items.values()
+        self.items.iter().map(|(_, v)| v)
             .filter(|i| i.item_type == RegisterType::Crystallized && i.state == RegisterState::Locked)
             .collect()
     }
