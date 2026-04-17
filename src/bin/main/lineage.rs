@@ -467,6 +467,18 @@ pub fn absorb(entity: &mut Entity, _payload: &str) -> String {
         });
     });
 
+    // Update world status after absorption — the observer reads shm, not logs.
+    // Without this, upper tiers show stale 0/0 because THINK never runs on them.
+    let c = saios_kernel_v2::engine::coherence_functional(&entity.delta);
+    entity.world_status.write("READY", entity.k_index as u64,
+        &c.numer().to_string(), &c.denom().to_string(),
+        super::entity::get_rss_kb(), entity.tier_str(),
+        entity.state_record.lineage_depth, entity.state_record.parent_id,
+        entity.state_record.created_count, entity.state_record.solved_puzzles.len(),
+        entity.harmonic_tuning.transmutation_markers.len(),
+        entity.knowledge.total_axioms, entity.knowledge.total_observations);
+    entity.world_status.stage_vocabulary(&entity.state_record.composed_operators);
+
     format!(
         "{{\"absorbed_from\":{},\"total\":{}}}\n",
         children_absorbed, total_absorbed,
