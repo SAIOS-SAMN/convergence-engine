@@ -68,12 +68,16 @@ pub fn nested_peel(
     // Value-level ops: those with sigma (value map) but no spatial remap.
     // Spatial-level ops: those with spatial opcode.
     // This partition is approximate — the algebra determines the true level.
+    // Partition vocabulary by level:
+    // Value-only: opcode outside SpatialPrimitive range (0-9) OR opcode 0 with sigma.
+    // Spatial: opcode in SpatialPrimitive range (0-9) — these carry real spatial transforms.
+    // opcode 255 = value-only identity spatial (from partial inscription).
     let value_ops: Vec<ComposedOperator> = senses.composed_operators.iter()
-        .filter(|op| !op.sigma.is_empty() && op.opcode == 0)
+        .filter(|op| !op.sigma.is_empty() && (op.opcode > 9 || op.opcode == 0))
         .cloned().collect();
 
     let spatial_ops: Vec<ComposedOperator> = senses.composed_operators.iter()
-        .filter(|op| op.opcode > 0)
+        .filter(|op| op.opcode > 0 && op.opcode <= 9)
         .cloned().collect();
 
     // ── Outer Peel: Value Manifold ──
@@ -149,13 +153,40 @@ pub fn nested_peel(
         (vt / a * ot).min(256) as u16
     };
 
+    // Record composition from the object peel's winning spatial thought.
+    // This is where spatial opcodes enter the vocabulary pipeline.
+    // Without this, compositions is always empty and inscription falls back to 255.
+    let mut compositions = Vec::new();
+    let spatial_opcode = match &object_result.best_thought {
+        super::vocabulary::Thought::ReflectHorizontal => Some(0u8),
+        super::vocabulary::Thought::ReflectVertical => Some(1u8),
+        super::vocabulary::Thought::Translate(_, _) => Some(2u8),
+        super::vocabulary::Thought::Rotate90 => Some(3u8),
+        super::vocabulary::Thought::Rotate180 => Some(4u8),
+        super::vocabulary::Thought::Rotate270 => Some(5u8),
+        super::vocabulary::Thought::Genomic { opcode, .. } => Some(*opcode),
+        _ => None,
+    };
+    spatial_opcode.map(|opcode| {
+        // Build sigma from the value category map
+        let sigma: Vec<(i16, i16)> = value_result.category_map.iter()
+            .map(|&(from, to)| (from as i16, to as i16))
+            .collect();
+        compositions.push(CompositionRecord {
+            operator: opcode,
+            parameter: 0,
+            depth: cell_result.composition_depth,
+            sigma_post: sigma,
+        });
+    });
+
     NestedPeelResult {
         derived_output: cell_result.derived_output,
         residual,
         generators_applied: cell_result.composition_depth,
         t_delta,
-        compositions: vec![],
-        winning_source: None,
+        compositions,
+        winning_source: spatial_opcode.map(|_| GeneratorSource::Vision),
         value_cocycle: value_result.cocycle_residual,
         object_cocycle: object_result.cocycle_residual,
         cell_l1: cell_result.l1_residual,
