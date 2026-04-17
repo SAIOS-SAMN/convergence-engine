@@ -440,7 +440,7 @@ pub fn absorb(entity: &mut Entity, _payload: &str) -> String {
                 });
                 // Composed operators with full sigma
                 let ops: Vec<&saios_kernel_v2::engine::ComposedOperator> =
-                    entity.state_record.composed_operators.iter().take(128).collect();
+                    entity.state_record.composed_operators.iter().take(256).collect();
                 buf.push(ops.len() as u8);
                 ops.iter().for_each(|op| {
                     buf.push(op.opcode);
@@ -561,12 +561,12 @@ pub fn project(entity: &mut Entity, _payload: &str) -> String {
     let ops = &entity.state_record.composed_operators;
 
     // Nothing to project — no vocabulary yet. Measured, not gated.
-    let n_ops = ops.len().min(128) as u16;
+    let n_ops = ops.len().min(256) as u16;
 
     // Serialize composed operators: [n:u16, (opcode:u8, param:i64, sigma_len:u16, sigma..., score:i64)...]
     let mut vocab_buf: Vec<u8> = Vec::new();
     vocab_buf.extend_from_slice(&n_ops.to_be_bytes());
-    for op in ops.iter().take(128) {
+    for op in ops.iter().take(256) {
         vocab_buf.push(op.opcode);
         vocab_buf.extend_from_slice(&op.parameter.to_be_bytes());
         let sigma_len = op.sigma.len().min(256) as u16;

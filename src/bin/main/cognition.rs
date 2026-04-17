@@ -1292,7 +1292,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                 buf.extend_from_slice(&d.to_le_bytes());
             }
             // Full vocabulary on first orbit block only
-            let n_ops = (idx == 0).then(|| ops.len().min(128)).unwrap_or(0);
+            let n_ops = (idx == 0).then(|| ops.len().min(256)).unwrap_or(0);
             buf.push(n_ops as u8);
             ops.iter().take(n_ops).for_each(|op| {
                 buf.push(op.opcode);

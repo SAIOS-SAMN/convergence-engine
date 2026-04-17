@@ -1307,7 +1307,7 @@ impl StateRecord {
             .map(|existing| { existing.score = existing.score.saturating_add(op.score); })
             .unwrap_or_else(|| {
                 // New operator — append or evict
-                (self.composed_operators.len() < 128).then(|| {
+                (self.composed_operators.len() < 256).then(|| {
                     self.composed_operators.push(op.clone());
                 }).unwrap_or_else(|| {
                     // Eviction: find the weakest, yield if new is stronger
@@ -1453,7 +1453,7 @@ impl StateRecord {
         }
 
         // Solved orbits: [count: u8] [orbit_4 per entry]
-        let n_solved = self.solved_puzzles.len().min(128);
+        let n_solved = self.solved_puzzles.len().min(256);
         buf.push(n_solved as u8);
         for orbit in self.solved_puzzles.iter().take(n_solved) {
             buf.extend_from_slice(orbit);
@@ -1466,7 +1466,7 @@ impl StateRecord {
         buf.extend_from_slice(&self.init_orbit);
 
         // Composed operators: [count_u8] + count × [opcode_u8 + param_i64 + score_i64 + sigma_count_u8 + sigma × (from_i16 + to_i16)]
-        let n_ops = self.composed_operators.len().min(128);
+        let n_ops = self.composed_operators.len().min(256);
         buf.push(n_ops as u8);
         for op in self.composed_operators.iter().take(n_ops) {
             buf.push(op.opcode);
@@ -1645,7 +1645,7 @@ impl StateRecord {
         let mut solved_puzzles: Vec<[u8; 4]> = Vec::new();
         if pos < data.len() {
             let n_solved = data[pos] as usize; pos += 1;
-            for _ in 0..n_solved.min(128) {
+            for _ in 0..n_solved.min(256) {
                 if pos + 4 > data.len() { break; }
                 let orbit: [u8; 4] = data[pos..pos+4].try_into().ok()?;
                 solved_puzzles.push(orbit);
@@ -1668,7 +1668,7 @@ impl StateRecord {
         let mut composed_operators: Vec<ComposedOperator> = Vec::new();
         if pos < data.len() {
             let n_ops = data[pos] as usize; pos += 1;
-            for _ in 0..n_ops.min(128) {
+            for _ in 0..n_ops.min(256) {
                 if pos + 18 > data.len() { break; } // opcode(1) + param(8) + score(8) + sigma_count(1)
                 let opcode = data[pos]; pos += 1;
                 let parameter = i64::from_le_bytes(data[pos..pos+8].try_into().ok()?); pos += 8;
