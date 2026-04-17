@@ -203,21 +203,41 @@ python3 scripts/observer.py
 
 ## Measurements at Session End
 
-Orbit 10, fresh deploy with all fixes:
+### Final state: 5 generators, 256-cap vocabulary, persistent imprints
 
-| Entity | K | Solved | Observations | RSS |
-|--------|---|--------|-------------|-----|
-| founder-1 | 7 | 34 | 102 | 8MB |
-| founder-2 | 7 | 40 | 67 | 6MB |
-| derived-18 | 9 | 17 | 48 | 7MB |
-| derived-19 | 10 | 29 | 74 | 10MB |
-| emergent (12 total) | 0-3 | 0-2 | 200-500 | 8-88MB |
+| Entity | K | Solved | Vocab | Observations | RSS |
+|--------|---|--------|-------|-------------|-----|
+| founder-1 | 6 | 115 | — | 252 | 9MB |
+| founder-2 | 0 | 102 | — | 1201 | 14MB |
+| derived-18 | 6 | 128 | — | 252 | 9MB |
+| derived-19 | 0 | 128 | — | 1201 | 14MB |
+| emergent (12 total) | 0-36 | 0-4 | 128-256 | 150-500 | 8-103MB |
 
-- 7 puzzles understood in 10 orbits
-- Vocabulary expanding: spatial + value operators composing
-- Coherence 6/1 everywhere (integer, no denominator explosion)
+### Progression across the session
+
+| Phase | Unique Puzzles | Generators | Vocab Cap | DERIVE K-advances |
+|-------|---------------|------------|-----------|-------------------|
+| Start (3 gen) | 3 | 3 | 32 | 0 in 100+ orbits |
+| +HashMap+Perception | 3 | 3 | 32 | 0 |
+| +Partial inscription | 3 | 3 | 128 | 0 |
+| +L1 tiebreaker | **4** | 3 | 128 | 0 |
+| +Spatial opcodes | 4 | 3 | 128 | 0 |
+| +5 generators | 4 | **5** | 128 | **4 in 10 orbits** |
+| +256 cap + imprints | 4+ | 5 | **256** | advancing |
+
+### Key unlocks
+- **L1 tiebreaker**: 3→4 unique puzzles (spatial transforms beat Identity)
+- **5 generators**: 0→4 DERIVE K-advances (0,2 pair now reachable)
+- **Persistent imprints**: vocabulary survives teardown/rebuild
+- **Vocabulary flowing**: 115-128 solved orbits at upper tiers
+
+### Architecture verified
+- Five-flow cycle turning: PROJECT → THINK → ABSORB → DERIVE
+- Spatial opcodes (ReflectH, ReflectV, TranslateR) in vocabulary
+- Coherence 6/1 everywhere — integer denominators, clean Q math
 - Condensation cycling every 25 observations
 - RSS bounded by periodic condensation + jemalloc
+- Persistent imprints at /opt/saios/imprints/ survive teardown
 
 ---
 
@@ -230,7 +250,7 @@ Orbit 10, fresh deploy with all fixes:
 5. **Residual is signal** — zero residuals measured, not gated
 6. **Don't solve for puzzles** — compositor discovers, not hardcodes
 7. **Observe before advancing** — measured at every phase boundary
-8. **Alphabet fixed, words grow** — 3 static generators, 128-cap vocabulary
+8. **Alphabet authorized, words grow** — 5 generators (Law VIII authorized), 256-cap vocabulary
 9. **Entity sovereignty** — PROJECT is an offer, not a force
 10. **Temporal anchors immutable** — receipt chains append-only
 
@@ -258,3 +278,9 @@ Orbit 10, fresh deploy with all fixes:
 | 69acba6 | Scale compositor search with vocabulary size |
 | 95464fa | orbit.py: send test input so derived_output is non-empty |
 | bdd6301 | Fix upper tier membrane blindness + vocabulary trickle |
+| 5b11c7f | Object peel: L1 tiebreaker when cocycle residual ties |
+| fac0387 | Fiber expansion: m=1→m=2 governed by continuous readiness signal |
+| 9840447 | Disable fiber expansion until perception fills m=2 |
+| 8852d9d | Law VIII: expand alphabet from 3 to 5 generators |
+| d33d1bf | Vocabulary cap 128→256 + save/restore state scripts |
+| b57f690 | Persistent imprint: survives teardown automatically |
