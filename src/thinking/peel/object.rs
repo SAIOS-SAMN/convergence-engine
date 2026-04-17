@@ -182,8 +182,18 @@ pub fn peel_object_manifold(
         let residual = measure_object_cocycle(&cand_props);
         best.thoughts_evaluated += 1;
 
-        // C(T) selects
-        (residual < best.cocycle_residual).then(|| {
+        // C(T) selects — object cocycle residual is primary.
+        // When cocycle ties (common with <3 objects), use cell-level L1
+        // as tiebreaker. The thought that produces lower L1 against the
+        // target wins, even if the object cocycle is tied.
+        let l1: u64 = new_pairs.iter().map(|(inp, out)| {
+            inp.iter().zip(out.iter()).map(|(a, b)| (a - b).unsigned_abs()).sum::<u64>()
+        }).sum();
+        let best_l1: u64 = best.transformed_pairs.iter().map(|(inp, out)| {
+            inp.iter().zip(out.iter()).map(|(a, b)| (a - b).unsigned_abs()).sum::<u64>()
+        }).sum();
+
+        (residual < best.cocycle_residual || (residual == best.cocycle_residual && l1 < best_l1)).then(|| {
             best.cocycle_residual = residual;
             best.torsion_order = measure_spatial_torsion(thought);
             best.best_thought = thought.clone();
