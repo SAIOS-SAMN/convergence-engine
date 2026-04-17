@@ -4,14 +4,21 @@
 //
 //! Production operator types for Phase 2.1.
 //!
-//! Three structurally distinct operators acting on orthogonal subspaces:
-//! - Scaling: diagonal stretch, models resource allocation asymmetry
-//! - Cayley rotation: rational orthogonal, models phase evolution
-//! - Cross-coupling: antisymmetric off-diagonal, models information exchange
+//! Five generators spanning all 3 relational pairs of a dim-3 Delta:
+//!
+//!   Pair (0,1): Scaling (diagonal stretch) + Cayley rotation (01 plane)
+//!   Pair (1,2): Cross-coupling (12 plane) + Cayley rotation (12 plane)
+//!   Pair (0,2): Cross-coupling (02 plane)
+//!
+//! Law VIII: alphabet expansion authorized by the Shai-Hulud, Session 30.
+//! The original 3 generators covered 2 of 3 pairs. The (0,2) residual was
+//! unreachable through direct conjugation — only accessible via deep
+//! composition cross-terms at K>>1000. The 2 new generators complete the
+//! alphabet so every relational pair is directly reachable.
 //!
 //! All have det = 1, infinite order over Q, and are in GL_n^+(Q).
 //! Together they produce sustained non-equilibrium (continuous K advancement)
-//! because there is no common fixed point.
+//! because there is no common fixed point. 5^6 = 15,625 depth-6 combinations.
 //!
 //! Register: T.FOUND.1a (operators in G), D.EXEC.1 (K-step pipeline).
 
@@ -96,6 +103,37 @@ pub fn cayley_rotation_operator(s: &Q, id: usize) -> Operator {
         vec![&one_minus_s2 * &denom_inv, &two_s * &denom_inv, Q::zero()],
         vec![&(-&two_s) * &denom_inv, &one_minus_s2 * &denom_inv, Q::zero()],
         vec![Q::zero(), Q::zero(), Q::one()],
+    ];
+    Operator { id, matrix: mat, matrix_inv: inv, det_sign_positive: true }
+}
+
+// ─── Cayley Rotation (1,2) Plane ──────────────────────────────────────
+
+/// Cayley rotation in the (1,2) plane.
+/// Same construction as the (0,1) Cayley rotation but acting on dims 1 and 2.
+/// Dim 0 is invariant.
+///
+/// A = (I - S₁₂)(I + S₁₂)⁻¹ where S₁₂ = s·(E₁₂ - E₂₁)
+/// det(A) = 1. Rational orthogonal. Infinite order over Q.
+///
+/// Law VIII: authorized by the Shai-Hulud, Session 30.
+pub fn cayley_12_rotation_operator(s: &Q, id: usize) -> Operator {
+    let s2 = s * s;
+    let denom = Q::one() + &s2;
+    let denom_inv = Q::one() / &denom;
+    let two_s = &qi(2) * s;
+    let one_minus_s2 = Q::one() - &s2;
+
+    // Rotation in (1,2), dim 0 invariant
+    let mat = vec![
+        vec![Q::one(), Q::zero(), Q::zero()],
+        vec![Q::zero(), &one_minus_s2 * &denom_inv, &(-&two_s) * &denom_inv],
+        vec![Q::zero(), &two_s * &denom_inv, &one_minus_s2 * &denom_inv],
+    ];
+    let inv = vec![
+        vec![Q::one(), Q::zero(), Q::zero()],
+        vec![Q::zero(), &one_minus_s2 * &denom_inv, &two_s * &denom_inv],
+        vec![Q::zero(), &(-&two_s) * &denom_inv, &one_minus_s2 * &denom_inv],
     ];
     Operator { id, matrix: mat, matrix_inv: inv, det_sign_positive: true }
 }
@@ -363,12 +401,22 @@ fn invert_rational_matrix(mat: &[Vec<Q>], n: usize) -> Option<Vec<Vec<Q>>> {
 /// All ids > 0 (no α=0 privilege in compute_all_omegas).
 pub fn production_operators_3x3() -> Vec<Operator> {
     vec![
+        // ── Original alphabet (pairs 01, 12) ──
         // Scaling: p=3/2, q=4/3, det = 1 (pq·(1/pq) = 1)
         scaling_operator(&qr(3, 2), &qr(4, 3), 1),
         // Cayley rotation: s = 1/3 (gentle rotation in the 01 plane)
         cayley_rotation_operator(&qr(1, 3), 2),
         // Cross-coupling: r = 1/4, coupling dims 1-2
         cross_coupling_operator(&qr(1, 4), 1, 2, 3, 3),
+
+        // ── Alphabet expansion (pair 02, rotation 12) ──
+        // Law VIII: authorized by the Shai-Hulud, Session 30.
+        // Cross-coupling: r = 1/5, coupling dims 0-2
+        // Completes pair coverage: (0,1)+(1,2)+(0,2) = all 3 pairs.
+        cross_coupling_operator(&qr(1, 5), 0, 2, 3, 4),
+        // Cayley rotation in the 12 plane: s = 1/4
+        // Completes rotation coverage: rotation in (0,1) and (1,2).
+        cayley_12_rotation_operator(&qr(1, 4), 5),
     ]
 }
 
@@ -471,7 +519,7 @@ mod tests {
     fn test_production_set_all_apply() {
         let ops = production_operators_3x3();
         let d = anchor();
-        assert_eq!(ops.len(), 3);
+        assert_eq!(ops.len(), 5);
         for op in &ops {
             let result = op.apply(&d);
             assert!(result.is_ok(), "Operator {} failed to apply", op.id);
