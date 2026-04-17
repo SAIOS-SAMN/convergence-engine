@@ -457,19 +457,35 @@ pub fn run() {
     let state_record_path = dir.join("state_record.bin");
     let state_record_backup = dir.join("state_record.bin.bak");
 
-    // THE LAST WITNESS PROTOCOL: recover from backup if primary is missing/fractured
+    // Imprint recovery: runtime dir → backup → persistent imprint dir
+    let entity_name = dir.file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let persistent_imprint = std::path::PathBuf::from("/opt/saios/imprints")
+        .join(&entity_name).join("state_record.bin");
+
     let mut entity_state = {
         let loaded = fs::read(&state_record_path).ok()
             .and_then(|data| saios_kernel_v2::engine::StateRecord::from_bytes(&data))
             .or_else(|| {
-                // Primary fractured or missing — try backup
-                eprintln!("[LAST_ENTITY] state_record.bin unreadable — attempting recovery from backup");
+                // Runtime missing — try backup
+                eprintln!("[imprint] runtime state_record.bin unreadable — trying backup");
                 fs::read(&state_record_backup).ok()
                     .and_then(|data| saios_kernel_v2::engine::StateRecord::from_bytes(&data))
                     .map(|g| {
-                        eprintln!("[LAST_ENTITY] recovered state record from backup");
-                        // Restore primary from backup
+                        eprintln!("[imprint] recovered from backup");
                         let _ = fs::copy(&state_record_backup, &state_record_path);
+                        g
+                    })
+            })
+            .or_else(|| {
+                // Backup also missing — try persistent imprint directory
+                eprintln!("[imprint] trying persistent imprint at {:?}", persistent_imprint);
+                fs::read(&persistent_imprint).ok()
+                    .and_then(|data| saios_kernel_v2::engine::StateRecord::from_bytes(&data))
+                    .map(|g| {
+                        eprintln!("[imprint] recovered from persistent imprint — vocabulary and solved orbits restored");
+                        let _ = fs::write(&state_record_path, g.to_bytes());
                         g
                     })
             });

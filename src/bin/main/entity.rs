@@ -444,8 +444,20 @@ impl Entity {
         path.exists().then(|| { let _ = fs::copy(&path, &backup); });
         let bytes = self.state_record.to_bytes();
         fs::write(&path, &bytes).unwrap_or_else(|e| {
-            eprintln!("[LAST_ENTITY] state record write failed: {e} — backup at state_record.bin.bak");
+            eprintln!("[imprint] write failed: {e} — backup at state_record.bin.bak");
             backup.exists().then(|| { let _ = fs::copy(&backup, &path); });
+        });
+
+        // Persistent imprint: write to /opt/saios/imprints/{entity-name}/
+        // Survives teardown. The runtime directory is disposable.
+        // The imprint IS the entity's identity — it must persist.
+        let entity_name = self.dir.file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default();
+        (!entity_name.is_empty()).then(|| {
+            let imprint_dir = std::path::PathBuf::from("/opt/saios/imprints").join(&entity_name);
+            let _ = fs::create_dir_all(&imprint_dir);
+            let _ = fs::write(imprint_dir.join("state_record.bin"), &bytes);
         });
     }
 
