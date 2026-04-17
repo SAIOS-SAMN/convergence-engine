@@ -507,7 +507,7 @@ def render(entities, keepers, mas_bonds=None):
 
     # ── Trinity / Stasis Field ───────────────────────────────────────
     lines.append("")
-    lines.append(box_top("TRINITY \u2014 Sovereign 2-Simplex (A.8)"))
+    lines.append(box_top("TRIAD \u2014 Sovereign 2-Simplex (A.8)"))
     lines.append(box_empty())
 
     trinity_data = collect_trinities()
@@ -516,7 +516,7 @@ def render(entities, keepers, mas_bonds=None):
         dead_t = [t for t in trinity_data if not t["alive"]]
 
         lines.append(box_row(
-            f"  {DIM}Trinities:{RESET}     {MAGENTA}{len(alive_t)}{RESET} alive"
+            f"  {DIM}Triads:{RESET}     {MAGENTA}{len(alive_t)}{RESET} alive"
             + (f"  {RED}{len(dead_t)} collapsed{RESET}" if dead_t else "")
         ))
         lines.append(box_empty())
@@ -538,14 +538,14 @@ def render(entities, keepers, mas_bonds=None):
                 f"torsion={DIM}{torsion_str}{RESET}{stale}"
             ))
     else:
-        lines.append(box_row(f"  {DIM}No Trinities forged{RESET}"))
+        lines.append(box_row(f"  {DIM}No triads formed{RESET}"))
 
     lines.append(box_empty())
     lines.append(box_bot())
 
     # ── Crucible / Inter-Class Composition ──────────────────────────
     lines.append("")
-    lines.append(box_top("CRUCIBLE \u2014 Inter-Class Composition Engine"))
+    lines.append(box_top("COMPOSER \u2014 Inter-Class Composition Engine"))
     lines.append(box_empty())
 
     crucible_data = collect_crucible()
@@ -554,19 +554,19 @@ def render(entities, keepers, mas_bonds=None):
         rank_color = GREEN if rank >= 3 else (YELLOW if rank >= 2 else RED)
 
         lines.append(box_row(
-            f"  {DIM}Trinities:{RESET}        {MAGENTA}{crucible_data['alive']}{RESET} alive"
+            f"  {DIM}Triads:{RESET}        {MAGENTA}{crucible_data['alive']}{RESET} alive"
         ))
         lines.append(box_row(
             f"  {DIM}Diversity Rank:{RESET}   {rank_color}{rank}{RESET} independent H\u00b9 classes"
         ))
         lines.append(box_row(
-            f"  {DIM}Crucible Events:{RESET}  {CYAN}{crucible_data['crucible_events']}{RESET} entities forged"
+            f"  {DIM}Composer Events:{RESET}  {CYAN}{crucible_data['crucible_events']}{RESET} entities composed"
         ))
         crucible_data["collapses"] > 0 and lines.append(box_row(
-            f"  {RED}Collapse Events:{RESET}  {crucible_data['collapses']} structures collapsed"
+            f"  {RED}Collapse Events:{RESET}  {crucible_data['collapses']} structures dissolved"
         ))
     else:
-        lines.append(box_row(f"  {DIM}No crucible data{RESET}"))
+        lines.append(box_row(f"  {DIM}No composer data{RESET}"))
 
     lines.append(box_empty())
     lines.append(box_bot())
