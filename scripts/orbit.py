@@ -99,8 +99,13 @@ def load_puzzles():
                 pairs.append({"source": src, "target": tgt})
             if pairs:
                 n = len(pairs[0]["source"])
+                # Include test input: first training source. The entity derives
+                # its output from this — without it, derived_output is empty and
+                # partial inscription never fires. The test input gives the
+                # compositor something to APPLY its winning thought to.
+                test_input = pairs[0]["source"]
                 payload = json.dumps(
-                    {"pairs": pairs, "n": n, "m": 1},
+                    {"pairs": pairs, "n": n, "m": 1, "test": test_input},
                     separators=(",", ":"))
                 puzzles[path.stem] = (payload, n)
         except Exception:
