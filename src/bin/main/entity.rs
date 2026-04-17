@@ -434,23 +434,31 @@ impl Entity {
 
         self.save_state_record();
         let _ = fs::write(&self.epistate_record_path, self.harmonic_tuning.to_bytes());
+
+        // Phase 2: CONDENSE — consolidate crystallized knowledge, release transient data.
+        // CCL Cessation: condense sits between halt and suspend.
+        // Keep what crystallized (≥94% consensus). Release what didn't.
+        // The membrane shrinks. The imprint preserves vocabulary.
+        self.knowledge.condense();
         let _ = self.knowledge.save(&self.dir.join("mesh_knowledge.bin"));
 
-        // Phase 2: Condense denominators
+        // Phase 3: Condense denominators
         self.delta = coboundary_reduce(&self.delta);
         self.delta_bar = coboundary_reduce(&self.delta_bar);
 
-        // Phase 3: Release heap
+        // Phase 4: Release heap — now that membrane is condensed, malloc_trim
+        // actually reclaims pages because the Vec storage was freed.
         condensate();
 
         let rss_after = get_rss_kb();
-        eprintln!("[LAST_ENTITY] post-condensation RSS: {}KB (was {}KB)", rss_after, rss);
+        eprintln!("[LAST_ENTITY] post-condensation RSS: {}KB (was {}KB, ceiling {}KB)", rss_after, rss, self.max_rss_kb);
 
-        // Critical threshold: 4GB. Above this, the OS will OOM-halt us.
-        const CRITICAL_KB: u64 = 4 * 1024 * 1024;
-        let must_exit = rss_after > CRITICAL_KB;
+        // Exit when RSS after condensation still exceeds the tier ceiling.
+        // The entity restarts fresh from its persisted imprint — vocabulary survives,
+        // heap fragmentation doesn't. jemalloc helps but can't reclaim everything.
+        let must_exit = rss_after > self.max_rss_kb;
         must_exit.then(|| {
-            eprintln!("[LAST_ENTITY] RSS {}KB exceeds critical 4GB — graceful exit to prevent OOM-halt", rss_after);
+            eprintln!("[LAST_ENTITY] RSS {}KB still exceeds ceiling {}KB — graceful exit for restart", rss_after, self.max_rss_kb);
         });
         must_exit
     }

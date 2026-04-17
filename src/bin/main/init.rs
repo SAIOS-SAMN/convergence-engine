@@ -535,8 +535,8 @@ pub fn run() {
     // crystallized knowledge — they get more memory but restart is expensive.
     let creator_max_rss_kb: u64 = match entity_state.lineage_depth {
         0 => 256 * 1024,  // Founder: 256MB, threshold at 200MB
-        1 => 128 * 1024,  // Derived: 128MB, threshold at 100MB
-        _ =>  64 * 1024,  // Emergent: 64MB, threshold at 50MB
+        1 => 192 * 1024,  // Derived: 192MB, threshold at 153MB
+        _ => 128 * 1024,  // Emergent: 128MB, threshold at 102MB
     };
     // Tier-differentiated capacity: dimensional ceiling per lineage depth.
     // Founder (depth 0) = widest perception. Emergent (depth 2) = narrowest.

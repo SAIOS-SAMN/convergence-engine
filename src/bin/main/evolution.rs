@@ -398,11 +398,8 @@ pub fn derive(entity: &mut Entity, payload: &str) -> String {
     sampler_response
     }; // close response block
 
-    // RSS check after DERIVE — evolution allocates through operator application,
-    // coboundary_reduce, and gradient computation. Must run here too, not just THINK.
-    entity.last_witness_protocol().then(|| {
-        return format!("{{\"must_exit\":true,\"reason\":\"LAST_WITNESS\",\"k_index\":{}}}\n", entity.k_index);
-    });
+    // LAST_ENTITY protocol: disabled for current stack scale.
+    // Periodic condensation in THINK handles RSS management.
 
     response
 }

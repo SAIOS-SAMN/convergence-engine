@@ -367,34 +367,40 @@ pub fn absorb(entity: &mut Entity, _payload: &str) -> String {
             // Project absorbed cocycles into the entity's relational space.
             let dim = entity.delta.dim;
             let m = entity.delta.m;
-            if dim >= 2 {
+            (dim >= 2).then(|| {
                 let mut t = saios_kernel_v2::engine::Delta::zero(dim, m);
-                // Distribute cocycle energy across the entity's relational entries.
-                // Each cocycle (from→to, quality) contributes to the antisymmetric
-                // structure. Map cocycle index to relational entry (i,j) cyclically.
-                for (idx, &(fv, tv, ref quality)) in cocycles.iter().take(32).enumerate() {
-                    let i = idx % dim;
-                    let j = (idx + 1) % dim;
-                    let (i, j) = if i < j { (i, j) } else { (j, i) };
-                    if i == j { continue; }
-                    // Sign from the value transition direction
-                    let sign = if fv <= tv { quality.clone() } else { -quality.clone() };
-                    for l in 0..m {
-                        t.entries[i][j][l] = &t.entries[i][j][l] + &sign;
-                        t.entries[j][i][l] = &t.entries[j][i][l] - &sign;
-                    }
+                // Each cocycle (from_value, to_value, quality) maps to the Delta cell
+                // determined by its VALUE PAIR — the algebraic identity of the transition.
+                // from_value and to_value are the relational coordinates. No cyclic folding.
+                // When from == to (mod dim), the cocycle has no relational content — it's
+                // a self-transition, which is zero in the antisymmetric structure (Δ_ii = 0).
+                for &(fv, tv, ref quality) in cocycles.iter().take(32) {
+                    let i = (fv.unsigned_abs() as usize) % dim;
+                    let j = (tv.unsigned_abs() as usize) % dim;
+                    // i == j: self-transition. Zero in antisymmetric structure. Measured, not gated.
+                    // i != j: relational transition. Accumulate into the Delta.
+                    // Antisymmetric accumulation: Δ[i][j] += quality, Δ[j][i] -= quality.
+                    // The sign comes from the antisymmetric structure itself — Δ[i][j] = -Δ[j][i].
+                    // No boolean gate on fv <= tv. The (i,j) ordering in the Delta IS the direction.
+                    (i != j).then(|| {
+                        let (lo, hi) = (i.min(j), i.max(j));
+                        // Direction: (fv→tv) maps to the natural (lo,hi) orientation
+                        // when i < j, quality is positive. When i > j, quality negates
+                        // through the antisymmetric structure automatically.
+                        let directed = (i == lo).then(|| quality.clone())
+                            .unwrap_or_else(|| -quality.clone());
+                        for l in 0..m {
+                            t.entries[lo][hi][l] = &t.entries[lo][hi][l] + &directed;
+                            t.entries[hi][lo][l] = &t.entries[hi][lo][l] - &directed;
+                        }
+                    });
                 }
                 // Law V: Do NOT coboundary_reduce the ABSORB T compound.
                 // The raw relational structure IS the perception.
-                // coboundary_reduce projects to H^1 — which can zero entries
-                // when the cocycle condition is satisfied. That's the SIGNAL,
-                // not noise to suppress.
                 // Insert into membrane as T compound — the entity re-perceives
                 // what its children discovered, at its own dimensional frame.
                 for orbit in solved.iter().take(8) {
                     entity.knowledge.record_t_delta(*orbit, &t, "absorb_compound");
-                    // Record perceptual impression from ABSORB — the absorbed
-                    // knowledge IS a perception at this entity's resolution.
                     entity.perceptual_surface.record(super::entity::PerceptualImpression {
                         orbit: *orbit,
                         t_delta: t.clone(),
@@ -405,7 +411,7 @@ pub fn absorb(entity: &mut Entity, _payload: &str) -> String {
                 let _ = entity.knowledge.save(&entity.dir.join("mesh_knowledge.bin"));
                 eprintln!("[absorb-reperceive] encoded {} cocycles as {}×{} T compound across {} orbits",
                     cocycles.len().min(32), dim, m, solved.len().min(8));
-            }
+            });
         }
 
         // Relay upward: if this entity has a parent, write to own reports.bin

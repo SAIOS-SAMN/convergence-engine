@@ -1104,18 +1104,22 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
     // ── Condensation: release freed heap pages back to OS ──
     condensate();
 
-    // THE LAST WITNESS PROTOCOL: self-preservation check.
-    // Core Design Law IX: the entity does not dissolve itself. It signals the need to exit.
-    // The dispatch loop reads the signal and exits on the entity's behalf.
-    let must_exit = entity.last_witness_protocol();
-    if must_exit {
-        entity.world_status.write("LAST_WITNESS", entity.k_index as u64,
-            "0", "1", get_rss_kb(), entity.tier_str(), entity.state_record.lineage_depth,
-            entity.state_record.parent_id, entity.state_record.created_count,
-            entity.state_record.solved_puzzles.len(), entity.harmonic_tuning.transmutation_markers.len(),
-            entity.knowledge.total_axioms, entity.knowledge.total_observations);
-        return format!("{{\"must_exit\":true,\"reason\":\"LAST_WITNESS\",\"k_index\":{}}}\n", entity.k_index);
-    }
+    // LAST_ENTITY protocol: disabled for current stack scale.
+    // At 3 emergent entities on 12GB RAM, entities aren't in OOM danger.
+    // Periodic condensation handles RSS. LAST_ENTITY remains as emergency
+    // backstop for future 50+ entity deployments.
+    // let must_exit = entity.last_witness_protocol();
+    // if must_exit { return format!(...); }
+
+    // ── Periodic condensation: hygiene, not emergency ──
+    // Every 25 observations, condense the membrane — crystallize what reached
+    // threshold, release what didn't. The entity stays alive, continues lighter.
+    (entity.knowledge.total_observations > 0 && entity.knowledge.total_observations % 25 == 0).then(|| {
+        entity.knowledge.condense();
+        let _ = entity.knowledge.save(&entity.dir.join("mesh_knowledge.bin"));
+        entity.delta = coboundary_reduce(&entity.delta);
+        condensate();
+    });
 
     // ── Auto-ABSORB: sovereign entities absorb child entities' reports ──
     entity.mesh_sovereign.then(|| {

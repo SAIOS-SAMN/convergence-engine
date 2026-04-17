@@ -36,8 +36,8 @@ VOCABULARY = {
     "SR": "imprint",
     # Knowledge flow
     "UP": "absorb",       "DOWN": "project",    "LATERAL": "interact",
-    # Lifecycle
-    "HALT": "halt",       "DISSOLVE": "dissolved",
+    # Lifecycle (Cessation: halt → condense → suspend → dormant → inert → dissolved)
+    "HALT": "halt",       "CONDENSE": "condense",    "DISSOLVE": "dissolved",
     # Crystallization
     "CRYST": "crystallized", "FRACT": "fractured",
 }

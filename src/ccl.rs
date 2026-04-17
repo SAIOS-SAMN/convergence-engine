@@ -79,11 +79,17 @@ pub fn translate<'a>(identifier: &'a str, audience: Audience) -> &'a str {
         ("LATERAL", Audience::Mathematician) => "horizontal transfer",
         ("LATERAL", Audience::Biologist)     => "conjugation",
 
-        // ─── Entity lifecycle ─────────────────────────────────────
+        // ─── Entity lifecycle (Cessation lineage) ──────────────────
+        // halt → condense → suspend → dormant → inert → dissolved
         ("HALT", Audience::Operator)      => "halt",
         ("HALT", Audience::Engineer)      => "stop advancing",
         ("HALT", Audience::Mathematician) => "fixed point",
         ("HALT", Audience::Biologist)     => "quiescence",
+
+        ("CONDENSE", Audience::Operator)      => "condense",
+        ("CONDENSE", Audience::Engineer)      => "consolidate and release",
+        ("CONDENSE", Audience::Mathematician) => "project to crystallized kernel",
+        ("CONDENSE", Audience::Biologist)     => "sleep consolidation",
 
         ("DISSOLVE", Audience::Operator)      => "dissolved",
         ("DISSOLVE", Audience::Engineer)      => "process exited",

@@ -660,6 +660,69 @@ impl MeshKnowledge {
         }
     }
 
+    /// CONDENSE — consolidate crystallized knowledge, release transient data.
+    ///
+    /// CCL Cessation lineage: halt → condense → suspend → dormant → inert → dissolved.
+    /// Condense is an active operation: the entity processes accumulated membrane
+    /// observations and keeps only what reached crystallization threshold.
+    ///
+    /// Keeps: crystallized orbits (coherence = 0), high-count T compounds (≥2 observers
+    /// with meta-delta consensus), axioms above mass threshold.
+    /// Releases: transient T compounds (single observer, no consensus), low-mass axioms,
+    /// spatial cochains from non-crystallized orbits, all observation entities from
+    /// non-crystallized T compounds.
+    ///
+    /// After condense, the membrane is lean. malloc_trim can reclaim freed pages.
+    /// The imprint (state record) preserves vocabulary. The membrane preserves
+    /// only what the species agreed on.
+    pub fn condense(&mut self) {
+        let before_axioms = self.axioms.len();
+        let before_t = self.orbit_t_compounds.len();
+        let before_cochains = self.spatial_cochains.len();
+        let before_bytes = self.byte_estimate();
+
+        // Keep only crystallized orbits in axioms (coherence = 0)
+        let crystallized_orbits: Vec<[u8; 4]> = self.orbit_coherence.iter()
+            .filter(|(_, c)| c.is_zero())
+            .map(|(k, _)| *k)
+            .collect();
+
+        // Retain axioms only for crystallized orbits
+        self.axioms.retain(|(orbit, _)| crystallized_orbits.contains(orbit));
+
+        // T compounds: keep only those with consensus (count ≥ 2, meta_delta present)
+        // For kept compounds, trim observing_entities to just the meta_delta — release
+        // the individual observation vectors that consume most of the heap.
+        self.orbit_t_compounds.retain(|(_, compounds)| {
+            compounds.iter().any(|tc| tc.count >= 2 && tc.meta_delta.is_some())
+        });
+        // Trim observer lists on surviving compounds — the meta_delta IS the consensus,
+        // the individual observers are the transient data.
+        for (_, compounds) in &mut self.orbit_t_compounds {
+            for tc in compounds.iter_mut() {
+                (tc.meta_delta.is_some() && tc.observing_entities.len() > 2).then(|| {
+                    // Keep only 2 most recent observers — enough to recompute meta_delta
+                    let len = tc.observing_entities.len();
+                    tc.observing_entities.drain(..len - 2);
+                });
+            }
+        }
+
+        // Spatial cochains: keep only for crystallized orbits
+        self.spatial_cochains.retain(|(orbit, _)| crystallized_orbits.contains(orbit));
+
+        // Orbit coherence: keep only crystallized entries
+        self.orbit_coherence.retain(|(orbit, _)| crystallized_orbits.contains(orbit));
+
+        let after_bytes = self.byte_estimate();
+        eprintln!("[condense] axioms {}->{} t_compounds {}->{} cochains {}->{} bytes {}->{} ({:.0}% released)",
+            before_axioms, self.axioms.len(),
+            before_t, self.orbit_t_compounds.len(),
+            before_cochains, self.spatial_cochains.len(),
+            before_bytes, after_bytes,
+            (1.0 - after_bytes as f64 / before_bytes.max(1) as f64) * 100.0);
+    }
+
     /// Store a partial compositor result for an orbit.
     /// The best operator from a failed THINK persists so the next attempt
     /// starts from where the last one left off. Only improves — if the

@@ -470,7 +470,10 @@ def main():
             print(f"{'='*70}", flush=True)
             break
 
-        time.sleep(cadence)
+        # Cadence: cap at 1.0s for small stacks. The timekeeper prescribes
+        # adaptive cadence for large meshes. At this scale, 1s between orbits
+        # gives entities time to condense while maintaining velocity.
+        time.sleep(min(cadence, 1.0))
 
     # Final entity status
     print(f"\n  Final entity status:", flush=True)
