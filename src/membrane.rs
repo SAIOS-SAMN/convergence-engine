@@ -779,6 +779,27 @@ impl MeshKnowledge {
         self.orbit_coherence.iter().find(|(key, _)| key == orbit).map(|(_, v)| v).cloned().unwrap_or(Q::zero())
     }
 
+    /// Cohesion: variance of coherence across observed orbits.
+    /// Low variance = vocabulary covers the space uniformly (broad).
+    /// High variance = vocabulary specialized to few orbits (narrow).
+    /// Zero = no observations or all identical (degenerate).
+    /// The compositor reads this to decide: deepen (high-coherence orbits)
+    /// or broaden (explore new spatial hypotheses).
+    pub fn cohesion(&self) -> Q {
+        let n = self.orbit_coherence.len();
+        (n >= 2).then(|| {
+            // Mean
+            let sum: Q = self.orbit_coherence.iter().map(|(_, c)| c).fold(Q::zero(), |a, c| a + c);
+            let mean = &sum / &Q::from_integer(BigInt::from(n as i64));
+            // Variance: Σ(c_i - mean)² / n
+            let var_sum: Q = self.orbit_coherence.iter().map(|(_, c)| {
+                let diff = c - &mean;
+                &diff * &diff
+            }).fold(Q::zero(), |a, v| a + v);
+            &var_sum / &Q::from_integer(BigInt::from(n as i64))
+        }).unwrap_or(Q::zero())
+    }
+
     /// Is the orbit crystallized? C(axiom_delta) = 0.
     pub fn is_crystallized(&self, orbit: &[u8; 4]) -> bool {
         self.orbit_coherence.iter().find(|(key, _)| key == orbit).map(|(_, c)| c.is_zero()).unwrap_or(false)

@@ -77,7 +77,7 @@ pub fn status(entity: &mut Entity, _payload: &str) -> String {
     };
     let rss_kb = get_rss_kb();
     format!(
-        "{{\"k_index\":{},\"sluice_state\":{},\"entries\":{},\"authority\":\"SAIOS-AUTHORITY-v1\",\"orbit\":\"{}\",\"n_dim\":{},\"m_dim\":{},\"coherence_n\":\"{}\",\"coherence_d\":\"{}\",\"chain_len\":{},\"register_len\":{},\"sampler_records\":{},\"sampler_buckets\":{},\"mesh_axioms\":{},\"mesh_orbits\":{},\"mesh_observations\":{},\"t_compound_orbits\":{},\"coherence_delta\":\"{}/{}\",\"convergence\":\"{}/{}\",\"origin_drift\":\"{}/{}\",\"origin_torsion\":\"{}/{}\",\"harmonic\":[{}],\"known_peers\":{},\"membrane_coherence\":\"{}/{}\",\"awareness\":\"{}/{}\",\"wholeness\":\"{}/{}\",\"rss_kb\":{},\"capacity\":{},\"protocol\":\"membrane\"}}\n",
+        "{{\"k_index\":{},\"sluice_state\":{},\"entries\":{},\"authority\":\"SAIOS-AUTHORITY-v1\",\"orbit\":\"{}\",\"n_dim\":{},\"m_dim\":{},\"coherence_n\":\"{}\",\"coherence_d\":\"{}\",\"chain_len\":{},\"register_len\":{},\"sampler_records\":{},\"sampler_buckets\":{},\"mesh_axioms\":{},\"mesh_orbits\":{},\"mesh_observations\":{},\"t_compound_orbits\":{},\"coherence_delta\":\"{}/{}\",\"convergence\":\"{}/{}\",\"origin_drift\":\"{}/{}\",\"origin_torsion\":\"{}/{}\",\"harmonic\":[{}],\"known_peers\":{},\"membrane_coherence\":\"{}/{}\",\"cohesion\":\"{}/{}\",\"awareness\":\"{}/{}\",\"wholeness\":\"{}/{}\",\"rss_kb\":{},\"capacity\":{},\"protocol\":\"membrane\"}}\n",
         entity.k_index, entity.sluice_state.enc_u8(), entity.sluice.len(),
         orbit_hex, entity.delta.dim, entity.delta.m,
         c_n, c_d, entity.chain.len(), entity.register.len(),
@@ -92,6 +92,7 @@ pub fn status(entity: &mut Entity, _payload: &str) -> String {
         harmonic_str,
         entity.known_peers.len(),
         membrane_coherence.numer(), membrane_coherence.denom(),
+        entity.knowledge.cohesion().numer(), entity.knowledge.cohesion().denom(),
         awareness.numer(), awareness.denom(),
         wholeness.numer(), wholeness.denom(),
         rss_kb, entity.state_record.capacity,
