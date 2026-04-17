@@ -12,7 +12,7 @@ use std::io::Write;
 
 use num_bigint::BigInt;
 use num_rational::BigRational;
-use num_traits::{Zero, One};
+use num_traits::{Zero, One, ToPrimitive};
 
 use saios_kernel_v2::agent::AgentStateRecord;
 use saios_kernel_v2::engine::*;
@@ -996,8 +996,43 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                     }
                 }
 
-                // ── D.PARTIAL.1 ──
-                (p.coherence < Q::one()).then(|| {
+                // ── D.PARTIAL.1: Partial solve inscription ──
+                // Any non-empty derived output contains value transitions the entity
+                // discovered — even if coherence < 1. Extract the transition map from
+                // derived_output vs target and inscribe as exploratory vocabulary.
+                // Score = number of matching cells. Low score = exploratory hypothesis.
+                // The compositor needs this seed diversity to break vocabulary stagnation.
+                (!p.derived_output.is_empty() && p.coherence < Q::one()).then(|| {
+                    // Build transition map from derived_output vs first target
+                    let target = pairs.first().map(|(_, t)| t.as_slice()).unwrap_or(&[]);
+                    let mut partial_map: Vec<(i64, i64, usize)> = Vec::new();
+                    p.derived_output.iter().zip(target.iter()).for_each(|(&dv, &tv)| {
+                        (dv != tv).then(|| {
+                            partial_map.iter_mut()
+                                .find(|(s, t, _)| *s == dv && *t == tv)
+                                .map(|e| { e.2 += 1; })
+                                .unwrap_or_else(|| partial_map.push((dv, tv, 1)));
+                        });
+                    });
+                    // Count matching cells as score
+                    let matching = p.derived_output.iter().zip(target.iter())
+                        .filter(|(d, t)| d == t).count() as i64;
+                    // Inscribe if there are transitions AND some cells match
+                    // (pure noise = zero matching = not worth inscribing)
+                    (!partial_map.is_empty() && matching > 0).then(|| {
+                        let sigma: Vec<(i16, i16)> = partial_map.iter()
+                            .take(16) // cap sigma length
+                            .map(|&(sv, tv, _)| (sv as i16, tv as i16))
+                            .collect();
+                        entity.state_record.assimilate(
+                            saios_kernel_v2::engine::ComposedOperator {
+                                opcode: 0,
+                                parameter: 0,
+                                sigma,
+                                score: matching,
+                            });
+                    });
+                    // Record best to membrane (existing behavior)
                     cog.compositions.iter()
                         .filter(|c| !c.sigma_post.is_empty())
                         .next()
@@ -1012,7 +1047,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                                     score: 0,
                                 },
                                 p.derived_output.iter()
-                                    .zip(pairs.first().map(|(_, o)| o.as_slice()).unwrap_or(&[]))
+                                    .zip(target.iter())
                                     .map(|(d, o)| (*d - *o).unsigned_abs())
                                     .sum::<u64>(),
                             );

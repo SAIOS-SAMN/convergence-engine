@@ -1285,9 +1285,10 @@ impl StateRecord {
     /// If the state record is full: the weakest operator yields to the stronger.
     /// The variational selection pattern — `<` IS C(T). No boolean gates.
     pub fn assimilate(&mut self, op: ComposedOperator) {
-        // Reinforcement: existing operator accumulates score
+        // Reinforcement: existing operator accumulates score.
+        // Identity = (opcode, parameter, sigma) — different sigma maps are different operators.
         self.composed_operators.iter_mut()
-            .find(|ex| ex.opcode == op.opcode && ex.parameter == op.parameter)
+            .find(|ex| ex.opcode == op.opcode && ex.parameter == op.parameter && ex.sigma == op.sigma)
             .map(|existing| { existing.score = existing.score.saturating_add(op.score); })
             .unwrap_or_else(|| {
                 // New operator — append or evict
