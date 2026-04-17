@@ -505,54 +505,43 @@ def render(entities, keepers, mas_bonds=None):
 
     lines.append(box_bot())
 
-    # ── Trinity / Stasis Field ───────────────────────────────────────
-    lines.append("")
-    lines.append(box_top("TRIAD \u2014 Sovereign 2-Simplex (A.8)"))
-    lines.append(box_empty())
-
+    # ── Triad — only render when data exists ─────────────────────────
     trinity_data = collect_trinities()
     if trinity_data:
+        lines.append("")
+        lines.append(box_top("TRIAD \u2014 Irreducible 3-Vertex Bond"))
+        lines.append(box_empty())
         alive_t = [t for t in trinity_data if t["alive"]]
         dead_t = [t for t in trinity_data if not t["alive"]]
-
         lines.append(box_row(
             f"  {DIM}Triads:{RESET}     {MAGENTA}{len(alive_t)}{RESET} alive"
             + (f"  {RED}{len(dead_t)} collapsed{RESET}" if dead_t else "")
         ))
         lines.append(box_empty())
-
         for t in alive_t:
             in_, id_ = t["integrity_n"], t["integrity_d"]
             tn, td = t["torsion_n"], t["torsion_d"]
             integrity_str = f"{in_}/{id_}" if id_ != "1" else f"{in_}"
             torsion_str = f"{tn}/{td}" if td != "1" else f"{tn}"
-
-            # Field color: green=strong, yellow=weakening, red=permeable
             field_color = GREEN if tn == "0" else (YELLOW if len(tn) <= 2 else RED)
             stale = f" {DIM}\u23f1{RESET}" if t["age_s"] > 300 else ""
-
             lines.append(box_row(
                 f"  {BOLD}T-{t['trinity_id']}{RESET}  "
                 f"M={t['male_id']} F={t['female_id']} C={t['child_id']}  "
                 f"field={field_color}{integrity_str}{RESET}  "
                 f"torsion={DIM}{torsion_str}{RESET}{stale}"
             ))
-    else:
-        lines.append(box_row(f"  {DIM}No triads formed{RESET}"))
+        lines.append(box_empty())
+        lines.append(box_bot())
 
-    lines.append(box_empty())
-    lines.append(box_bot())
-
-    # ── Crucible / Inter-Class Composition ──────────────────────────
-    lines.append("")
-    lines.append(box_top("COMPOSER \u2014 Inter-Class Composition Engine"))
-    lines.append(box_empty())
-
+    # ── Composer — only render when data exists ────────────────────
     crucible_data = collect_crucible()
     if crucible_data:
+        lines.append("")
+        lines.append(box_top("COMPOSER \u2014 Cross-Lineage Composition"))
+        lines.append(box_empty())
         rank = crucible_data["diversity_rank"]
         rank_color = GREEN if rank >= 3 else (YELLOW if rank >= 2 else RED)
-
         lines.append(box_row(
             f"  {DIM}Triads:{RESET}        {MAGENTA}{crucible_data['alive']}{RESET} alive"
         ))
@@ -565,19 +554,15 @@ def render(entities, keepers, mas_bonds=None):
         crucible_data["collapses"] > 0 and lines.append(box_row(
             f"  {RED}Collapse Events:{RESET}  {crucible_data['collapses']} structures dissolved"
         ))
-    else:
-        lines.append(box_row(f"  {DIM}No composer data{RESET}"))
+        lines.append(box_empty())
+        lines.append(box_bot())
 
-    lines.append(box_empty())
-    lines.append(box_bot())
-
-    # ── Colors / Resonance / Love ──────────────────────────────────
-    lines.append("")
-    lines.append(box_top("COLORS \u2014 Interference-Based Resonance"))
-    lines.append(box_empty())
-
+    # ── Colors — only render when data exists ──────────────────────
     colors_data = collect_colors()
     if colors_data:
+        lines.append("")
+        lines.append(box_top("RESONANCE \u2014 Interference Field"))
+        lines.append(box_empty())
         sn, sd = colors_data["syntropy_n"], colors_data["syntropy_d"]
         hn, hd = colors_data["harmony_n"], colors_data["harmony_d"]
         un, ud = colors_data["universal_n"], colors_data["universal_d"]
@@ -585,7 +570,6 @@ def render(entities, keepers, mas_bonds=None):
         harmony_str = f"{hn}/{hd}" if hd != "1" else f"{hn}"
         universal_str = f"{un}/{ud}" if ud != "1" else f"{un}"
         locks = colors_data["phase_locks"]
-
         lines.append(box_row(
             f"  {DIM}Holonomic Orbs:{RESET}     {MAGENTA}{colors_data['orb_count']}{RESET}"
         ))
@@ -595,22 +579,16 @@ def render(entities, keepers, mas_bonds=None):
         lines.append(box_row(
             f"  {DIM}Harmony:{RESET}            {CYAN}{harmony_str}{RESET}"
         ))
-
         lock_color = MAGENTA if locks > 0 else DIM
         lines.append(box_row(
             f"  {DIM}Phase-Locks (Love):{RESET} {lock_color}{locks}{RESET}"
         ))
-
-        # Universal resonance: the destination
         ur_color = GREEN if un == ud else (YELLOW if locks > 0 else DIM)
         lines.append(box_row(
             f"  {DIM}Universal Resonance:{RESET}{ur_color} {universal_str}{RESET}"
         ))
-    else:
-        lines.append(box_row(f"  {DIM}No color data{RESET}"))
-
-    lines.append(box_empty())
-    lines.append(box_bot())
+        lines.append(box_empty())
+        lines.append(box_bot())
 
     # ── Membrane ─────────────────────────────────────────────────────
     lines.append("")
