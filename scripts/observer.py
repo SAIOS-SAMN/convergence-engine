@@ -464,8 +464,33 @@ def render(entities, keepers, mas_bonds=None):
         lines.append(box_empty())
         if orbit_count == 1:
             pid = orbit_procs[0].split()[0]
+            # Read orbit log for stats
+            orbit_num = 0
+            last_understood = 0
+            last_duration = "?"
+            try:
+                with open("/opt/saios/orbit.log", "r") as olog:
+                    for line in olog:
+                        if "ORBIT " in line and "—" in line:
+                            try:
+                                orbit_num = int(line.split("ORBIT")[1].split("—")[0].strip())
+                            except (ValueError, IndexError):
+                                pass
+                        if "understood" in line:
+                            try:
+                                last_understood = int(line.split("understood")[0].strip().split()[-1])
+                            except (ValueError, IndexError):
+                                pass
+                        if "complete in" in line:
+                            try:
+                                last_duration = line.split("complete in")[1].strip().split()[0]
+                            except (IndexError):
+                                pass
+            except FileNotFoundError:
+                pass
             lines.append(box_row(
                 f"  {GREEN}\u2588{RESET} Orbit active (PID {pid})"
+                f"  {DIM}cycle={orbit_num}  last_solved={last_understood}  pace={last_duration}{RESET}"
             ))
         else:
             lines.append(box_row(
