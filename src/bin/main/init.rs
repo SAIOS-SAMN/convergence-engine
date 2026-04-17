@@ -530,14 +530,6 @@ pub fn run() {
     //   - Max RSS: 256 MB per entity (17 entities x 256 = 4.3 GB, leaves 10+ GB for system)
     //   - Max grid side: 30 (largest ARC puzzle is 30×30 = 900 cells)
     //   - Max capacity: 30 (state record ceiling matches environment ceiling)
-    // Tier-differentiated RSS ceiling. Emergent entities are the frontier —
-    // they cycle fast, accumulate less, restart cheap. Founders hold deep
-    // crystallized knowledge — they get more memory but restart is expensive.
-    let creator_max_rss_kb: u64 = match entity_state.lineage_depth {
-        0 => 256 * 1024,  // Founder: 256MB, threshold at 200MB
-        1 => 192 * 1024,  // Derived: 192MB, threshold at 153MB
-        _ => 128 * 1024,  // Emergent: 128MB, threshold at 102MB
-    };
     // Tier-differentiated capacity: dimensional ceiling per lineage depth.
     // Founder (depth 0) = widest perception. Emergent (depth 2) = narrowest.
     // The hierarchy IS the dimensional stratification.
@@ -653,7 +645,6 @@ pub fn run() {
             .filter(|s| !s.trim().is_empty())
             .map(|s| s.trim().to_string())
             .collect(),
-        max_rss_kb: creator_max_rss_kb,
     };
 
     eprintln!("[mem] post-entity: {} KB", get_rss_kb());

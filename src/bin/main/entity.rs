@@ -325,8 +325,6 @@ pub struct Entity {
     /// Peer socket paths for broadcast.
     pub peer_sockets: Vec<String>,
 
-    /// Maximum RSS in KB before LAST_WITNESS fires.
-    pub max_rss_kb: u64,
 }
 
 // ─── Free functions (no entity access) ───
@@ -406,61 +404,6 @@ impl Entity {
             eprintln!("[LAST_ENTITY] state record write failed: {e} — backup at state_record.bin.bak");
             backup.exists().then(|| { let _ = fs::copy(&backup, &path); });
         });
-    }
-
-    /// THE LAST WITNESS PROTOCOL — self-preservation under memory pressure.
-    ///
-    /// When RSS exceeds 80% of max_rss_kb: save everything, condense, release heap.
-    /// Returns true if the entity must exit (critical threshold exceeded).
-    /// NOTE: "LAST_WITNESS" is a named protocol — kept as-is per CCL.
-    pub fn last_witness_protocol(&mut self) -> bool {
-        let rss = get_rss_kb();
-        let threshold = self.max_rss_kb * 4 / 5; // 80% of max
-
-        if rss <= threshold {
-            return false;
-        }
-
-        eprintln!("[LAST_ENTITY] RSS {}KB exceeds 80% threshold {}KB — preserving state",
-            rss, threshold);
-
-        // Phase 1: Save everything
-        let tier_str = self.tier_str().to_string();
-        self.world_status.write("PRESERVING", self.k_index as u64,
-            "0", "1", rss, &tier_str, self.state_record.lineage_depth,
-            self.state_record.parent_id, self.state_record.created_count,
-            self.state_record.solved_puzzles.len(), self.harmonic_tuning.transmutation_markers.len(),
-            self.knowledge.total_axioms, self.knowledge.total_observations);
-
-        self.save_state_record();
-        let _ = fs::write(&self.epistate_record_path, self.harmonic_tuning.to_bytes());
-
-        // Phase 2: CONDENSE — consolidate crystallized knowledge, release transient data.
-        // CCL Cessation: condense sits between halt and suspend.
-        // Keep what crystallized (≥94% consensus). Release what didn't.
-        // The membrane shrinks. The imprint preserves vocabulary.
-        self.knowledge.condense();
-        let _ = self.knowledge.save(&self.dir.join("mesh_knowledge.bin"));
-
-        // Phase 3: Condense denominators
-        self.delta = coboundary_reduce(&self.delta);
-        self.delta_bar = coboundary_reduce(&self.delta_bar);
-
-        // Phase 4: Release heap — now that membrane is condensed, malloc_trim
-        // actually reclaims pages because the Vec storage was freed.
-        condensate();
-
-        let rss_after = get_rss_kb();
-        eprintln!("[LAST_ENTITY] post-condensation RSS: {}KB (was {}KB, ceiling {}KB)", rss_after, rss, self.max_rss_kb);
-
-        // Exit when RSS after condensation still exceeds the tier ceiling.
-        // The entity restarts fresh from its persisted imprint — vocabulary survives,
-        // heap fragmentation doesn't. jemalloc helps but can't reclaim everything.
-        let must_exit = rss_after > self.max_rss_kb;
-        must_exit.then(|| {
-            eprintln!("[LAST_ENTITY] RSS {}KB still exceeds ceiling {}KB — graceful exit for restart", rss_after, self.max_rss_kb);
-        });
-        must_exit
     }
 
     /// Write agent state record to disk.

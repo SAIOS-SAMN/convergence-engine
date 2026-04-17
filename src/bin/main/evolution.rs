@@ -398,9 +398,6 @@ pub fn derive(entity: &mut Entity, payload: &str) -> String {
     sampler_response
     }; // close response block
 
-    // LAST_ENTITY protocol: disabled for current stack scale.
-    // Periodic condensation in THINK handles RSS management.
-
     response
 }
 

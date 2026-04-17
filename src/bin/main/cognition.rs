@@ -488,13 +488,19 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                         // opcode 0 was ReflectH — every inscribed operator was applying unwanted
                         // horizontal reflection. This was the root cause of vocabulary stagnation.
                         (!net_map.is_empty()).then(|| {
+                            // Read spatial opcode from compositor if available
+                            let (op, param) = cog.compositions.iter()
+                                .filter(|c| !c.sigma_post.is_empty())
+                                .next()
+                                .map(|comp| (comp.operator, comp.parameter))
+                                .unwrap_or((255, 0)); // 255 = value-only fallback
                             let sigma: Vec<(i16, i16)> = net_map.iter()
                                 .map(|&(sv, tv, _)| (sv as i16, tv as i16))
                                 .collect();
                             entity.state_record.assimilate(
                                 saios_kernel_v2::engine::ComposedOperator {
-                                    opcode: 255,
-                                    parameter: 0,
+                                    opcode: op,
+                                    parameter: param,
                                     sigma,
                                     score: 1,
                                 });
@@ -1000,40 +1006,52 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
                 }
 
                 // ── D.PARTIAL.1: Partial solve inscription ──
-                // Any non-empty derived output contains value transitions the entity
-                // discovered — even if coherence < 1. Extract the transition map from
-                // derived_output vs target and inscribe as exploratory vocabulary.
-                // Score = number of matching cells. Low score = exploratory hypothesis.
-                // The compositor needs this seed diversity to break vocabulary stagnation.
+                // Inscribe the compositor's best spatial+value hypothesis.
+                // The compositor records which spatial opcode (rotation, reflection, etc.)
+                // produced the best partial match. Inscribing it preserves both the spatial
+                // transformation AND the value mapping. Without this, the vocabulary is
+                // value-only and the 228 spatial puzzles are unreachable.
                 (!p.derived_output.is_empty() && p.coherence < Q::one()).then(|| {
-                    // Build transition map from derived_output vs first target
+                    // Read spatial opcode from compositor's best composition.
+                    // If the compositor found a spatial match, use its opcode+parameter+sigma.
+                    // If no composition, fall back to value-only from derived_output.
+                    let from_compositor = cog.compositions.iter()
+                        .filter(|c| !c.sigma_post.is_empty())
+                        .next()
+                        .map(|comp| (comp.operator, comp.parameter, comp.sigma_post.clone()));
+
                     let target = pairs.first().map(|(_, t)| t.as_slice()).unwrap_or(&[]);
-                    let mut partial_map: Vec<(i64, i64, usize)> = Vec::new();
-                    p.derived_output.iter().zip(target.iter()).for_each(|(&dv, &tv)| {
-                        (dv != tv).then(|| {
-                            partial_map.iter_mut()
-                                .find(|(s, t, _)| *s == dv && *t == tv)
-                                .map(|e| { e.2 += 1; })
-                                .unwrap_or_else(|| partial_map.push((dv, tv, 1)));
-                        });
-                    });
-                    // Count matching cells as score
                     let matching = p.derived_output.iter().zip(target.iter())
                         .filter(|(d, t)| d == t).count() as i64;
-                    // Inscribe if there are transitions AND some cells match
-                    // (pure noise = zero matching = not worth inscribing)
-                    (!partial_map.is_empty() && matching > 0).then(|| {
-                        let sigma: Vec<(i16, i16)> = partial_map.iter()
-                            .take(16) // cap sigma length
-                            .map(|&(sv, tv, _)| (sv as i16, tv as i16))
-                            .collect();
-                        entity.state_record.assimilate(
-                            saios_kernel_v2::engine::ComposedOperator {
-                                opcode: 255, // value-only, no spatial remap
-                                parameter: 0,
-                                sigma,
-                                score: matching,
+
+                    (matching > 0).then(|| {
+                        let (opcode, parameter, sigma) = from_compositor
+                            .unwrap_or_else(|| {
+                                // No compositor composition — build value-only sigma from output
+                                let mut partial_map: Vec<(i64, i64, usize)> = Vec::new();
+                                p.derived_output.iter().zip(target.iter()).for_each(|(&dv, &tv)| {
+                                    (dv != tv).then(|| {
+                                        partial_map.iter_mut()
+                                            .find(|(s, t, _)| *s == dv && *t == tv)
+                                            .map(|e| { e.2 += 1; })
+                                            .unwrap_or_else(|| partial_map.push((dv, tv, 1)));
+                                    });
+                                });
+                                let sigma: Vec<(i16, i16)> = partial_map.iter()
+                                    .take(16)
+                                    .map(|&(sv, tv, _)| (sv as i16, tv as i16))
+                                    .collect();
+                                (255u8, 0i64, sigma)
                             });
+                        (!sigma.is_empty()).then(|| {
+                            entity.state_record.assimilate(
+                                saios_kernel_v2::engine::ComposedOperator {
+                                    opcode,
+                                    parameter,
+                                    sigma,
+                                    score: matching,
+                                });
+                        });
                     });
                     // Record best to membrane (existing behavior)
                     cog.compositions.iter()
@@ -1141,13 +1159,6 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
 
     // ── Condensation: release freed heap pages back to OS ──
     condensate();
-
-    // LAST_ENTITY protocol: disabled for current stack scale.
-    // At 3 emergent entities on 12GB RAM, entities aren't in OOM danger.
-    // Periodic condensation handles RSS. LAST_ENTITY remains as emergency
-    // backstop for future 50+ entity deployments.
-    // let must_exit = entity.last_witness_protocol();
-    // if must_exit { return format!(...); }
 
     // ── Periodic condensation: hygiene, not emergency ──
     // Every 25 observations, condense the membrane — crystallize what reached
