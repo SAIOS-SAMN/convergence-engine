@@ -401,7 +401,7 @@ pub fn absorb(entity: &mut Entity, _payload: &str) -> String {
                 // The raw relational structure IS the perception.
                 // Insert into membrane as T compound — the entity re-perceives
                 // what its children discovered, at its own dimensional frame.
-                for orbit in solved.iter().take(8) {
+                for orbit in solved.iter().take(32) {
                     entity.knowledge.record_t_delta(*orbit, &t, "absorb_compound");
                     entity.perceptual_surface.record(super::entity::PerceptualImpression {
                         orbit: *orbit,
@@ -440,7 +440,7 @@ pub fn absorb(entity: &mut Entity, _payload: &str) -> String {
                 });
                 // Composed operators with full sigma
                 let ops: Vec<&saios_kernel_v2::engine::ComposedOperator> =
-                    entity.state_record.composed_operators.iter().take(8).collect();
+                    entity.state_record.composed_operators.iter().take(128).collect();
                 buf.push(ops.len() as u8);
                 ops.iter().for_each(|op| {
                     buf.push(op.opcode);

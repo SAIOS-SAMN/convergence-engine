@@ -1271,7 +1271,7 @@ pub fn think(entity: &mut Entity, payload: &str) -> String {
         // on the first block prevents redundant parsing of identical vocabulary.
         let ops = &entity.state_record.composed_operators;
         let cocycles: Vec<_> = entity.state_record.value_cocycles.iter().take(16).collect();
-        for (idx, orbit) in entity.state_record.solved_puzzles.iter().take(8).enumerate() {
+        for (idx, orbit) in entity.state_record.solved_puzzles.iter().take(32).enumerate() {
             buf.extend_from_slice(orbit);
             buf.push(cocycles.len() as u8);
             for (fv, tv, q) in &cocycles {

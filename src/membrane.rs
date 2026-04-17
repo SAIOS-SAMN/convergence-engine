@@ -945,6 +945,10 @@ impl MeshKnowledge {
         t_delta: &Delta,
         level: &str,
     ) {
+        // T compounds are observations — increment so upper tiers that only
+        // receive data through ABSORB show non-zero observation count.
+        self.total_observations += 1;
+
         let compounds = match self.orbit_t_compounds.iter().position(|(key, _)| *key == orbit) {
             Some(pos) => &mut self.orbit_t_compounds[pos].1,
             None => {
